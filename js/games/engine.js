@@ -11,6 +11,7 @@ import {
 } from '../data/content.js';
 import { t, pickText, randomPraise, playSfx, speakText, stopSpeaking } from '../i18n.js';
 import { getFamilyPhotos } from '../storage.js';
+import { renderMasterBoSvg, getLiveComboCount } from '../ui-fx.js';
 
 function shuffle(arr) {
   const copy = [...arr];
@@ -45,6 +46,10 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
     dotsHtml += `<span class="p-dot ${cls}"></span>`;
   }
 
+  const curCombo = getLiveComboCount();
+  const comboHidden = curCombo >= 2 ? '' : 'hidden';
+  const comboTxt = lang === 'en' ? `🔥 Combo ×${curCombo}` : `🔥 連中 ×${curCombo}`;
+
   const header = document.createElement('div');
   header.innerHTML = `
     <div class="stage-top">
@@ -59,9 +64,15 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
           .join('')}
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;">
-      <h2 style="margin:0;font-size:1.25rem;font-weight:900;">${gameMeta.icon} ${pickText(gameMeta.title, lang)}</h2>
-      <div>${extraRightHtml}</div>
+    <div class="nintendo-stage-banner">
+      <div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">
+        <div class="stage-mini-bo" id="stageMiniBo">${renderMasterBoSvg(curCombo >= 2 ? 'happy' : 'greet')}</div>
+        <div>
+          <h2 style="margin:0;font-size:1.2rem;font-weight:900;line-height:1.25;">${gameMeta.icon} ${pickText(gameMeta.title, lang)}</h2>
+          <span class="combo-pill ${comboHidden}" id="liveComboBadge">${comboTxt}</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">${extraRightHtml}</div>
     </div>
   `;
 

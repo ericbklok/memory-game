@@ -43,7 +43,11 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-sans);
-  background: radial-gradient(circle at top, #FFFDF8 0%, var(--bg-paper) 65%, var(--bg-paper-warm) 100%);
+  background-color: var(--bg-paper);
+  background-image:
+    radial-gradient(#E5D7BC 1.35px, transparent 1.35px),
+    radial-gradient(circle at top, #FFFDF8 0%, var(--bg-paper) 70%, var(--bg-paper-warm) 100%);
+  background-size: 22px 22px, 100% 100%;
   color: var(--ink);
   line-height: 1.5;
   min-height: 100vh;
@@ -1447,4 +1451,458 @@ button, input, select {
   border-color: var(--gold);
   background: #FFF3C4;
   box-shadow: 0 0 20px rgba(235, 168, 35, 0.55);
+}
+
+/* =========================================================================
+   NINTENDO UI & TACTILE JUICE OVERHAUL (BIG BRAIN ACADEMY / CLUBHOUSE VIBE)
+   ========================================================================= */
+
+.card {
+  border: 2.5px solid #CBB894;
+  box-shadow: 0 6px 0 rgba(168, 142, 98, 0.28), 0 10px 24px rgba(45, 32, 14, 0.07);
+}
+
+.hero-card {
+  border: 3px solid #B89B67;
+  background: linear-gradient(180deg, #FFFDF8 0%, #FFF6E3 100%);
+}
+
+.btn {
+  border-width: 2.5px;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.35), 0 5px 0 rgba(0, 0, 0, 0.22);
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #DF453A 0%, #C42E24 100%);
+  border-color: #881B14;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.42), 0 6px 0 #881B14;
+}
+
+.btn-jade {
+  background: linear-gradient(180deg, #24876A 0%, #186850 100%);
+  border-color: #0E4434;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.38), 0 6px 0 #0E4434;
+}
+
+.btn-gold {
+  background: linear-gradient(180deg, #EB9F28 0%, #C97E12 100%);
+  border-color: #875105;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.45), 0 6px 0 #875105;
+}
+
+.btn-plum {
+  background: linear-gradient(180deg, #8B46C7 0%, #6A2CA0 100%);
+  color: #FFFFFF;
+  border-color: #45186E;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.4), 0 6px 0 #45186E;
+}
+
+.btn-plum:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #45186E;
+}
+
+/* Master Bo Interactive Host Stage */
+.bo-mascot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: #FFFDF7;
+  border: 2.5px solid #D5BE93;
+  border-radius: 20px;
+  padding: 0.75rem 0.95rem;
+  margin-bottom: 0.95rem;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 4px 0 #DFCEAC;
+}
+
+.bo-avatar-btn {
+  width: 78px;
+  height: 78px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bo-avatar-btn:hover {
+  transform: scale(1.07) rotate(-3deg);
+}
+
+.bo-avatar-btn:active {
+  transform: scale(0.94);
+}
+
+.master-bo-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  animation: boBob 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 0 rgba(43, 33, 24, 0.16));
+}
+
+@keyframes boBob {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.bo-eye {
+  transform-origin: center 53px;
+  animation: boBlink 4.6s infinite;
+}
+
+@keyframes boBlink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.12); }
+}
+
+.bo-speech-bubble {
+  flex: 1;
+  position: relative;
+  background: #FFF9EB;
+  border: 2px solid #D5BA8A;
+  border-radius: 16px;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.bo-speech-bubble:hover {
+  background: #FFF3D6;
+}
+
+.bo-name-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--jade);
+  color: #FFFFFF;
+  font-size: 0.74rem;
+  font-weight: 900;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  margin-bottom: 0.25rem;
+}
+
+.bo-tap-hint {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+  margin-left: 0.4rem;
+}
+
+/* Home Dashboard Two-Column Split (4-Dish Slip + 5-Spoke Brain Radar) */
+.home-dash-grid {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 0.9rem;
+  align-items: stretch;
+  margin: 0.85rem 0 1rem;
+}
+
+@media (max-width: 680px) {
+  .home-dash-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.home-dash-grid .stamp-slip {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.radar-panel {
+  background: #FFFEFA;
+  border: 2.5px solid #D5C19D;
+  border-radius: var(--radius-md);
+  padding: 0.8rem 0.75rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.radar-title {
+  font-weight: 900;
+  font-size: 0.9rem;
+  color: var(--jade-dark);
+  margin-bottom: 0.2rem;
+}
+
+/* Category Filter Pills & Roulette Bar */
+.cat-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0.9rem 0 0.85rem;
+}
+
+.cat-filter-bar {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cat-pill {
+  min-height: 42px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 2.5px solid #CBB692;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #CBB692;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.12s ease;
+}
+
+.cat-pill:hover {
+  transform: translateY(-2px);
+}
+
+.cat-pill.active {
+  background: var(--red-chop);
+  border-color: var(--red-chop-dark);
+  color: #FFFFFF;
+  box-shadow: 0 3px 0 var(--red-chop-dark);
+}
+
+/* Color-Coded Nintendo Switch / DS Game Cartridges */
+.game-card {
+  position: relative;
+  border-width: 2.5px;
+  border-radius: 20px;
+  padding: 0.95rem 1rem;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 5px 0 #CFC0A3;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease, border-color 0.15s ease;
+  overflow: hidden;
+}
+
+.game-card:hover {
+  transform: translateY(-3px) scale(1.01);
+}
+
+.game-card.theme-red { border-left: 8px solid #D93B30; }
+.game-card.theme-red .game-icon-box { background: linear-gradient(145deg, #FFE8E5, #FFD0CA); border: 2px solid #F0A39B; }
+
+.game-card.theme-jade { border-left: 8px solid #1E8264; }
+.game-card.theme-jade .game-icon-box { background: linear-gradient(145deg, #E2F7F0, #C4EDE0); border: 2px solid #88CFB8; }
+
+.game-card.theme-gold { border-left: 8px solid #DF8E18; }
+.game-card.theme-gold .game-icon-box { background: linear-gradient(145deg, #FFF5DC, #FFE5AD); border: 2px solid #ECC171; }
+
+.game-card.theme-blue { border-left: 8px solid #2469A6; }
+.game-card.theme-blue .game-icon-box { background: linear-gradient(145deg, #E5F2FF, #C8E2FC); border: 2px solid #8DBCEB; }
+
+.game-card.theme-plum { border-left: 8px solid #7E3FB8; }
+.game-card.theme-plum .game-icon-box { background: linear-gradient(145deg, #F3E8FF, #E2CCFC); border: 2px solid #BA94E8; }
+
+.game-card.roulette-highlight {
+  border-color: var(--gold) !important;
+  background: #FFF6D6 !important;
+  transform: scale(1.04);
+  box-shadow: 0 0 0 4px rgba(235, 159, 40, 0.35), 0 6px 0 var(--gold-dark);
+}
+
+.cartridge-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.38rem;
+}
+
+.play-medal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 800;
+  background: #FFF3D4;
+  color: #8A5200;
+  border: 1.5px solid #E8BE6B;
+}
+
+/* Active Game Stage Nintendo HUD */
+.nintendo-stage-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: linear-gradient(180deg, #FFFDF8 0%, #FFF5E2 100%);
+  border: 2.5px solid #D7C19A;
+  border-radius: 18px;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 0.85rem;
+  box-shadow: 0 4px 0 rgba(184, 155, 103, 0.25);
+}
+
+.stage-mini-bo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.stage-mini-bo.bo-pop {
+  animation: miniBoJump 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes miniBoJump {
+  0% { transform: scale(0.85); }
+  55% { transform: scale(1.18) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.combo-pill {
+  display: inline-block;
+  margin-top: 0.15rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FF6B35, #D92B2B);
+  color: #FFFFFF;
+  font-size: 0.76rem;
+  font-weight: 900;
+  box-shadow: 0 2px 0 #8A1616;
+}
+
+.combo-pill.combo-bounce {
+  animation: comboPop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes comboPop {
+  0% { transform: scale(0.6); }
+  65% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+.p-dot {
+  width: 18px;
+  height: 11px;
+  border-radius: 999px;
+  border: 1.5px solid #BFA882;
+  background: #EFE5D1;
+  transition: all 0.2s ease;
+}
+
+.p-dot.active {
+  width: 26px;
+  background: var(--gold);
+  border-color: var(--gold-dark);
+  transform: none;
+}
+
+.p-dot.done {
+  background: var(--jade);
+  border-color: var(--jade-dark);
+}
+
+/* Floating Nintendo +Score / Combo Pop & Confetti Particles */
+.nintendo-pop-badge {
+  position: fixed;
+  z-index: 95;
+  pointer-events: none;
+  color: #FFFFFF;
+  font-weight: 900;
+  font-size: 0.96rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 2.5px solid #FFFFFF;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.24);
+  animation: floatUpFade 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes floatUpFade {
+  0% { transform: translateY(10px) scale(0.65); opacity: 0; }
+  22% { transform: translateY(-8px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(-48px) scale(0.96); opacity: 0; }
+}
+
+.confetti-layer {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  width: 0;
+  height: 0;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.confetti-bit {
+  position: absolute;
+  width: 11px;
+  height: 15px;
+  border-radius: 3px;
+  left: -5px;
+  top: -7px;
+  animation: confettiFly 1.2s cubic-bezier(0.16, 0.85, 0.32, 1) forwards;
+}
+
+@keyframes confettiFly {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), calc(var(--dy) + 120px)) rotate(var(--rot)) scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* Stage Clear Victory Card & Sequential Bouncing Stars */
+.victory-stage {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 1.7rem 1.25rem;
+}
+
+.victory-sunburst {
+  width: 168px;
+  height: 168px;
+  margin: 0 auto -138px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(246, 189, 96, 0.32) 0deg 15deg,
+    rgba(255, 253, 244, 0.05) 15deg 30deg
+  );
+  animation: spinSun 16s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes spinSun {
+  to { transform: rotate(360deg); }
+}
+
+.victory-star {
+  display: inline-block;
+  font-size: 2.15rem;
+  margin: 0 0.12rem;
+  opacity: 0;
+  animation: starBounceIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes starBounceIn {
+  0% { transform: scale(0) rotate(-35deg); opacity: 0; }
+  70% { transform: scale(1.28) rotate(8deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }

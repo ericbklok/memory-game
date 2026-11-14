@@ -1,6 +1,17 @@
+export const GAME_CATEGORIES = [
+  { id: 'all', icon: '🌟', zh: '全部 (15)', en: 'All (15)' },
+  { id: 'memory', icon: '🧠', zh: '記憶力', en: 'Memory' },
+  { id: 'logic', icon: '🧩', zh: '邏輯推理', en: 'Logic' },
+  { id: 'math', icon: '🧮', zh: '靈活心算', en: 'Math' },
+  { id: 'verbal', icon: '📖', zh: '語言博學', en: 'Language' },
+  { id: 'focus', icon: '👀', zh: '眼力專注', en: 'Focus' }
+];
+
 export const GAME_CATALOG = [
   {
     id: 'news',
+    cat: 'memory',
+    theme: 'red',
     icon: '📰',
     title: { zh: '時事醒目仔', en: 'Daily News Recall' },
     shortName: { zh: '時事', en: 'News' },
@@ -12,6 +23,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'memory',
+    cat: 'memory',
+    theme: 'jade',
     icon: '🀄',
     title: { zh: '麻雀與買餸記憶', en: 'Mahjong & Market Memory' },
     shortName: { zh: '記憶', en: 'Memory' },
@@ -23,6 +36,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'math',
+    cat: 'math',
+    theme: 'gold',
     icon: '🧮',
     title: { zh: '飲茶埋單心算', en: 'Yum Cha & Market Math' },
     shortName: { zh: '心算', en: 'Math' },
@@ -34,6 +49,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'history',
+    cat: 'verbal',
+    theme: 'blue',
     icon: '🏛️',
     title: { zh: '當年今日博學堂', en: 'History & Back in the Day' },
     shortName: { zh: '博學', en: 'History' },
@@ -45,6 +62,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'words',
+    cat: 'verbal',
+    theme: 'plum',
     icon: '🗣️',
     title: { zh: '成語俗語與分類', en: 'Idioms & Category Sort' },
     shortName: { zh: '語言', en: 'Words' },
@@ -56,6 +75,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'eagle',
+    cat: 'focus',
+    theme: 'gold',
     icon: '👀',
     title: { zh: '眼明手快尋寶', en: 'Eagle Eye Tile Hunt' },
     shortName: { zh: '眼力', en: 'Focus' },
@@ -67,6 +88,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'sudoku',
+    cat: 'logic',
+    theme: 'blue',
     icon: '🔢',
     title: { zh: '醒神茶樓數獨', en: 'Tea-House Sudoku' },
     shortName: { zh: '數獨', en: 'Sudoku' },
@@ -78,6 +101,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'tenpai',
+    cat: 'logic',
+    theme: 'jade',
     icon: '🀄',
     title: { zh: '叫糊大師（聽邊張牌）', en: 'Mahjong Winning Tile' },
     shortName: { zh: '叫糊', en: 'Tenpai' },
@@ -89,6 +114,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'shisen',
+    cat: 'logic',
+    theme: 'red',
     icon: '🀅',
     title: { zh: '麻雀連連看消消樂', en: 'Mahjong Pair Clear' },
     shortName: { zh: '連連看', en: 'Tile Link' },
@@ -100,6 +127,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'make24',
+    cat: 'math',
+    theme: 'red',
     icon: '🃏',
     title: { zh: '合廿四撲克心算', en: 'Make 24 Card Math' },
     shortName: { zh: '合廿四', en: 'Make 24' },
@@ -111,6 +140,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'wordsearch',
+    cat: 'focus',
+    theme: 'jade',
     icon: '🔤',
     title: { zh: '港溫尋字陣', en: 'HK × YVR Word Search' },
     shortName: { zh: '尋字陣', en: 'Word Grid' },
@@ -122,6 +153,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'blocks',
+    cat: 'logic',
+    theme: 'gold',
     icon: '🧱',
     title: { zh: '茶木方塊消消樂', en: 'Tea-Wood Block Fit' },
     shortName: { zh: '方塊', en: 'Block Fit' },
@@ -133,6 +166,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'stroop',
+    cat: 'focus',
+    theme: 'plum',
     icon: '🎨',
     title: { zh: '心清眼亮辨色字', en: 'Color vs. Word Switch' },
     shortName: { zh: '辨色字', en: 'Color Mind' },
@@ -144,6 +179,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'melody',
+    cat: 'memory',
+    theme: 'blue',
     icon: '🎵',
     title: { zh: '茗茶聽音記次序', en: 'Porcelain Tea Chimes' },
     shortName: { zh: '聽音記', en: 'Chimes' },
@@ -155,6 +192,8 @@ export const GAME_CATALOG = [
   },
   {
     id: 'vocab',
+    cat: 'verbal',
+    theme: 'jade',
     icon: '📖',
     title: { zh: '雅言詞匯館（中英雙語）', en: 'Vocabulary Builder' },
     shortName: { zh: '詞匯', en: 'Vocab' },

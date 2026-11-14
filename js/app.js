@@ -1,5 +1,12 @@
-import { GAME_CATALOG, COLLECTIBLE_ALBUM } from './data/content.js';
+import { GAME_CATALOG, GAME_CATEGORIES, COLLECTIBLE_ALBUM } from './data/content.js';
 import { t, pickText, getRankTitle, randomPraise, playSfx, stopSpeaking } from './i18n.js';
+import {
+  renderMasterBoSvg,
+  MASTER_BO_QUIPS,
+  spawnConfettiBurst,
+  renderBrainRadarSvg,
+  resetComboStreak
+} from './ui-fx.js';
 import {
   loadState,
   saveState,
@@ -46,6 +53,9 @@ let currentTab = 'home'; // home | games | leaderboard | album | playing
 let activeGameId = null;
 let inDailySequence = false;
 let boardSubTab = 'total'; // total | today | circle
+let selectedGameCategory = 'all';
+let boQuipIdx = 0;
+let rouletteBusy = false;
 
 const mainEl = document.getElementById('mainContent');
 const modalBackdrop = document.getElementById('modalBackdrop');
@@ -259,7 +269,7 @@ async function shareDailyStampCard() {
 }
 
 /* =========================================================================
-   HOME VIEW (今日早茶)
+   HOME VIEW (今日早茶 · NINTENDO BRAIN CLUBHOUSE)
    ========================================================================= */
 function renderHomeView() {
   const lang = state.lang;
@@ -276,6 +286,9 @@ function renderHomeView() {
     : doneCount === 0
     ? t(lang, 'startDailyBtn')
     : t(lang, 'continueDailyBtn');
+
+  const quipPool = MASTER_BO_QUIPS[lang] || MASTER_BO_QUIPS.zh;
+  const curQuip = quipPool[boQuipIdx % quipPool.length];
 
   const wrap = document.createElement('div');
   wrap.innerHTML = `
@@ -294,12 +307,38 @@ function renderHomeView() {
         </div>
       </div>
 
-      <div class="stamp-slip">
-        <div class="stamp-slip-header">
-          <span>${t(lang, 'slipTitle')}</span>
-          <span>${t(lang, 'slipDoneCount')} ${doneCount} / ${dishes.length}</span>
+      <!-- Interactive Host: Tea Master Bo (茶博士阿波) -->
+      <div class="bo-mascot-row" id="boInteractiveRow">
+        <button type="button" class="bo-avatar-btn" id="boAvatarBtn" aria-label="Tea Master Bo">
+          ${renderMasterBoSvg(doneCount === 4 ? 'cheer' : curQuip.mood)}
+        </button>
+        <div class="bo-speech-bubble" id="boBubbleBtn">
+          <div>
+            <span class="bo-name-tag">🫖 ${lang === 'zh' ? '茶博士阿波' : 'Master Bo'}</span>
+            <span class="bo-tap-hint">${lang === 'zh' ? '💬 撳我傾偈換貼士' : '💬 Tap for brain tips!'}</span>
+          </div>
+          <div id="boSpeechText" style="font-weight:800;font-size:0.94rem;color:var(--ink);">
+            ${curQuip.text}
+          </div>
         </div>
-        <div class="stamp-grid" id="dailyStampGrid"></div>
+      </div>
+
+      <!-- 4-Dish Stamp Slip + Big Brain Academy 5-Axis Vitality Radar -->
+      <div class="home-dash-grid">
+        <div class="stamp-slip">
+          <div class="stamp-slip-header">
+            <span>${t(lang, 'slipTitle')}</span>
+            <span>${t(lang, 'slipDoneCount')} ${doneCount} / ${dishes.length}</span>
+          </div>
+          <div class="stamp-grid" id="dailyStampGrid"></div>
+        </div>
+        <div class="radar-panel">
+          <div class="radar-title">🧠 ${lang === 'zh' ? '腦力五維活力圖' : 'Brain Vitality Radar'}</div>
+          ${renderBrainRadarSvg(state.stats.perGamePlays, lang)}
+          <div style="font-size:0.75rem;color:var(--ink-muted);font-weight:700;">
+            ${lang === 'zh' ? `已完成 ${state.stats.gamesCompleted} 局健腦練習` : `${state.stats.gamesCompleted} Brain Rounds Played`}
+          </div>
+        </div>
       </div>
 
       <button type="button" class="btn ${!nextUnstamped ? 'btn-gold' : 'btn-primary'} btn-full" id="heroStartBtn" style="font-size:1.14rem;min-height:62px;">
@@ -307,16 +346,30 @@ function renderHomeView() {
       </button>
 
       <div class="action-row" style="margin-top:0.75rem;">
+        <button type="button" class="btn btn-plum btn-sm" id="surpriseHomeBtn">
+          🎲 ${lang === 'zh' ? '隨機抽一籠點心！' : 'Surprise Me!'}
+        </button>
         <button type="button" class="btn btn-jade btn-sm" id="shareCardBtn">${t(lang, 'shareFamilyBtn')}</button>
         <button type="button" class="btn btn-outline btn-sm" id="inviteHomeBtn">${t(lang, 'inviteBtn')}</button>
       </div>
     </section>
 
-    <div class="section-heading">
-      <h2>🥢 ${t(lang, 'quickPickTitle')}</h2>
+    <div class="cat-toolbar">
+      <div class="cat-filter-bar" id="homeCatBar"></div>
     </div>
     <div class="games-grid" id="homeGamesGrid"></div>
   `;
+
+  // Wire Master Bo interactive chatter
+  const cycleBoQuip = () => {
+    playSfx('switch', state.sound);
+    boQuipIdx = (boQuipIdx + 1) % quipPool.length;
+    const nextQ = quipPool[boQuipIdx];
+    wrap.querySelector('#boAvatarBtn').innerHTML = renderMasterBoSvg(nextQ.mood);
+    wrap.querySelector('#boSpeechText').textContent = nextQ.text;
+  };
+  wrap.querySelector('#boAvatarBtn').addEventListener('click', cycleBoQuip);
+  wrap.querySelector('#boBubbleBtn').addEventListener('click', cycleBoQuip);
 
   const stampGrid = wrap.querySelector('#dailyStampGrid');
   dishes.forEach((dId, idx) => {
@@ -334,6 +387,7 @@ function renderHomeView() {
       ${stamped ? `<span class="red-chop">${t(lang, 'stampChop')}</span>` : ''}
     `;
     slot.addEventListener('click', () => {
+      playSfx('switch', state.sound);
       inDailySequence = true;
       launchGame(dId);
     });
@@ -341,45 +395,121 @@ function renderHomeView() {
   });
 
   wrap.querySelector('#heroStartBtn').addEventListener('click', () => {
-    playSfx('tap', state.sound);
+    playSfx('switch', state.sound);
     inDailySequence = true;
     if (nextUnstamped) {
       launchGame(nextUnstamped);
     } else {
-      // Pick a fun bonus dish!
       const randomMeta = GAME_CATALOG[Math.floor(Math.random() * GAME_CATALOG.length)];
       launchGame(randomMeta.id);
     }
   });
 
+  const gGrid = wrap.querySelector('#homeGamesGrid');
+  const catBar = wrap.querySelector('#homeCatBar');
+  renderCategoryBarInto(catBar, gGrid);
+  renderGameCardsInto(gGrid, selectedGameCategory);
+
+  wrap.querySelector('#surpriseHomeBtn').addEventListener('click', () => {
+    spinSurpriseRoulette(gGrid);
+  });
   wrap.querySelector('#shareCardBtn').addEventListener('click', shareDailyStampCard);
   wrap.querySelector('#inviteHomeBtn').addEventListener('click', shareInviteWithFriends);
-
-  const gGrid = wrap.querySelector('#homeGamesGrid');
-  renderGameCardsInto(gGrid);
 
   mainEl.innerHTML = '';
   mainEl.appendChild(wrap);
 }
 
-function renderGameCardsInto(gridEl) {
+function renderCategoryBarInto(barEl, targetGridEl) {
   const lang = state.lang;
+  barEl.innerHTML = '';
+  GAME_CATEGORIES.forEach(cat => {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = `cat-pill ${selectedGameCategory === cat.id ? 'active' : ''}`;
+    pill.textContent = `${cat.icon} ${cat[lang]}`;
+    pill.addEventListener('click', () => {
+      playSfx('switch', state.sound);
+      selectedGameCategory = cat.id;
+      renderCategoryBarInto(barEl, targetGridEl);
+      renderGameCardsInto(targetGridEl, selectedGameCategory);
+    });
+    barEl.appendChild(pill);
+  });
+}
+
+function spinSurpriseRoulette(gridEl) {
+  if (rouletteBusy) return;
+  const cards = Array.from(gridEl.querySelectorAll('.game-card'));
+  if (!cards.length) {
+    const pick = GAME_CATALOG[Math.floor(Math.random() * GAME_CATALOG.length)];
+    launchGame(pick.id);
+    return;
+  }
+  rouletteBusy = true;
+  const totalTicks = 10;
+  const winnerIdx = Math.floor(Math.random() * cards.length);
+  let step = 0;
+
+  const tick = () => {
+    cards.forEach(c => c.classList.remove('roulette-highlight'));
+    const idx = step < totalTicks ? step % cards.length : winnerIdx;
+    const targetCard = cards[idx];
+    targetCard.classList.add('roulette-highlight');
+    playSfx('roulette', state.sound);
+
+    if (step === totalTicks) {
+      targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setTimeout(() => {
+        rouletteBusy = false;
+        inDailySequence = false;
+        launchGame(targetCard.dataset.gameId);
+      }, 420);
+      return;
+    }
+    step += 1;
+    setTimeout(tick, 65 + step * 18);
+  };
+  tick();
+}
+
+function renderGameCardsInto(gridEl, catFilter) {
+  const lang = state.lang;
+  const filter = catFilter || 'all';
   const lvlNames = [t(lang, 'lvlEasy'), t(lang, 'lvlMed'), t(lang, 'lvlHard')];
-  GAME_CATALOG.forEach(g => {
+  gridEl.innerHTML = '';
+
+  const list = filter === 'all' ? GAME_CATALOG : GAME_CATALOG.filter(g => g.cat === filter);
+
+  list.forEach(g => {
     const lvl = typeof state.stats.perGameLevel[g.id] === 'number' ? state.stats.perGameLevel[g.id] : 1;
+    const plays = (state.stats.perGamePlays && state.stats.perGamePlays[g.id]) || 0;
+    const medalLabel =
+      plays >= 5
+        ? `👑 ×${plays}`
+        : plays > 0
+        ? `⭐ ×${plays}`
+        : lang === 'zh'
+        ? '✨ 試玩'
+        : '✨ Try!';
+
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'game-card';
+    btn.dataset.gameId = g.id;
+    btn.className = `game-card theme-${g.theme || 'jade'}`;
     btn.innerHTML = `
       <div class="game-icon-box">${g.icon}</div>
       <div class="game-card-body">
         <h3 class="game-card-title">${pickText(g.title, lang)}</h3>
         <p class="game-card-desc">${pickText(g.desc, lang)}</p>
-        <span class="level-tag">${pickText(g.pillar, lang)} · ${lvlNames[lvl]}</span>
+        <div class="cartridge-meta-row">
+          <span class="level-tag" style="margin-top:0;">${pickText(g.pillar, lang)} · ${lvlNames[lvl]}</span>
+          <span class="play-medal">${medalLabel}</span>
+        </div>
       </div>
     `;
     btn.addEventListener('click', () => {
-      playSfx('tap', state.sound);
+      playSfx('switch', state.sound);
       inDailySequence = false;
       launchGame(g.id);
     });
@@ -388,7 +518,7 @@ function renderGameCardsInto(gridEl) {
 }
 
 /* =========================================================================
-   ALL GAMES VIEW (自選點心)
+   ALL GAMES VIEW (自選點心 · CARTRIDGE SHELF)
    ========================================================================= */
 function renderGamesTabView() {
   const lang = state.lang;
@@ -400,15 +530,27 @@ function renderGamesTabView() {
           <h1 style="margin:0;font-size:1.3rem;">🀄 ${t(lang, 'quickPickTitle')}</h1>
           <p style="margin:0.25rem 0 0;color:var(--ink-muted);">${t(lang, 'freePlaySub')}</p>
         </div>
-        <button type="button" class="btn btn-outline btn-sm" id="managePhotosBtn">
-          📸 ${lang === 'zh' ? '管理屋企相片卡' : 'Family Photo Cards'}
-        </button>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button type="button" class="btn btn-plum btn-sm" id="surpriseAllBtn">
+            🎲 ${lang === 'zh' ? '隨機抽一籠！' : 'Surprise Me!'}
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="managePhotosBtn">
+            📸 ${lang === 'zh' ? '管理屋企相片卡' : 'Family Photo Cards'}
+          </button>
+        </div>
       </div>
+      <div class="cat-filter-bar" id="allGamesCatBar" style="margin-top:0.9rem;"></div>
     </div>
     <div class="games-grid" id="allGamesGrid"></div>
   `;
+  const gridEl = wrap.querySelector('#allGamesGrid');
+  const catBar = wrap.querySelector('#allGamesCatBar');
+  renderCategoryBarInto(catBar, gridEl);
+  renderGameCardsInto(gridEl, selectedGameCategory);
+
+  wrap.querySelector('#surpriseAllBtn').addEventListener('click', () => spinSurpriseRoulette(gridEl));
   wrap.querySelector('#managePhotosBtn').addEventListener('click', openFamilyPhotosModal);
-  renderGameCardsInto(wrap.querySelector('#allGamesGrid'));
+
   mainEl.innerHTML = '';
   mainEl.appendChild(wrap);
 }
@@ -418,6 +560,7 @@ function renderGamesTabView() {
    ========================================================================= */
 function launchGame(gameId) {
   stopSpeaking();
+  resetComboStreak();
   activeGameId = gameId;
   currentTab = 'playing';
   syncChrome();
@@ -456,7 +599,9 @@ function launchGame(gameId) {
 }
 
 async function handleDishCompleted(gameId, score, stars) {
-  playSfx('stamp', state.sound);
+  playSfx('fanfare', state.sound);
+  spawnConfettiBurst(42);
+
   const allAlbumIds = COLLECTIBLE_ALBUM.map(x => x.id);
   const { newlyCompletedAllFour, newlyUnlockedId } = recordGameCompletion(
     state,
@@ -477,35 +622,43 @@ async function handleDishCompleted(gameId, score, stars) {
   const nextDailyDish = state.daily.dishes.find(d => !state.daily.stamps[d]);
   const unlockedItem = newlyUnlockedId ? COLLECTIBLE_ALBUM.find(x => x.id === newlyUnlockedId) : null;
 
+  let starsHtml = '';
+  for (let i = 0; i < stars; i++) {
+    starsHtml += `<span class="victory-star" style="animation-delay:${i * 0.14}s;">⭐</span>`;
+  }
+
   mainEl.innerHTML = `
-    <div class="card hero-card" style="text-align:center;padding:1.6rem 1.2rem;">
-      <div style="display:inline-flex;position:relative;margin-bottom:0.6rem;">
-        <span style="font-size:3.4rem;">${gameMeta.icon}</span>
-        <span class="red-chop" style="position:static;margin-left:0.5rem;width:3rem;height:3rem;font-size:0.85rem;">
+    <div class="card hero-card victory-stage">
+      <div class="victory-sunburst"></div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:0.75rem;position:relative;margin-bottom:0.55rem;">
+        <div style="width:74px;height:74px;">${renderMasterBoSvg('cheer')}</div>
+        <span style="font-size:3.5rem;">${gameMeta.icon}</span>
+        <span class="red-chop" style="position:static;width:3.1rem;height:3.1rem;font-size:0.86rem;">
           ${t(lang, 'stampChop')}
         </span>
       </div>
-      <h2 style="margin:0.2rem 0;font-size:1.45rem;">${randomPraise(lang)}</h2>
-      <p style="font-size:1.15rem;font-weight:800;color:var(--red-chop-dark);margin:0.4rem 0;">
-        ${'⭐'.repeat(stars)} +${score} ${t(lang, 'pointsUnit')}
+      <div style="margin:0.2rem 0;">${starsHtml}</div>
+      <h2 style="margin:0.25rem 0;font-size:1.5rem;">${randomPraise(lang)}</h2>
+      <p style="font-size:1.25rem;font-weight:900;color:var(--red-chop-dark);margin:0.4rem 0;">
+        +<span id="winScoreTicker">0</span> ${t(lang, 'pointsUnit')}
         ${newlyCompletedAllFour ? (lang === 'zh' ? '（另加齊印獎賞 +50 分！🎊）' : ' (+50 Full Card Bonus! 🎊)') : ''}
       </p>
 
       ${
         unlockedItem
           ? `
-        <div style="margin:1rem auto;max-width:360px;padding:0.9rem;background:#FFFDF6;border:2px solid var(--gold);border-radius:16px;">
-          <div style="font-size:0.82rem;font-weight:800;color:var(--gold-dark);">
+        <div style="margin:1rem auto;max-width:360px;padding:0.9rem;background:#FFFDF6;border:2.5px solid var(--gold);border-radius:18px;box-shadow:0 4px 0 rgba(200,129,26,0.25);">
+          <div style="font-size:0.82rem;font-weight:900;color:var(--gold-dark);">
             🎁 ${lang === 'zh' ? '恭喜解鎖新珍藏圖鑑！' : 'New Collectible Unlocked!'}
           </div>
-          <div style="font-size:2.3rem;margin:0.2rem 0;">${unlockedItem.display || unlockedItem.emoji}</div>
+          <div style="font-size:2.4rem;margin:0.2rem 0;">${unlockedItem.display || unlockedItem.emoji}</div>
           <strong>${unlockedItem[lang]}</strong>
           <p style="margin:0.25rem 0 0;font-size:0.86rem;color:var(--ink-muted);">${pickText(unlockedItem.blurb, lang)}</p>
         </div>`
           : ''
       }
 
-      <div class="action-row" style="margin-top:1.2rem;">
+      <div class="action-row" style="margin-top:1.25rem;">
         ${
           inDailySequence && nextDailyDish
             ? `<button type="button" class="btn btn-primary" id="nextDishAfterWinBtn">${t(lang, 'continueDailyBtn')}</button>`
@@ -516,6 +669,18 @@ async function handleDishCompleted(gameId, score, stars) {
       </div>
     </div>
   `;
+
+  // Smooth Nintendo score ticker count-up!
+  const tickerEl = mainEl.querySelector('#winScoreTicker');
+  if (tickerEl) {
+    let cur = 0;
+    const stepVal = Math.max(3, Math.ceil(score / 18));
+    const iv = setInterval(() => {
+      cur = Math.min(score, cur + stepVal);
+      tickerEl.textContent = String(cur);
+      if (cur >= score) clearInterval(iv);
+    }, 28);
+  }
 
   const nextBtn = mainEl.querySelector('#nextDishAfterWinBtn');
   if (nextBtn) nextBtn.addEventListener('click', () => launchGame(nextDailyDish));
@@ -1090,7 +1255,7 @@ document.querySelectorAll('.region-pill').forEach(btn => {
 
 document.querySelectorAll('.nav-tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    playSfx('tap', state.sound);
+    playSfx('switch', state.sound);
     switchTab(tab.dataset.tab);
   });
 });

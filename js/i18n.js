@@ -1,3 +1,5 @@
+import { triggerComboJuice } from './ui-fx.js';
+
 export const UI_STRINGS = {
   zh: {
     appTitle: '每日腦點心',
@@ -144,69 +146,95 @@ function ensureAudio() {
 }
 
 export function playSfx(type, soundEnabled = true) {
+  const isEn = typeof document !== 'undefined' && document.documentElement.lang === 'en';
+  const combo = triggerComboJuice(type, isEn ? 'en' : 'zh');
+
   if (!soundEnabled) return;
   const ctx = ensureAudio();
   if (!ctx) return;
 
   const now = ctx.currentTime;
 
-  if (type === 'tap' || type === 'flip') {
+  if (type === 'switch' || type === 'roulette') {
+    // Crisp Nintendo Switch Joy-Con click-clack!
+    const f1 = type === 'roulette' ? 880 : 1040;
+    const f2 = type === 'roulette' ? 1180 : 1560;
+    [f1, f2].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.028);
+      gain.gain.setValueAtTime(0.14, now + idx * 0.028);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.028 + 0.045);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + idx * 0.028);
+      osc.stop(now + idx * 0.028 + 0.05);
+    });
+  } else if (type === 'tap' || type === 'flip') {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(type === 'flip' ? 420 : 520, now);
-    osc.frequency.exponentialRampToValueAtTime(680, now + 0.06);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+    osc.frequency.setValueAtTime(type === 'flip' ? 440 : 540, now);
+    osc.frequency.exponentialRampToValueAtTime(720, now + 0.055);
+    gain.gain.setValueAtTime(0.13, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.068);
     osc.connect(gain).connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.075);
+    osc.stop(now + 0.072);
   } else if (type === 'correct') {
-    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+    // Rising-pitch Nintendo combo chime (shifts up 1 semitone per combo up to +6!)
+    const semitoneBoost = Math.pow(2, Math.min(6, Math.max(0, combo - 1)) / 12);
+    [523.25, 659.25, 783.99, 1046.5].slice(0, combo >= 2 ? 4 : 3).forEach((baseFreq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.07);
-      gain.gain.setValueAtTime(0.16, now + idx * 0.07);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.24);
+      osc.type = idx === 3 ? 'triangle' : 'sine';
+      osc.frequency.setValueAtTime(baseFreq * semitoneBoost, now + idx * 0.062);
+      gain.gain.setValueAtTime(0.17, now + idx * 0.062);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.062 + 0.24);
       osc.connect(gain).connect(ctx.destination);
-      osc.start(now + idx * 0.07);
-      osc.stop(now + idx * 0.07 + 0.25);
+      osc.start(now + idx * 0.062);
+      osc.stop(now + idx * 0.062 + 0.25);
     });
   } else if (type === 'gentle') {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(310, now);
-    osc.frequency.linearRampToValueAtTime(260, now + 0.16);
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.linearRampToValueAtTime(265, now + 0.15);
+    gain.gain.setValueAtTime(0.11, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
     osc.connect(gain).connect(ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.19);
-  } else if (type === 'stamp') {
-    // Crisp wooden tea-house chop thud + celebratory chime!
+    osc.stop(now + 0.18);
+  } else if (type === 'stamp' || type === 'fanfare') {
+    // Crisp wooden tea-house chop thud + Nintendo Big Brain Academy stage-clear fanfare!
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(165, now);
+    osc.frequency.setValueAtTime(175, now);
     osc.frequency.exponentialRampToValueAtTime(58, now + 0.13);
-    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.setValueAtTime(0.34, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
     osc.connect(gain).connect(ctx.destination);
     osc.start(now);
     osc.stop(now + 0.15);
 
-    [587.33, 783.99, 1046.5].forEach((freq, idx) => {
+    const fanfare = [
+      { f: 523.25, t: 0.10, d: 0.14 },
+      { f: 659.25, t: 0.19, d: 0.14 },
+      { f: 783.99, t: 0.28, d: 0.14 },
+      { f: 1046.5, t: 0.39, d: 0.45 }
+    ];
+    fanfare.forEach(note => {
       const bell = ctx.createOscillator();
       const bGain = ctx.createGain();
-      bell.type = 'sine';
-      bell.frequency.setValueAtTime(freq, now + 0.12 + idx * 0.08);
-      bGain.gain.setValueAtTime(0.16, now + 0.12 + idx * 0.08);
-      bGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12 + idx * 0.08 + 0.35);
+      bell.type = 'triangle';
+      bell.frequency.setValueAtTime(note.f, now + note.t);
+      bGain.gain.setValueAtTime(0.18, now + note.t);
+      bGain.gain.exponentialRampToValueAtTime(0.001, now + note.t + note.d);
       bell.connect(bGain).connect(ctx.destination);
-      bell.start(now + 0.12 + idx * 0.08);
-      bell.stop(now + 0.12 + idx * 0.08 + 0.36);
+      bell.start(now + note.t);
+      bell.stop(now + note.t + note.d + 0.02);
     });
   }
 }
