@@ -1,0 +1,285 @@
+{
+  "updatedAt": "2026-11-14",
+  "stories": [
+    {
+      "id": "live-hk-0-0",
+      "region": "hk",
+      "tag": {
+        "zh": "🇭🇰 香港即時新聞",
+        "en": "🇭🇰 HK Today"
+      },
+      "headline": {
+        "zh": "方保僑料迪士尼票務系統或存漏洞 攻擊者大量擷取第三方平台憑證",
+        "en": "[HK News] 方保僑料迪士尼票務系統或存漏洞 攻擊者大量擷取第三方平台憑證"
+      },
+      "summary": {
+        "zh": "香港迪士尼樂園證實發現網絡事件。據了解，香港迪士尼樂園有1萬7千個二維碼在網上票務系統中懷疑被盜取，現已暫停運作官方票務系統。警方將案暫列作「有犯罪或不誠實意圖而取用電腦」調查，暫未有人被捕。香港迪士尼表示，已即時採取跟進及防護措拖，並加强入場時門票核實程序。 香港資訊科技商會榮譽會長方保僑相信，相關系統是被黑客入侵，在未調查清楚有否客戶資料被盜前，暫停相關網上票務運作，是恰當及必要的應變處理。 他表示，從網絡安全角度，事件反映票務系統",
+        "en": "香港迪士尼樂園證實發現網絡事件。據了解，香港迪士尼樂園有1萬7千個二維碼在網上票務系統中懷疑被盜取，現已暫停運作官方票務系統。警方將案暫列作「有犯罪或不誠實意圖而取用電腦」調查，暫未有人被捕。香港迪士尼表示，已即時採取跟進及防護措拖，並加强入場時門票核實程序。 香港資訊科技商會榮譽會長方保僑相信，相關系統是被黑客入侵，在未調查清楚有否客戶資料被盜前，暫停相關網上票務運作，是恰當及必要的應變處理。 他表示，從網絡安全角度，事件反映票務系統"
+      },
+      "question": {
+        "zh": "根據剛才讀到嘅香港新聞重點，以下邊一項係報道提及嘅主題？",
+        "en": "Which topic was featured in the Hong Kong news brief you just read?"
+      },
+      "choices": [
+        {
+          "zh": "方保僑料迪士尼票務系統或存漏洞 攻擊者大量擷取第三方平台憑證",
+          "en": "方保僑料迪士尼票務系統或存漏洞 攻擊者大量擷取第三方平台憑證"
+        },
+        {
+          "zh": "南極企鵝保育中心宣佈免費派發雪糕",
+          "en": "Antarctic penguin sanctuary opens a free ice-cream tram"
+        },
+        {
+          "zh": "火星探測器喺月球開設第一間港式茶餐廳",
+          "en": "Mars rover opens the first dim sum tea house on the Moon"
+        }
+      ],
+      "answerIndex": 0
+    },
+    {
+      "id": "live-yvr-1-0",
+      "region": "yvr",
+      "tag": {
+        "zh": "🇨🇦 大溫哥華新聞",
+        "en": "🇨🇦 Vancouver & BC"
+      },
+      "headline": {
+        "zh": "【溫哥華快訊】Canadian government investing $200M in B.C.’s Woodfibre LNG",
+        "en": "Canadian government investing $200M in B.C.’s Woodfibre LNG"
+      },
+      "summary": {
+        "zh": "The Woodfibre LNG facility, near Squamish, will receive natural gas, cool it into liquefied natural gas, where it will be loaded onto specialized LNG carriers and exported overseas",
+        "en": "The Woodfibre LNG facility, near Squamish, will receive natural gas, cool it into liquefied natural gas, where it will be loaded onto specialized LNG carriers and exported overseas"
+      },
+      "question": {
+        "zh": "根據剛才嘅大溫哥華新聞快訊，報道標題提到邊一件事？",
+        "en": "Which headline did you just read in the Vancouver & BC news brief?"
+      },
+      "choices": [
+        {
+          "zh": "Canadian government investing $200M in B.C.’s Woodfibre LNG",
+          "en": "Canadian government investing $200M in B.C.’s Woodfibre LNG"
+        },
+        {
+          "zh": "Antarctic penguin sanctuary opens a free ice-cream tram",
+          "en": "Antarctic penguin sanctuary opens a free ice-cream tram"
+        },
+        {
+          "zh": "Mars rover opens the first dim sum tea house on the Moon",
+          "en": "Mars rover opens the first dim sum tea house on the Moon"
+        }
+      ],
+      "answerIndex": 0
+    },
+    {
+      "id": "hk-star-ferry-eco",
+      "region": "hk",
+      "tag": {
+        "zh": "🇭🇰 香港社區",
+        "en": "🇭🇰 Hong Kong"
+      },
+      "headline": {
+        "zh": "維港環保渡輪加強服務　週末增設海濱懷舊導賞",
+        "en": "Victoria Harbour Eco-Ferries Expand Weekend Heritage Tours"
+      },
+      "summary": {
+        "zh": "天星小輪及維港環保渡輪宣布，由本月起逢星期六、日加開下午茶時段航班，並在中環七號碼頭增設免費「百年海港相片展」，展出五十年代至今共 40 幅珍貴舊相片，吸引唔少一家大細週末去吹海風打卡。",
+        "en": "Victoria Harbour's eco-ferry fleet is adding weekend afternoon sailings starting this month, paired with a free 40-photo 'Century of the Harbour' exhibition at Central Pier 7 celebrating ferries since the 1950s."
+      },
+      "question": {
+        "zh": "根據剛才嘅新聞，免費「百年海港相片展」設於邊個碼頭？",
+        "en": "According to the news brief, where is the free 'Century of the Harbour' photo exhibition held?"
+      },
+      "choices": [
+        {
+          "zh": "中環七號碼頭（共 40 幅舊相片）",
+          "en": "Central Pier 7 (with 40 vintage photos)"
+        },
+        {
+          "zh": "尖沙咀九號碼頭（共 10 幅舊相片）",
+          "en": "Tsim Sha Tsui Pier 9 (with 10 photos)"
+        },
+        {
+          "zh": "灣仔會議展覽中心",
+          "en": "Wan Chai Convention Centre"
+        }
+      ],
+      "answerIndex": 0
+    },
+    {
+      "id": "yvr-stanley-park-salmon",
+      "region": "yvr",
+      "tag": {
+        "zh": "🇨🇦 溫哥華生活",
+        "en": "🇨🇦 Vancouver"
+      },
+      "headline": {
+        "zh": "大溫哥華秋季三文魚迴游盛況　社區義工帶領溪流導賞",
+        "en": "Metro Vancouver Autumn Salmon Run Draws Families to Local Creeks"
+      },
+      "summary": {
+        "zh": "踏入秋季，北溫哥華卡比蘭奴河（Capilano River）及本拿比溪流迎來一年一度嘅三文魚迴游季節。公園局聯同超過 60 位社區義工，逢星期日上午舉辦免費廣東話及英語生態講解，提醒市民行山賞魚時記得留喺指定步道。",
+        "en": "Autumn has brought thousands of returning salmon to North Vancouver's Capilano River and Burnaby creeks. Over 60 community volunteers are hosting free Sunday morning Cantonese and English nature talks along designated viewing trails."
+      },
+      "question": {
+        "zh": "大溫公園局義工喺邊日朝早舉辦免費廣東話及英語生態講解？",
+        "en": "When are the over 60 community volunteers hosting free Cantonese & English nature talks?"
+      },
+      "choices": [
+        {
+          "zh": "逢星期日上午",
+          "en": "Every Sunday morning"
+        },
+        {
+          "zh": "逢星期三夜晚",
+          "en": "Every Wednesday night"
+        },
+        {
+          "zh": "每年只限元旦一日",
+          "en": "New Year's Day only"
+        }
+      ],
+      "answerIndex": 0
+    },
+    {
+      "id": "world-walking-brain-health",
+      "region": "world",
+      "tag": {
+        "zh": "🌍 健康新知",
+        "en": "🌍 Health & Science"
+      },
+      "headline": {
+        "zh": "國際醫學研究：每日輕鬆急步行 25 分鐘　有助提升記憶力",
+        "en": "Global Study: A Brisk 25-Minute Daily Walk Boosts Memory & Focus"
+      },
+      "summary": {
+        "zh": "最新發表嘅國際健康研究追蹤咗三千名 60 歲以上人士，發現每日喺公園或商場輕鬆急步行 25 分鐘，配合動腦小遊戲同社交傾偈，可以令專注力同短期記憶測試分數平均提升一成半。",
+        "en": "A new international study following 3,000 adults aged 60+ found that a comfortable 25-minute daily walk — paired with short brain games and friendly conversation — improved attention and short-term memory scores by an average of 15%."
+      },
+      "question": {
+        "zh": "研究指出每日輕鬆急步行幾耐，配合動腦同傾偈最有幫助？",
+        "en": "How many minutes of daily brisk walking did the study highlight alongside brain games?"
+      },
+      "choices": [
+        {
+          "zh": "每日約 25 分鐘",
+          "en": "About 25 minutes a day"
+        },
+        {
+          "zh": "每日跑馬拉松 4 小時",
+          "en": "4 hours of marathon running daily"
+        },
+        {
+          "zh": "每個月只行 5 分鐘",
+          "en": "Only 5 minutes once a month"
+        }
+      ],
+      "answerIndex": 0
+    },
+    {
+      "id": "hk-mtr-senior-music",
+      "region": "hk",
+      "tag": {
+        "zh": "🇭🇰 香港文化",
+        "en": "🇭🇰 HK Culture"
+      },
+      "headline": {
+        "zh": "西九文化區週末舉辦免費粵曲與懷舊金曲茶座",
+        "en": "West Kowloon Hosts Free Weekend Cantonese Opera & Golden Oldies Tea Sessions"
+      },
+      "summary": {
+        "zh": "西九戲曲中心中庭將於今個星期五及星期六下午三點，舉辦免費「金曲午後茶座」，邀請青年樂師演奏七、八十年代經典香港電視劇主題曲及粵曲小調，現場更設有清茶招待入場長者。",
+        "en": "The Xiqu Centre atrium in West Kowloon is hosting free 'Golden Melodies Afternoon Tea' concerts at 3:00 PM this Friday and Saturday, featuring classic 1970s–80s HK TV themes and Cantonese opera tunes with complimentary tea for seniors."
+      },
+      "question": {
+        "zh": "「金曲午後茶座」喺西九邊個場地、幾點鐘舉行？",
+        "en": "Where and at what time are the 'Golden Melodies Afternoon Tea' sessions held?"
+      },
+      "choices": [
+        {
+          "zh": "西九戲曲中心中庭，下午三點",
+          "en": "Xiqu Centre atrium at 3:00 PM"
+        },
+        {
+          "zh": "赤鱲角機場大堂，凌晨兩點",
+          "en": "HK Airport hall at 2:00 AM"
+        },
+        {
+          "zh": "大嶼山山頂，朝早六點",
+          "en": "Lantau Peak at 6:00 AM"
+        }
+      ],
+      "answerIndex": 0
+    },
+    {
+      "id": "yvr-richmond-library-chinese",
+      "region": "yvr",
+      "tag": {
+        "zh": "🇨🇦 列治文社區",
+        "en": "🇨🇦 Richmond & YVR"
+      },
+      "headline": {
+        "zh": "列治文公共圖書館新增三百本繁體中文大字版書籍及園藝種子庫",
+        "en": "Richmond Public Library Adds 300 Large-Print Traditional Chinese Books & Seed Library"
+      },
+      "summary": {
+        "zh": "大溫列治文（Richmond）Brighouse 總館今個月新返咗 300 本繁體中文大字版養生、食譜及歷史小說，同場仲開放免費「社區種子圖書館」，市民憑圖書證可以免費領取生菜、番茄同菊花種子返屋企種植。",
+        "en": "Richmond Public Library's Brighouse branch added 300 new large-print Traditional Chinese books on cooking, wellness, and history this month, alongside a free Seed Library offering lettuce, tomato, and chrysanthemum seeds."
+      },
+      "question": {
+        "zh": "列治文圖書館今個月新返咗幾多本繁體中文大字版書？",
+        "en": "How many new large-print Traditional Chinese books arrived at Richmond Public Library this month?"
+      },
+      "choices": [
+        {
+          "zh": "300 本（並附設免費種子庫）",
+          "en": "300 books (plus a free Seed Library)"
+        },
+        {
+          "zh": "只有 3 本",
+          "en": "Only 3 books"
+        },
+        {
+          "zh": "5,000 本法文字典",
+          "en": "5,000 French dictionaries"
+        }
+      ],
+      "answerIndex": 0
+    },
+    {
+      "id": "world-tea-antioxidants",
+      "region": "world",
+      "tag": {
+        "zh": "🌍 飲食養生",
+        "en": "🌍 Nutrition"
+      },
+      "headline": {
+        "zh": "營養學家分享飲茶小貼士：飯後半小時嘆溫茶最護胃",
+        "en": "Nutritionists Share Tea Tip: Warm Tea 30 Minutes After Meals Is Gentlest"
+      },
+      "summary": {
+        "zh": "食品科學專家指出，綠茶、烏龍茶同陳年普洱都含有豐富茶多酚，有助抗氧化。專家建議水溫控制喺攝氏 80 至 90 度避免太滾燙口，而且喺正餐後約 30 分鐘飲用，既解膩又唔會影響鐵質吸收。",
+        "en": "Food scientists note that green tea, oolong, and aged Pu'er are rich in antioxidants. Brewing at a comfortable 80–90°C and enjoying tea about 30 minutes after meals aids digestion without interfering with iron absorption."
+      },
+      "question": {
+        "zh": "專家建議正餐之後隔幾耐飲溫茶，既解膩又唔影響鐵質吸收？",
+        "en": "How long after a meal do nutritionists recommend enjoying warm tea?"
+      },
+      "choices": [
+        {
+          "zh": "正餐後約 30 分鐘",
+          "en": "About 30 minutes after a meal"
+        },
+        {
+          "zh": "空肚連續飲十壺濃茶",
+          "en": "Ten pots on an empty stomach at midnight"
+        },
+        {
+          "zh": "一定要加五匙鹽一齊飲",
+          "en": "Mixed with five spoons of salt"
+        }
+      ],
+      "answerIndex": 0
+    }
+  ]
+}

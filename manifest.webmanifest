@@ -1,0 +1,19 @@
+{
+  "name": "每日腦點心 · Daily MindSum",
+  "short_name": "腦點心 MindSum",
+  "description": "Engaging Cantonese & English daily brain exercises, news recall, memory, math, and HK × Vancouver trivia.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FAF5EC",
+  "theme_color": "#C8372D",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
