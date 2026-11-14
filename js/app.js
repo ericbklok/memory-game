@@ -25,7 +25,8 @@ import {
   mountWordSearchGame,
   mountBlocksGame,
   mountStroopGame,
-  mountMelodyGame
+  mountMelodyGame,
+  mountVocabGame
 } from './games/extra-games.js';
 import {
   isFirebaseConfigured,
@@ -449,6 +450,7 @@ function launchGame(gameId) {
   else if (gameId === 'blocks') mountBlocksGame(ctx);
   else if (gameId === 'stroop') mountStroopGame(ctx);
   else if (gameId === 'melody') mountMelodyGame(ctx);
+  else if (gameId === 'vocab') mountVocabGame(ctx);
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

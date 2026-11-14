@@ -7,7 +7,7 @@ A senior-friendly, bilingual (**Cantonese / Traditional Chinese 粵語** & **Eng
 ## ✨ Features
 
 - **1-Tap Daily 4-Dish Ritual (`今日四道腦點心紙`):** Tactile tea-house Dim Sum Stamp Card with red ink chop animations, streaks (`🔥`), forgiving **Warm Teapot Streak Shields (`🫖 保溫壺`)**, and 1-tap WhatsApp / WeChat / iMessage sharing.
-- **14 Engaging Brain Games (Adaptive Difficulty & Untimed by Default):**
+- **15 Engaging Brain Games (Adaptive Difficulty & Untimed by Default):**
   1. **📰 時事醒目仔 (Daily News Recall):** HK, Vancouver & Wellness short briefs with **🔊 Cantonese (`zh-HK`) & English Read-Aloud** + recall quiz (refreshed daily via GitHub Actions).
   2. **🀄 麻雀與買餸記憶 (Mahjong / Family Photo Pairs & Wet Market Recall):** High-contrast Mahjong & Dim Sum tiles, private local **Family Photo cards** (`IndexedDB`), plus delayed-recall Wet Market shopping list.
   3. **🧮 飲茶埋單心算 (Yum Cha Bill & Exact Change):** Tea-house bill tallying, interactive bill/coin change-making, and target sums.
@@ -22,6 +22,7 @@ A senior-friendly, bilingual (**Cantonese / Traditional Chinese 粵語** & **Eng
   12. **🧱 茶木方塊消消樂 (Tea-Wood Block Fit):** Relaxing 6×6 wooden block placement puzzle clearing complete rows and columns.
   13. **🎨 心清眼亮辨色字 (Color vs. Word Switch / Stroop):** Prefrontal focus exercise switching between ink color and word meaning.
   14. **🎵 茗茶聽音記次序 (Porcelain Tea Chimes):** Pentatonic porcelain teacup melody memory (*Simon Says*) with 1-tap replay.
+  15. **📖 雅言詞匯館 (Vocabulary Builder):** Refined Chinese context clues, practical HK × Vancouver everyday English vocabulary (with audio pronunciation & phonetics), and Synonym / Bilingual pair-matching.
 - **🎁 Collectible Keepsake Album (`港溫珍藏圖鑑`):** Unlock 18 illustrated Classic Dim Sum, Famous Chinese Teas, and HK × Vancouver Landmarks.
 - **🏆 Open Local Play + Optional Google OAuth Global & Family Circle Leaderboard:**
   - Anyone can play locally with zero login.

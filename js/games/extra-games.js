@@ -1,5 +1,5 @@
 import { GAME_CATALOG, MAHJONG_AND_DIMSUM_TILES } from '../data/content.js';
-import { t, pickText, randomPraise, playSfx, playPentatonicNote } from '../i18n.js';
+import { t, pickText, randomPraise, playSfx, playPentatonicNote, speakText, stopSpeaking } from '../i18n.js';
 import { renderStageHeader } from './engine.js';
 
 function shuffle(arr) {
@@ -1505,4 +1505,452 @@ export function mountMelodyGame(ctx) {
   buildSequence();
   render();
   playSequenceDemo();
+}
+
+
+/* =========================================================================
+   15. VOCABULARY BUILDER (雅言詞匯館 — 中文雅詞 · 生活英文 · 雙語近義對對碰)
+   ========================================================================= */
+const VOCAB_CONTEXT_ITEMS = [
+  {
+    tag: { zh: '📖 中文雅詞 · 語境選詞', en: '📖 Context Vocabulary' },
+    sentence: {
+      zh: '週末嘅格蘭湖島市集熱鬧非常，前來買新鮮生果嘅遊人「＿＿＿＿」，由朝到晚都咁旺場。',
+      en: 'Granville Island Market was bustling all weekend, with a "________" stream of visitors browsing fresh fruit from morning till dusk.'
+    },
+    wordSpotlight: { zh: '絡繹不絕', en: 'Continuous / Steady stream' },
+    choices: [
+      { zh: '絡繹不絕（形容人流接連不斷）', en: 'Continuous / Unbroken (絡繹不絕)', ok: true },
+      { zh: '鴉雀無聲（形容非常安靜）', en: 'Pin-drop silent (鴉雀無聲)', ok: false },
+      { zh: '寥寥可數（形容人數極少）', en: 'Few and far between (寥寥可數)', ok: false }
+    ],
+    tip: {
+      zh: '例句：每逢節日，維園花市嘅市民都絡繹不絕。（英文常用：a steady stream of visitors）',
+      en: 'Usage: "A steady / continuous stream of visitors filled the flower market."'
+    }
+  },
+  {
+    tag: { zh: '📖 中文雅詞 · 人物神采', en: '📖 Expressive Adjectives' },
+    sentence: {
+      zh: '陳伯每日朝早去公園行山嘆早茶，雖然年過七十，依然面色紅潤、「＿＿＿＿」！',
+      en: 'Uncle Chan hikes and enjoys morning tea every day; even past seventy, he looks vibrant and "________"!'
+    },
+    wordSpotlight: { zh: '神采奕奕', en: 'Radiant & full of vitality' },
+    choices: [
+      { zh: '神采奕奕（精神飽滿、容光煥發）', en: 'Radiant & vigorous (神采奕奕)', ok: true },
+      { zh: '無精打采（疲倦乏力）', en: 'Listless & tired (無精打采)', ok: false },
+      { zh: '心不在焉（思想唔集中）', en: 'Absent-minded (心不在焉)', ok: false }
+    ],
+    tip: {
+      zh: '近義詞：容光煥發、精神抖擻。（英文常用：radiant / full of vitality）',
+      en: 'Synonyms: vibrant, glowing, full of vitality (容光煥發).'
+    }
+  },
+  {
+    tag: { zh: '📖 中文雅詞 · 生活態度', en: '📖 Everyday Wisdom Words' },
+    sentence: {
+      zh: '溫哥華冬天落雨又落雪，我哋最好趁秋天「＿＿＿＿」，提早檢查好暖氣同雨具。',
+      en: 'Before Vancouver’s rainy winter arrives, it is wise to be "________" and check our heating and rain gear early.'
+    },
+    wordSpotlight: { zh: '未雨綢繆', en: 'Proactive / Plan ahead' },
+    choices: [
+      { zh: '未雨綢繆（天未落雨先修補門窗，比喻事先準備）', en: 'Proactive — prepare ahead (未雨綢繆)', ok: true },
+      { zh: '臨急抱佛腳（事到臨頭先匆忙應付）', en: 'Last-minute scramble (臨急抱佛腳)', ok: false },
+      { zh: '得過且過（敷衍了事）', en: 'Just getting by (得過且過)', ok: false }
+    ],
+    tip: {
+      zh: '「未雨綢繆」出自《詩經》，讚賞人有遠見！（英文常用：proactive / plan ahead for a rainy day）',
+      en: 'Idiom note: Preparing before the rain falls — matching English "save/prepare for a rainy day"!'
+    }
+  },
+  {
+    tag: { zh: '📖 中文雅詞 · 整齊條理', en: '📖 Precision Words' },
+    sentence: {
+      zh: '媽媽將廚房嘅茶葉罐同調味樽擺放得「＿＿＿＿」，搵起嘢上嚟一目了然！',
+      en: 'Mom arranged all the tea tins and spice jars in such a "________" order that everything is easy to find at a glance!'
+    },
+    wordSpotlight: { zh: '井井有條', en: 'Meticulous & orderly' },
+    choices: [
+      { zh: '井井有條（整齊而有秩序）', en: 'Neat & orderly (井井有條)', ok: true },
+      { zh: '亂七八糟（毫無條理）', en: 'Cluttered & messy (亂七八糟)', ok: false },
+      { zh: '模稜兩可（含糊不清）', en: 'Vague & ambiguous (模稜兩可)', ok: false }
+    ],
+    tip: {
+      zh: '近義詞：有條不紊、整整齊齊。（英文常用：neat and orderly / well-organized）',
+      en: 'Synonyms: methodical, tidy, well-organized (有條不紊).'
+    }
+  }
+];
+
+const PRACTICAL_ENGLISH_ITEMS = [
+  {
+    enWord: 'Complimentary',
+    phonetic: 'kom-plih-MEN-tuh-ree',
+    prompt: {
+      zh: '喺酒店、渡輪或者西九茶座見到英文「Complimentary Tea」，請問「Complimentary」係咩意思？',
+      en: 'When a hotel or tea house menu lists "Complimentary Tea", what does "Complimentary" mean?'
+    },
+    choices: [
+      { zh: '免費招待／贈送（Free of charge）', en: 'Provided free of charge as a courtesy', ok: true },
+      { zh: '必須額外加收雙倍服務費', en: 'Subject to a double surcharge', ok: false },
+      { zh: '已經售罄暫停供應', en: 'Sold out for the day', ok: false }
+    ],
+    example: {
+      zh: '實用句：Breakfast is complimentary for all guests.（所有住客均可享免費早餐。）',
+      en: 'Example: "Complimentary warm jasmine tea is served upon arrival."'
+    }
+  },
+  {
+    enWord: 'Itinerary',
+    phonetic: 'eye-TIN-uh-reh-ree',
+    prompt: {
+      zh: '去旅行搭飛機或者參加導賞團時，職員派發嘅「Itinerary」係指乜嘢？',
+      en: 'When traveling between Hong Kong and Vancouver, what is a travel "Itinerary"?'
+    },
+    choices: [
+      { zh: '詳細行程表／航班時間路線單', en: 'A planned route or schedule of travel times & stops', ok: true },
+      { zh: '行李超重罰款單', en: 'An overweight baggage fine', ok: false },
+      { zh: '免稅店化妝品優惠券', en: 'A duty-free cosmetics coupon', ok: false }
+    ],
+    example: {
+      zh: '實用句：Let me check our flight itinerary.（等我睇睇我哋張航班行程表先。）',
+      en: 'Example: "Our itinerary includes a morning ferry ride and afternoon dim sum."'
+    }
+  },
+  {
+    enWord: 'Postpone',
+    phonetic: 'pohst-POHN',
+    prompt: {
+      zh: '社區中心通告寫住：「Due to heavy rain, the garden walk will be postponed.」請問「Postpone」係咩意思？',
+      en: 'A community notice says: "Due to rain, the walk will be postponed." What does "Postpone" mean?'
+    },
+    choices: [
+      { zh: '延期／改期遲啲再舉行（唔係永久取消）', en: 'Reschedule to a later date or time', ok: true },
+      { zh: '提早兩個鐘頭開始', en: 'Start two hours earlier than planned', ok: false },
+      { zh: '改為室內收費晚宴', en: 'Convert into a formal paid banquet', ok: false }
+    ],
+    example: {
+      zh: '實用句：Let’s postpone our walk until tomorrow morning.（我哋將散步順延到聽日朝早啦。）',
+      en: 'Example: "They decided to postpone the picnic until sunny Saturday."'
+    }
+  },
+  {
+    enWord: 'Scenic',
+    phonetic: 'SEE-nik',
+    prompt: {
+      zh: '溫哥華海堤或者香港山頂常見路牌寫住「Scenic Route」，請問「Scenic」代表乜嘢？',
+      en: 'Road signs near Stanley Park or Victoria Peak often point to a "Scenic Route". What does "Scenic" describe?'
+    },
+    choices: [
+      { zh: '風景優美嘅、景色怡人嘅', en: 'Offering beautiful, picturesque natural views', ok: true },
+      { zh: '禁止行人進入嘅施工路段', en: 'Closed off for heavy construction', ok: false },
+      { zh: '只准貨車行駛嘅高速公路', en: 'Restricted to commercial trucks only', ok: false }
+    ],
+    example: {
+      zh: '實用句：We took the scenic ferry ride across the harbour.（我哋搭渡輪欣賞沿途海港靚景。）',
+      en: 'Example: "The Sea-to-Sky Highway is famous for its breathtaking scenic views."'
+    }
+  },
+  {
+    enWord: 'Nostalgic',
+    phonetic: 'nah-STAL-jik',
+    prompt: {
+      zh: '聽到七、八十年代金曲或者見到舊啟德相片覺得好「Nostalgic」，呢個英文詞形容咩心情？',
+      en: 'Hearing golden 1970s Cantopop songs or seeing vintage Kai Tak photos feels "Nostalgic" — what does that mean?'
+    },
+    choices: [
+      { zh: '懷舊溫馨、勾起昔日美好回憶', en: 'Warmly sentimental & fond of happy past memories', ok: true },
+      { zh: '緊張焦慮、擔心遲到', en: 'Anxious about running late', ok: false },
+      { zh: '肚餓想食宵夜', en: 'Hungry for a midnight snack', ok: false }
+    ],
+    example: {
+      zh: '實用句：Old tram photos make me feel nostalgic.（舊電車相片令我好懷念昔日時光。）',
+      en: 'Example: "Classic bakery egg tarts always bring back nostalgic childhood memories."'
+    }
+  }
+];
+
+const VOCAB_MATCH_PAIRS = [
+  { id: 'v1', left: '津津有味', rightZh: '興致勃勃（近義）', rightEn: 'Relish with gusto' },
+  { id: 'v2', left: '和藹可親', rightZh: '親切溫和（近義）', rightEn: 'Warm & amiable' },
+  { id: 'v3', left: '一絲不苟', rightZh: '認真仔細（近義）', rightEn: 'Meticulous & thorough' },
+  { id: 'v4', left: '豁然開朗', rightZh: '頓時明白（近義）', rightEn: 'Sudden clarity' },
+  { id: 'v5', left: '精益求精', rightZh: '力求完美（近義）', rightEn: 'Strive for excellence' },
+  { id: 'v6', left: '琳瑯滿目', rightZh: '美物繁多（近義）', rightEn: 'Dazzling array' }
+];
+
+export function mountVocabGame(ctx) {
+  const { container, state, onBack, onComplete, onLevelChange } = ctx;
+  const lang = state.lang;
+  const level = getLevel(state, 'vocab');
+  const gameMeta = GAME_CATALOG.find(g => g.id === 'vocab');
+
+  // 3 engaging steps per dish:
+  // Step 0: Refined Chinese Context Word
+  // Step 1: Practical HK x Vancouver Everyday English Word (with English & Cantonese audio!)
+  // Step 2: Synonym & Bilingual Pair-Match Board!
+  const ctxItem = shuffle(VOCAB_CONTEXT_ITEMS)[0];
+  const engItem = shuffle(PRACTICAL_ENGLISH_ITEMS)[0];
+  const pairCount = level === 0 ? 3 : 4;
+  const chosenPairs = shuffle(VOCAB_MATCH_PAIRS).slice(0, pairCount);
+
+  let step = 0;
+  let mistakes = 0;
+  let bilingualBridge = true; // Toggle between Chinese-English bridge vs Chinese-Synonym on Step 2
+
+  function render() {
+    container.innerHTML = '';
+    renderStageHeader({
+      container,
+      gameMeta,
+      lang,
+      level,
+      onChangeLevel: onLevelChange,
+      onBack,
+      stepIndex: step,
+      totalSteps: 3
+    });
+
+    if (step === 0) renderContextStep();
+    else if (step === 1) renderEnglishStep();
+    else renderPairMatchStep();
+  }
+
+  function renderContextStep() {
+    const sText = pickText(ctxItem.sentence, lang);
+    const opts = shuffle(ctxItem.choices);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="prompt-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.45rem;flex-wrap:wrap;">
+          <span class="news-tag">${pickText(ctxItem.tag, lang)} · 1/3</span>
+          <button type="button" class="tts-btn" id="vocCtxSpeakBtn">${t(lang, 'listenCantonese')}</button>
+        </div>
+        <p class="prompt-title" style="margin-bottom:0;">${sText}</p>
+      </div>
+      <div class="choices-list" id="vocCtxOpts"></div>
+      <div id="vocCtxFb"></div>
+    `;
+
+    card.querySelector('#vocCtxSpeakBtn').addEventListener('click', () => speakText(sText, lang));
+    const listEl = card.querySelector('#vocCtxOpts');
+    let solved = false;
+
+    opts.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-btn';
+      btn.innerHTML = `<span>${pickText(opt, lang)}</span><span>○</span>`;
+      btn.addEventListener('click', () => {
+        if (solved) return;
+        if (opt.ok) {
+          solved = true;
+          playSfx('correct', state.sound);
+          btn.classList.add('correct');
+          btn.querySelector('span:last-child').textContent = '✅';
+          card.querySelector('#vocCtxFb').innerHTML = `
+            <div class="feedback-banner">
+              <strong>${randomPraise(lang)} · 🌟 ${ctxItem.wordSpotlight.zh} (${ctxItem.wordSpotlight.en})</strong>
+              <p style="margin:0.4rem 0 0.8rem;">${pickText(ctxItem.tip, lang)}</p>
+              <button type="button" class="btn btn-jade btn-full" id="vocStep1NextBtn">${t(lang, 'nextQuestion')}</button>
+            </div>
+          `;
+          card.querySelector('#vocStep1NextBtn').addEventListener('click', () => {
+            stopSpeaking();
+            step = 1;
+            render();
+          });
+        } else {
+          mistakes += 1;
+          playSfx('gentle', state.sound);
+          btn.classList.add('wrong');
+          btn.disabled = true;
+          card.querySelector('#vocCtxFb').innerHTML = `<div class="feedback-banner gentle-retry">${t(lang, 'gentleRetry')}</div>`;
+        }
+      });
+      listEl.appendChild(btn);
+    });
+
+    container.appendChild(card);
+  }
+
+  function renderEnglishStep() {
+    const pText = pickText(engItem.prompt, lang);
+    const opts = shuffle(engItem.choices);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="prompt-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.45rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+          <span class="news-tag">🔤 ${lang === 'zh' ? '生活實用英文詞匯 · 2/3' : 'Everyday Expressive Word · 2/3'}</span>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <button type="button" class="tts-btn" id="speakEnWordBtn">🔊 讀英文 "${engItem.enWord}"</button>
+            <button type="button" class="chip-btn" id="speakPromptBtn">🔊 ${lang === 'zh' ? '讀題目' : 'Read Prompt'}</button>
+          </div>
+        </div>
+        <div style="font-size:1.65rem;font-weight:900;color:var(--blue-ink);margin:0.2rem 0;">
+          ${engItem.enWord}
+          <span style="font-size:0.88rem;font-weight:600;color:var(--ink-muted);"> /${engItem.phonetic}/</span>
+        </div>
+        <p class="prompt-title" style="margin:0.35rem 0 0;font-size:1.08rem;">${pText}</p>
+      </div>
+      <div class="choices-list" id="vocEnOpts"></div>
+      <div id="vocEnFb"></div>
+    `;
+
+    card.querySelector('#speakEnWordBtn').addEventListener('click', () => speakText(engItem.enWord, 'en'));
+    card.querySelector('#speakPromptBtn').addEventListener('click', () => speakText(pText, lang));
+
+    const listEl = card.querySelector('#vocEnOpts');
+    let solved = false;
+    opts.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-btn';
+      btn.innerHTML = `<span>${pickText(opt, lang)}</span><span>○</span>`;
+      btn.addEventListener('click', () => {
+        if (solved) return;
+        if (opt.ok) {
+          solved = true;
+          playSfx('correct', state.sound);
+          btn.classList.add('correct');
+          btn.querySelector('span:last-child').textContent = '✅';
+          card.querySelector('#vocEnFb').innerHTML = `
+            <div class="feedback-banner">
+              <strong>${randomPraise(lang)}</strong>
+              <p style="margin:0.4rem 0 0.8rem;">${pickText(engItem.example, lang)}</p>
+              <button type="button" class="btn btn-jade btn-full" id="vocStep2NextBtn">${t(lang, 'nextQuestion')}</button>
+            </div>
+          `;
+          card.querySelector('#vocStep2NextBtn').addEventListener('click', () => {
+            stopSpeaking();
+            step = 2;
+            render();
+          });
+        } else {
+          mistakes += 1;
+          playSfx('gentle', state.sound);
+          btn.classList.add('wrong');
+          btn.disabled = true;
+          card.querySelector('#vocEnFb').innerHTML = `<div class="feedback-banner gentle-retry">${t(lang, 'gentleRetry')}</div>`;
+        }
+      });
+      listEl.appendChild(btn);
+    });
+
+    container.appendChild(card);
+  }
+
+  function renderPairMatchStep() {
+    const leftList = shuffle(chosenPairs.map(p => ({ id: p.id, text: p.left, side: 'L' })));
+    const rightList = shuffle(
+      chosenPairs.map(p => ({
+        id: p.id,
+        text: bilingualBridge ? p.rightEn : p.rightZh,
+        speakLang: bilingualBridge ? 'en' : 'zh',
+        side: 'R'
+      }))
+    );
+    const matchedIds = new Set();
+    let pickedLeft = null;
+
+    function drawPairs() {
+      container.querySelectorAll('.voc-pair-card').forEach(e => e.remove());
+      const card = document.createElement('div');
+      card.className = 'card voc-pair-card';
+      card.innerHTML = `
+        <div class="prompt-box">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            <span class="news-tag">🔗 ${lang === 'zh' ? '壓軸題：詞義對對碰 · 3/3' : 'Final Round: Vocabulary Match · 3/3'}</span>
+            <button type="button" class="chip-btn" id="toggleBridgeModeBtn">
+              ${bilingualBridge ? '🌉 中↔英配對（切換中文近義詞）' : '📖 中文近義詞（切換中↔英配對）'}
+            </button>
+          </div>
+          <p class="prompt-title" style="margin:0.4rem 0 0;font-size:1.06rem;">
+            ${
+              lang === 'zh'
+                ? '先撳左邊四字雅詞，再撳右邊相應意思完成配對（撳詞語仲會自動發音！）：'
+                : 'Tap a Chinese expression on the left, then tap its matching meaning on the right:'
+            }
+          </p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.65rem;" id="pairCols">
+          <div style="display:grid;gap:0.55rem;" id="leftCol"></div>
+          <div style="display:grid;gap:0.55rem;" id="rightCol"></div>
+        </div>
+        <div id="vocPairFb"></div>
+      `;
+
+      card.querySelector('#toggleBridgeModeBtn').addEventListener('click', () => {
+        bilingualBridge = !bilingualBridge;
+        renderPairMatchStep();
+      });
+
+      const lCol = card.querySelector('#leftCol');
+      const rCol = card.querySelector('#rightCol');
+
+      leftList.forEach(item => {
+        const done = matchedIds.has(item.id);
+        const isSel = pickedLeft === item.id;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.disabled = done;
+        btn.className = `item-chip ${isSel ? 'selected' : ''} ${done ? 'locked-group-0' : ''}`;
+        btn.innerHTML = `<strong>${item.text}</strong> ${done ? '✅' : ''}`;
+        btn.addEventListener('click', () => {
+          playSfx('tap', state.sound);
+          speakText(item.text, 'zh');
+          pickedLeft = item.id;
+          drawPairs();
+        });
+        lCol.appendChild(btn);
+      });
+
+      rightList.forEach(item => {
+        const done = matchedIds.has(item.id);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.disabled = done;
+        btn.className = `item-chip ${done ? 'locked-group-0' : ''}`;
+        btn.innerHTML = `<span>${item.text}</span> ${done ? '✅' : ''}`;
+        btn.addEventListener('click', () => {
+          speakText(item.text.replace(/（.*?）/, ''), item.speakLang);
+          if (!pickedLeft) {
+            playSfx('tap', state.sound);
+            return;
+          }
+          if (pickedLeft === item.id) {
+            matchedIds.add(item.id);
+            pickedLeft = null;
+            playSfx('correct', state.sound);
+            drawPairs();
+            if (matchedIds.size === chosenPairs.length) {
+              setTimeout(() => {
+                stopSpeaking();
+                const stars = mistakes === 0 ? 3 : mistakes <= 1 ? 2 : 1;
+                onComplete({ score: 105 + level * 15 + stars * 10, stars });
+              }, 420);
+            }
+          } else {
+            mistakes += 1;
+            playSfx('gentle', state.sound);
+            const fb = container.querySelector('#vocPairFb');
+            if (fb) {
+              fb.innerHTML = `<div class="feedback-banner gentle-retry">${
+                lang === 'zh' ? '呢兩個詞義唔同喎，再揀另一個配對試下 😊' : 'Try another meaning match 😊'
+              }</div>`;
+            }
+          }
+        });
+        rCol.appendChild(btn);
+      });
+
+      container.appendChild(card);
+    }
+
+    drawPairs();
+  }
+
+  render();
 }

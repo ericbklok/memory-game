@@ -152,6 +152,17 @@ export const GAME_CATALOG = [
       en: 'Watch and listen to pentatonic porcelain teacups chime, then tap them back in order!'
     },
     pillar: { zh: '聽覺記憶 · 次序專注', en: 'Auditory Sequence' }
+  },
+  {
+    id: 'vocab',
+    icon: '📖',
+    title: { zh: '雅言詞匯館（中英雙語）', en: 'Vocabulary Builder' },
+    shortName: { zh: '詞匯', en: 'Vocab' },
+    desc: {
+      zh: '精選中文雅詞、近義詞配對及溫哥華／日常實用英文生字（附發音朗讀與例句）！',
+      en: 'Context clues, synonym match & practical Cantonese-English vocabulary with audio!'
+    },
+    pillar: { zh: '詞匯擴充 · 語言表達', en: 'Vocabulary · Expression' }
   }
 ];
 

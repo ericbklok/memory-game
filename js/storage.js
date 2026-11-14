@@ -60,15 +60,15 @@ export function createDefaultState() {
       dailySetsCompleted: 0,
       perGamePlays: {
         news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
-        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0
+        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0
       },
       perGameLevel: {
         news: 1, memory: 1, math: 1, history: 1, words: 1, eagle: 1,
-        sudoku: 1, tenpai: 1, shisen: 1, make24: 1, wordsearch: 1, blocks: 1, stroop: 1, melody: 1
+        sudoku: 1, tenpai: 1, shisen: 1, make24: 1, wordsearch: 1, blocks: 1, stroop: 1, melody: 1, vocab: 1
       }, // 0=Easy, 1=Standard, 2=Challenge
       perGameCleanStreak: {
         news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
-        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0
+        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0
       }
     },
     daily: {
@@ -112,7 +112,7 @@ export function loadState() {
     const daySeed = Number(today.replace(/-/g, ''));
     const memPool = ['memory', 'shisen', 'melody'];
     const logicPool = ['sudoku', 'math', 'make24', 'blocks'];
-    const wisdomPool = ['history', 'tenpai', 'words', 'wordsearch', 'stroop', 'eagle'];
+    const wisdomPool = ['vocab', 'history', 'tenpai', 'words', 'wordsearch', 'stroop', 'eagle'];
     state.daily = {
       date: today,
       dishes: [
