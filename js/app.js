@@ -18,6 +18,16 @@ import {
   mountEagleGame
 } from './games/engine.js';
 import {
+  mountSudokuGame,
+  mountTenpaiGame,
+  mountShisenGame,
+  mountMake24Game,
+  mountWordSearchGame,
+  mountBlocksGame,
+  mountStroopGame,
+  mountMelodyGame
+} from './games/extra-games.js';
+import {
   isFirebaseConfigured,
   initFirebaseIfConfigured,
   getCurrentAuthUser,
@@ -431,6 +441,14 @@ function launchGame(gameId) {
   else if (gameId === 'history') mountHistoryGame(ctx);
   else if (gameId === 'words') mountWordsGame(ctx);
   else if (gameId === 'eagle') mountEagleGame(ctx);
+  else if (gameId === 'sudoku') mountSudokuGame(ctx);
+  else if (gameId === 'tenpai') mountTenpaiGame(ctx);
+  else if (gameId === 'shisen') mountShisenGame(ctx);
+  else if (gameId === 'make24') mountMake24Game(ctx);
+  else if (gameId === 'wordsearch') mountWordSearchGame(ctx);
+  else if (gameId === 'blocks') mountBlocksGame(ctx);
+  else if (gameId === 'stroop') mountStroopGame(ctx);
+  else if (gameId === 'melody') mountMelodyGame(ctx);
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

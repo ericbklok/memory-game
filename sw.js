@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-mindsum-v1';
+const CACHE_NAME = 'daily-mindsum-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const CORE_ASSETS = [
   './js/firebase-service.js',
   './js/data/content.js',
   './js/games/engine.js',
+  './js/games/extra-games.js',
   './data/daily-news.json'
 ];
 

@@ -58,14 +58,23 @@ export function createDefaultState() {
       teapotShields: 1, // Start every parent with 1 Warm Teapot Streak Freeze!
       gamesCompleted: 0,
       dailySetsCompleted: 0,
-      perGamePlays: { news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0 },
-      perGameLevel: { news: 1, memory: 1, math: 1, history: 1, words: 1, eagle: 1 }, // 0=Easy, 1=Standard, 2=Challenge
-      perGameCleanStreak: { news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0 }
+      perGamePlays: {
+        news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
+        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0
+      },
+      perGameLevel: {
+        news: 1, memory: 1, math: 1, history: 1, words: 1, eagle: 1,
+        sudoku: 1, tenpai: 1, shisen: 1, make24: 1, wordsearch: 1, blocks: 1, stroop: 1, melody: 1
+      }, // 0=Easy, 1=Standard, 2=Challenge
+      perGameCleanStreak: {
+        news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
+        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0
+      }
     },
     daily: {
       date: getTodayDateStr(),
       // Today's 4 core Brain Dim Sum dishes
-      dishes: ['news', 'memory', 'math', 'history'],
+      dishes: ['news', 'sudoku', 'tenpai', 'history'],
       stamps: {} // e.g. { news: { score: 90, stars: 3 } }
     },
     unlockedAlbumIds: ['har-gow', 'puer'], // Give 2 welcoming starter collectibles!
@@ -98,14 +107,20 @@ export function loadState() {
   }
 
   const today = getTodayDateStr();
-  // Rotate daily dishes deterministically if a new day has started
+  // Rotate daily dishes deterministically across 4 balanced cognitive pillars each day!
   if (state.daily.date !== today) {
     const daySeed = Number(today.replace(/-/g, ''));
-    const extraDishes = ['history', 'words', 'eagle'];
-    const fourthDish = extraDishes[daySeed % extraDishes.length];
+    const memPool = ['memory', 'shisen', 'melody'];
+    const logicPool = ['sudoku', 'math', 'make24', 'blocks'];
+    const wisdomPool = ['history', 'tenpai', 'words', 'wordsearch', 'stroop', 'eagle'];
     state.daily = {
       date: today,
-      dishes: ['news', 'memory', 'math', fourthDish],
+      dishes: [
+        'news',
+        memPool[daySeed % memPool.length],
+        logicPool[daySeed % logicPool.length],
+        wisdomPool[daySeed % wisdomPool.length]
+      ],
       stamps: {}
     };
   }

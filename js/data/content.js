@@ -64,6 +64,94 @@ export const GAME_CATALOG = [
       en: 'Spot the single subtly different character or tile in a calm, crisp grid!'
     },
     pillar: { zh: '視覺專注 · 觀察力', en: 'Visual Attention · Focus' }
+  },
+  {
+    id: 'sudoku',
+    icon: '🔢',
+    title: { zh: '醒神茶樓數獨', en: 'Tea-House Sudoku' },
+    shortName: { zh: '數獨', en: 'Sudoku' },
+    desc: {
+      zh: '支援 4×4、6×6 及經典 9×9 棋盤，可切換數字或點心圖案，附草稿同智能提示！',
+      en: '4×4, 6×6 & 9×9 grids with optional Dim Sum icons, pencil notes & smart step hints!'
+    },
+    pillar: { zh: '邏輯推理 · 專注力', en: 'Deductive Logic' }
+  },
+  {
+    id: 'tenpai',
+    icon: '🀄',
+    title: { zh: '叫糊大師（聽邊張牌）', en: 'Mahjong Winning Tile' },
+    shortName: { zh: '叫糊', en: 'Tenpai' },
+    desc: {
+      zh: '望實副整齊廣東牌，計下摸邊一張牌即刻食糊！附食糊牌型解說！',
+      en: 'Study a sorted Cantonese Mahjong hand and pick the exact tile that completes the win!'
+    },
+    pillar: { zh: '圖案組合 · 麻雀智慧', en: 'Pattern Grouping' }
+  },
+  {
+    id: 'shisen',
+    icon: '🀅',
+    title: { zh: '麻雀連連看消消樂', en: 'Mahjong Pair Clear' },
+    shortName: { zh: '連連看', en: 'Tile Link' },
+    desc: {
+      zh: '搵出兩隻相同而連線轉彎唔超過兩次嘅麻雀／點心牌配對消除，越玩越順手！',
+      en: 'Connect matching Mahjong & Dim Sum tiles within two turns to clear the board!'
+    },
+    pillar: { zh: '空間規劃 · 視覺搜尋', en: 'Spatial Planning' }
+  },
+  {
+    id: 'make24',
+    icon: '🃏',
+    title: { zh: '合廿四撲克心算', en: 'Make 24 Card Math' },
+    shortName: { zh: '合廿四', en: 'Make 24' },
+    desc: {
+      zh: '經典港式紙牌智力遊戲！用加減乘除將紙牌合成目標數字（輕鬆 12／標準 24）！',
+      en: 'Combine playing cards step-by-step using + − × ÷ to hit 24 (or 12 in Relaxed mode)!'
+    },
+    pillar: { zh: '靈活運算 · 策略思考', en: 'Flexible Arithmetic' }
+  },
+  {
+    id: 'wordsearch',
+    icon: '🔤',
+    title: { zh: '港溫尋字陣', en: 'HK × YVR Word Search' },
+    shortName: { zh: '尋字陣', en: 'Word Grid' },
+    desc: {
+      zh: '撳頭尾兩格（無須拖拉）搵出隱藏嘅港溫地標、名茶點心與吉祥成語！',
+      en: 'Tap start & end letters (no dragging needed) to uncover hidden HK, YVR & tea words!'
+    },
+    pillar: { zh: '字詞搜尋 · 視覺追蹤', en: 'Word Tracking' }
+  },
+  {
+    id: 'blocks',
+    icon: '🧱',
+    title: { zh: '茶木方塊消消樂', en: 'Tea-Wood Block Fit' },
+    shortName: { zh: '方塊', en: 'Block Fit' },
+    desc: {
+      zh: '輕撳擺放木塊填滿橫行或直行即可消除得分，無時間限制最療癒！',
+      en: 'Tap to place wooden blocks on a 6×6 board and clear full rows or columns!'
+    },
+    pillar: { zh: '空間幾何 · 前瞻規劃', en: 'Visuospatial Fit' }
+  },
+  {
+    id: 'stroop',
+    icon: '🎨',
+    title: { zh: '心清眼亮辨色字', en: 'Color vs. Word Switch' },
+    shortName: { zh: '辨色字', en: 'Color Mind' },
+    desc: {
+      zh: '睇清題目要求揀「字嘅顏色」定「字嘅意思」，訓練大腦反應同定力！',
+      en: 'Switch sharply between tapping the ink color vs. the written word meaning!'
+    },
+    pillar: { zh: '專注抑制 · 腦筋轉數', en: 'Mental Agility' }
+  },
+  {
+    id: 'melody',
+    icon: '🎵',
+    title: { zh: '茗茶聽音記次序', en: 'Porcelain Tea Chimes' },
+    shortName: { zh: '聽音記', en: 'Chimes' },
+    desc: {
+      zh: '聽住五聲音階茶杯發光奏樂，跟住次序撳返相應茶杯（支援重聽）！',
+      en: 'Watch and listen to pentatonic porcelain teacups chime, then tap them back in order!'
+    },
+    pillar: { zh: '聽覺記憶 · 次序專注', en: 'Auditory Sequence' }
   }
 ];
 

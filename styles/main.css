@@ -1076,3 +1076,375 @@ button, input, select {
   text-align: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
 }
+
+/* =========================================================================
+   EXTRA 8 GAMES: SUDOKU, MAHJONG TENPAI, SHISEN-SHO, MAKE 24,
+   WORD SEARCH, WOOD BLOCKS, STROOP, AND MELODY CHIMES
+   ========================================================================= */
+
+/* Sudoku */
+.sudoku-board {
+  display: grid;
+  margin: 0.85rem auto;
+  max-width: 480px;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.sudoku-cell {
+  aspect-ratio: 1 / 1;
+  min-height: 36px;
+  border: 1px solid #D5C8B0;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 1.18rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  user-select: none;
+}
+
+.sudoku-board.size-9 .sudoku-cell {
+  font-size: 1rem;
+  min-height: 32px;
+}
+
+.sudoku-cell.given {
+  background: #F4ECE0;
+  color: #1C232B;
+  font-weight: 900;
+}
+
+.sudoku-cell.user-val {
+  color: var(--blue-ink);
+}
+
+.sudoku-cell.peer {
+  background: #FFF9EC;
+}
+
+.sudoku-cell.selected {
+  background: #FFE5B4 !important;
+  box-shadow: inset 0 0 0 2.5px var(--red-chop);
+}
+
+.sudoku-cell.conflict {
+  background: #FDECEB !important;
+  color: var(--red-chop-dark);
+}
+
+.sudoku-cell.box-right {
+  border-right: 2.5px solid var(--ink);
+}
+
+.sudoku-cell.box-bottom {
+  border-bottom: 2.5px solid var(--ink);
+}
+
+.sudoku-notes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  font-size: 0.56rem;
+  line-height: 1;
+  color: var(--ink-muted);
+  align-items: center;
+  justify-items: center;
+  padding: 2px;
+}
+
+.numpad-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+  margin-top: 0.85rem;
+}
+
+.numpad-btn {
+  min-width: 48px;
+  min-height: 50px;
+  padding: 0.35rem 0.65rem;
+  border-radius: 12px;
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  font-weight: 900;
+  font-size: 1.12rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--border);
+}
+
+.numpad-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* Mahjong Winning Tile (Tenpai) */
+.mj-rack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  justify-content: center;
+  padding: 0.9rem 0.6rem;
+  background: linear-gradient(180deg, #1E6B52 0%, #144B39 100%);
+  border: 3px solid #0E382A;
+  border-radius: 16px;
+  margin: 0.75rem 0;
+}
+
+.mj-hand-tile {
+  width: 2.55rem;
+  height: 3.5rem;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7EFE0 100%);
+  border: 2px solid #C8B594;
+  box-shadow: 0 4px 0 #0B2D21;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  line-height: 1.05;
+  padding: 2px;
+}
+
+.mj-hand-tile .t-top {
+  font-size: 1.05rem;
+}
+
+.mj-hand-tile .t-sub {
+  font-size: 0.72rem;
+}
+
+/* Shisen-Sho Pair Clear */
+.shisen-grid {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.85rem auto;
+  max-width: 520px;
+}
+
+.shisen-tile {
+  aspect-ratio: 3 / 4;
+  min-height: 62px;
+  border-radius: 10px;
+  border: 2px solid #C5B290;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAF1E0 100%);
+  box-shadow: 0 4px 0 #B8A17A;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 0.2rem;
+}
+
+.shisen-tile.selected {
+  border-color: var(--red-chop);
+  background: #FFF0EE;
+  transform: translateY(-2px);
+}
+
+.shisen-tile.hinted {
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.shisen-empty {
+  aspect-ratio: 3 / 4;
+  min-height: 62px;
+  border-radius: 10px;
+  border: 1.5px dashed rgba(197, 179, 147, 0.45);
+}
+
+/* Make 24 Playing Cards */
+.poker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  justify-content: center;
+  margin: 0.9rem 0;
+}
+
+.poker-card {
+  width: 5.1rem;
+  height: 7rem;
+  border-radius: 14px;
+  border: 2.5px solid var(--border-strong);
+  background: #FFFFFF;
+  box-shadow: 0 5px 0 var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 1.55rem;
+  position: relative;
+}
+
+.poker-card.selected {
+  border-color: var(--red-chop);
+  background: var(--red-chop-soft);
+  transform: translateY(-4px);
+}
+
+.op-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+}
+
+.op-btn {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 14px;
+  border: 2px solid var(--jade);
+  background: var(--jade-soft);
+  color: var(--jade-dark);
+  font-size: 1.45rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(27, 110, 86, 0.3);
+}
+
+.op-btn.selected {
+  background: var(--jade);
+  color: #FFFFFF;
+}
+
+/* Word Search Grid */
+.ws-grid {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 430px;
+  margin: 0.85rem auto;
+}
+
+.ws-cell {
+  aspect-ratio: 1 / 1;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  font-weight: 900;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ws-cell.start-pick {
+  border-color: var(--red-chop);
+  background: var(--red-chop-soft);
+  color: var(--red-chop-dark);
+}
+
+.ws-cell.found {
+  border-color: var(--jade);
+  background: var(--jade-soft);
+  color: var(--jade-dark);
+}
+
+/* Wood Block Fit */
+.block-board {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  max-width: 360px;
+  margin: 0.8rem auto;
+  padding: 8px;
+  background: #DCC7A1;
+  border: 3px solid #9E8256;
+  border-radius: 14px;
+}
+
+.block-cell {
+  aspect-ratio: 1 / 1;
+  min-height: 44px;
+  border-radius: 7px;
+  background: #FAF3E6;
+  border: 1px solid #CBB692;
+  cursor: pointer;
+}
+
+.block-cell.filled {
+  background: linear-gradient(145deg, #C87D28, #9C5B14);
+  border-color: #703E08;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+
+.piece-tray {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+.piece-btn {
+  min-width: 92px;
+  min-height: 82px;
+  padding: 0.55rem;
+  border-radius: 14px;
+  border: 2.5px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.piece-btn.selected {
+  border-color: var(--red-chop);
+  background: var(--red-chop-soft);
+}
+
+/* Porcelain Teacup Chimes */
+.teacup-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  max-width: 440px;
+  margin: 1rem auto;
+}
+
+@media (max-width: 460px) {
+  .teacup-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.teacup-btn {
+  min-height: 96px;
+  border-radius: 18px;
+  border: 3px solid var(--border-strong);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 5px 0 var(--border);
+  transition: transform 0.1s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.teacup-btn.lit {
+  transform: scale(1.06);
+  border-color: var(--gold);
+  background: #FFF3C4;
+  box-shadow: 0 0 20px rgba(235, 168, 35, 0.55);
+}

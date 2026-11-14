@@ -20,7 +20,7 @@ export const UI_STRINGS = {
     bonusSteamerBtn: '✨ 今日集齊印仔！再來一籠加餸',
     shareFamilyBtn: '📲 分享今日點心紙畀屋企人',
     inviteBtn: '📨 邀請親友一齊玩',
-    quickPickTitle: '自選六大健腦點心',
+    quickPickTitle: '自選十四款健腦點心',
     freePlaySub: '隨時揀一款最啱心水嘅遊戲練習，唔限次數！',
     lvlEasy: '輕鬆',
     lvlMed: '標準',
@@ -209,6 +209,25 @@ export function playSfx(type, soundEnabled = true) {
       bell.stop(now + 0.12 + idx * 0.08 + 0.36);
     });
   }
+}
+
+export function playPentatonicNote(noteIdx, soundEnabled = true) {
+  if (!soundEnabled) return;
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  // C5, D5, E5, G5, A5, C6 (Traditional Chinese Pentatonic 宮 商 角 徵 羽 宮')
+  const scale = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+  const freq = scale[noteIdx % scale.length];
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, now);
+  gain.gain.setValueAtTime(0.22, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.44);
 }
 
 /* Native Cantonese (zh-HK) & English Read-Aloud */
