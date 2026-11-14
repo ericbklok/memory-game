@@ -1,5 +1,5 @@
 import { GAME_CATALOG, GAME_CATEGORIES, COLLECTIBLE_ALBUM } from './data/content.js';
-import { t, pickText, getRankTitle, randomPraise, playSfx, stopSpeaking } from './i18n.js';
+import { t, pickText, getRankTitle, randomPraise, playSfx, speakText, stopSpeaking } from './i18n.js';
 import {
   renderMasterBoSvg,
   MASTER_BO_QUIPS,
@@ -61,6 +61,7 @@ const mainEl = document.getElementById('mainContent');
 const modalBackdrop = document.getElementById('modalBackdrop');
 const modalCard = document.getElementById('modalCard');
 const inviteBannerEl = document.getElementById('inviteBanner');
+const startScreenEl = document.getElementById('startScreenOverlay');
 
 function showToast(msg) {
   const wrap = document.getElementById('toastContainer');
@@ -161,8 +162,11 @@ function checkUrlInvite() {
 /* Sync Top Controls & Chrome */
 function syncChrome() {
   const lang = state.lang;
+  const prefs = state.prefs || {};
   document.documentElement.lang = lang === 'zh' ? 'zh-HK' : 'en';
   document.documentElement.dataset.font = state.fontSize;
+  document.documentElement.dataset.speechRate = prefs.speechRate || 'normal';
+  document.documentElement.dataset.motion = prefs.reducedMotion ? 'calm' : 'full';
 
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -1207,6 +1211,633 @@ function openFirebaseSetupModal() {
 }
 
 /* =========================================================================
+   NINTENDO STARTING SCREEN, NEWCOMER WELCOME TOUR & USER PREFERENCES
+   ========================================================================= */
+function showStartScreen() {
+  if (!startScreenEl) return;
+  stopSpeaking();
+  const lang = state.lang;
+  const zh = lang === 'zh';
+  const isNewcomer = !state.onboardingDone;
+  const rank = getRankTitle(state.stats.totalPoints, lang);
+
+  startScreenEl.classList.remove('hidden');
+  startScreenEl.innerHTML = `
+    <div class="start-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+        <span class="start-ribbon" style="margin-bottom:0;">
+          🌏 ${zh ? '港 × 溫 雙語健腦樂園' : 'HK × Vancouver Brain Clubhouse'}
+        </span>
+        <div class="pref-seg-group">
+          <button type="button" class="pref-seg-btn ${zh ? 'active' : ''}" id="startLangZhBtn">粵語 中文</button>
+          <button type="button" class="pref-seg-btn ${!zh ? 'active' : ''}" id="startLangEnBtn">English</button>
+        </div>
+      </div>
+
+      <h1 class="start-title-zh">每日腦點心</h1>
+      <div class="start-title-en">DAILY MINDSUM · 15 BRAIN GAMES</div>
+
+      <div class="start-mascot-stage">
+        <span class="start-float-icon">🥟</span>
+        <span class="start-float-icon delay-1">🀄</span>
+        <div style="width:98px;height:98px;">${renderMasterBoSvg('cheer')}</div>
+        <span class="start-float-icon delay-2">🫖</span>
+        <span class="start-float-icon delay-1">🍁</span>
+      </div>
+
+      <div style="background:#FFFDF6;border:2px solid #DECAA4;border-radius:16px;padding:0.7rem 0.9rem;margin-bottom:1rem;">
+        ${
+          isNewcomer
+            ? `<div style="font-weight:900;font-size:0.98rem;color:var(--ink);">
+                 👋 ${zh ? '歡迎新茶客光臨！' : 'Welcome, First-Time Guest!'}
+               </div>
+               <div style="font-size:0.86rem;color:var(--ink-muted);margin-top:0.15rem;">
+                 ${
+                   zh
+                     ? '撳下面「開枱飲茶」，茶博士阿波會帶你做 1 分鐘輕鬆導賞！'
+                     : 'Press PLAY below for a quick 1-minute Welcome Tour with Master Bo!'
+                 }
+               </div>`
+            : `<div style="font-weight:900;font-size:0.98rem;color:var(--ink);">
+                 ${state.profile.avatar} ${zh ? `歡迎返嚟，${escapeHtml(state.profile.displayName)}！` : `Welcome back, ${escapeHtml(state.profile.displayName)}!`}
+               </div>
+               <div style="font-size:0.85rem;color:var(--ink-muted);margin-top:0.15rem;">
+                 ${rank} · 🔥 ${state.stats.streak} ${t(lang, 'streakUnit')} · ⭐ ${state.stats.totalPoints} ${t(lang, 'pointsUnit')}
+               </div>`
+        }
+      </div>
+
+      <button type="button" class="btn-play-mega" id="startMegaPlayBtn">
+        <span>▶</span>
+        <span>${zh ? (isNewcomer ? '開枱飲茶！（新手導賞）' : '開枱飲茶！開始遊戲') : isNewcomer ? 'PLAY! (Welcome Tour)' : 'PRESS PLAY!'}</span>
+      </button>
+
+      <div class="action-row" style="margin-top:0.85rem;">
+        <button type="button" class="btn btn-outline btn-sm" id="startTourBtn">
+          📖 ${zh ? '玩法導賞' : 'How to Play'}
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="startSettingsBtn">
+          ⚙️ ${zh ? '偏好設定' : 'Settings'}
+        </button>
+      </div>
+    </div>
+  `;
+
+  startScreenEl.querySelector('#startLangZhBtn').addEventListener('click', () => {
+    playSfx('switch', state.sound);
+    state.lang = 'zh';
+    saveState(state);
+    syncChrome();
+    renderMain();
+    showStartScreen();
+  });
+
+  startScreenEl.querySelector('#startLangEnBtn').addEventListener('click', () => {
+    playSfx('switch', state.sound);
+    state.lang = 'en';
+    saveState(state);
+    syncChrome();
+    renderMain();
+    showStartScreen();
+  });
+
+  startScreenEl.querySelector('#startMegaPlayBtn').addEventListener('click', () => {
+    playSfx('fanfare', state.sound);
+    startScreenEl.classList.add('hidden');
+    if (!state.onboardingDone) {
+      openWelcomeTourModal(0);
+    }
+  });
+
+  startScreenEl.querySelector('#startTourBtn').addEventListener('click', () => {
+    playSfx('switch', state.sound);
+    startScreenEl.classList.add('hidden');
+    openWelcomeTourModal(0);
+  });
+
+  startScreenEl.querySelector('#startSettingsBtn').addEventListener('click', () => {
+    playSfx('switch', state.sound);
+    openSettingsModal();
+  });
+}
+
+function openWelcomeTourModal(initialStep) {
+  let step = typeof initialStep === 'number' ? initialStep : 0;
+
+  function renderSlide() {
+    const lang = state.lang;
+    const zh = lang === 'zh';
+
+    const slides = [
+      {
+        mood: 'greet',
+        title: zh ? '歡迎光臨《每日腦點心》！' : 'Welcome to Daily MindSum!',
+        voice: zh
+          ? '歡迎光臨每日腦點心！我係茶博士阿波。首先揀選你睇得最舒服嘅語言、字體大細同地區啦！'
+          : 'Welcome to Daily MindSum! I am Tea Master Bo. First, pick your preferred language, comfortable text size, and city focus!',
+        bodyHtml: `
+          <p style="margin:0 0 0.65rem;color:var(--ink-muted);font-size:0.92rem;">
+            ${
+              zh
+                ? '專為香港同溫哥華屋企人設計嘅早茶健腦館！開波前，先校好最啱你心水嘅畫面設定：'
+                : 'Crafted for Hong Kong & Vancouver families! Pick what feels most comfortable right here:'
+            }
+          </p>
+          <div class="tour-showcase-box">
+            <div class="pref-row">
+              <span class="pref-label">🌐 ${zh ? '語言 Language' : 'Language'}</span>
+              <div class="pref-seg-group">
+                <button type="button" class="pref-seg-btn ${zh ? 'active' : ''}" data-tlang="zh">粵語 中文</button>
+                <button type="button" class="pref-seg-btn ${!zh ? 'active' : ''}" data-tlang="en">English</button>
+              </div>
+            </div>
+            <div class="pref-row">
+              <span class="pref-label">🔠 ${zh ? '字體大小' : 'Text Size'}</span>
+              <div class="pref-seg-group">
+                <button type="button" class="pref-seg-btn ${state.fontSize === 'md' ? 'active' : ''}" data-tfont="md">${zh ? '標準 A' : 'Normal A'}</button>
+                <button type="button" class="pref-seg-btn ${state.fontSize === 'lg' ? 'active' : ''}" data-tfont="lg">${zh ? '大字 A+' : 'Large A+'}</button>
+                <button type="button" class="pref-seg-btn ${state.fontSize === 'xl' ? 'active' : ''}" data-tfont="xl">${zh ? '特大 A++' : 'Extra A++'}</button>
+              </div>
+            </div>
+            <div class="pref-row">
+              <span class="pref-label">🌏 ${zh ? '地區內容' : 'City Focus'}</span>
+              <div class="pref-seg-group">
+                <button type="button" class="pref-seg-btn ${state.region === 'both' ? 'active' : ''}" data-treg="both">${zh ? '港×溫' : 'HK×YVR'}</button>
+                <button type="button" class="pref-seg-btn ${state.region === 'hk' ? 'active' : ''}" data-treg="hk">🇭🇰 HK</button>
+                <button type="button" class="pref-seg-btn ${state.region === 'yvr' ? 'active' : ''}" data-treg="yvr">🇨🇦 YVR</button>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        mood: 'happy',
+        title: zh ? '📋 每日四道腦點心紙 · 儲紅印仔' : "📋 Today's 4-Dish Stamp Card",
+        voice: zh
+          ? '每日我哋會為你精選四道健腦點心。每完成一道就蓋一個頂點紅印仔，集齊四個仲有額外五十分同保溫壺保障連續紀錄！'
+          : 'Each day features 4 balanced Brain Dishes. Finish a dish to earn a red TOP chop! Complete all 4 for bonus points and Warm Teapot Streak Shields!',
+        bodyHtml: `
+          <div class="tour-showcase-box">
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;margin-bottom:0.65rem;">
+              <div style="padding:0.55rem;border-radius:12px;border:2px solid #E3958F;background:#FFF9F7;position:relative;text-align:center;">
+                <div style="font-size:1.4rem;">📰</div>
+                <strong style="font-size:0.84rem;">1. ${zh ? '時事醒目仔' : 'Daily News'}</strong>
+                <span class="red-chop" style="width:2rem;height:2rem;font-size:0.64rem;">${zh ? '頂點' : 'TOP'}</span>
+              </div>
+              <div style="padding:0.55rem;border-radius:12px;border:2px solid #E3958F;background:#FFF9F7;position:relative;text-align:center;">
+                <div style="font-size:1.4rem;">🔢</div>
+                <strong style="font-size:0.84rem;">2. ${zh ? '茶樓數獨' : 'Sudoku'}</strong>
+                <span class="red-chop" style="width:2rem;height:2rem;font-size:0.64rem;">${zh ? '頂點' : 'TOP'}</span>
+              </div>
+            </div>
+            <p style="margin:0;font-size:0.9rem;line-height:1.55;">
+              • <strong>🔴 ${zh ? '每日四籠' : '4 Daily Dishes'}：</strong>${zh ? '只需約 4 至 6 分鐘，全面鍛鍊記憶、邏輯、心算、語言同眼力！' : 'Takes just 4–6 relaxing minutes across Memory, Logic, Math, Verbal & Focus!'}<br/>
+              • <strong>🫖 ${zh ? '保溫壺護盾' : 'Teapot Streak Shield'}：</strong>${zh ? '忙緊漏玩一日？保溫壺會自動幫你保住連續日數，零壓力！' : 'Miss a busy day? Your Warm Teapot automatically protects your streak!'}
+            </p>
+          </div>
+        `
+      },
+      {
+        mood: 'cheer',
+        title: zh ? '🕹️ 十五款遊戲 · 零計時壓力＋語音貼士' : '🕹️ 15 Relaxed Games · Voice & Hints',
+        voice: zh
+          ? '全部十五款遊戲都唔限時間，只需要輕輕一撳就玩得。隨時撳藍色喇叭聽廣東話或英文朗讀，有需要仲可以撳燈膽睇貼士！'
+          : 'All 15 games are untimed and tap-only — never any rush or dragging! Tap Read Aloud anytime to listen, or tap Hint whenever you want a nudge.',
+        bodyHtml: `
+          <div class="tour-showcase-box">
+            <p style="margin:0;font-size:0.9rem;line-height:1.6;">
+              • <strong>👆 ${zh ? '一指輕撳即玩' : 'Simple Single-Tap'}：</strong>${zh ? '無須拖拉、無倒數催促，答錯都會溫馨提示再試！' : 'No dragging, no countdown clocks — gentle encouragement on every try!'}<br/>
+              • <strong>🔊 ${zh ? '真人語音朗讀' : 'Cantonese & English Audio'}：</strong>${zh ? '新聞、歷史同詞匯題目都支援廣東話及英文發音！' : 'Listen to stories, idioms, and vocabulary read aloud!'}<br/>
+              • <strong>💡 ${zh ? '隨時睇貼士 & 🎲 隨機抽點心' : 'Smart Hints & 🎲 Surprise Roulette'}：</strong>${zh ? '唔知玩邊款？撳「隨機抽一籠」好似扭蛋咁開局！' : 'Not sure what to pick? Spin the Surprise Roulette button!'}
+            </p>
+          </div>
+        `
+      },
+      {
+        mood: 'proud',
+        title: zh ? '🏆 免登入即玩 · 親友圈跨洋同樂' : '🏆 Instant Local Play & Family Circles',
+        voice: zh
+          ? '你可以唔使登入直接免費任玩，仲可以加入孫仔孫女相片玩翻牌！如果想同香港、溫哥華親友比拼分數，隨時一鍵分享或者用 Google 登入龍虎榜就得喇！'
+          : 'Play locally right away with zero sign-up — even add private family photos for Memory Match! Share stamp cards on WhatsApp or sign in with Google to join your Family Circle scoreboard!',
+        bodyHtml: `
+          <div class="tour-showcase-box">
+            <p style="margin:0;font-size:0.9rem;line-height:1.6;">
+              • <strong>🏠 ${zh ? '本地免費任玩' : 'Open Local Play'}：</strong>${zh ? '無須註冊即可儲存進度同解鎖 18 款港溫珍藏圖鑑！' : 'Play freely right away and unlock 18 HK × Vancouver keepsakes!'}<br/>
+              • <strong>📸 ${zh ? '私密屋企相片卡' : 'Private Family Photo Cards'}：</strong>${zh ? '可加入屋企人靚相玩配對（100% 留喺本機，唔會上傳）！' : 'Add grandkids or travel photos to Memory Match (stays 100% on your device)!'}<br/>
+              • <strong>👨‍👩‍👧‍👦 ${zh ? '親友圈龍虎榜' : 'Family & Global Leaderboard'}：</strong>${zh ? '傳送邀請連結畀親友，香港溫哥華一齊嘆茶較量！' : 'Send your invite link so family in HK & Vancouver can play together!'}
+            </p>
+          </div>
+        `
+      }
+    ];
+
+    const s = slides[step];
+    let dots = '';
+    for (let i = 0; i < slides.length; i++) {
+      dots += `<span class="tour-dot ${i === step ? 'active' : ''}"></span>`;
+    }
+
+    openModal(
+      `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <span style="font-size:0.8rem;font-weight:900;color:var(--jade-dark);">
+          🫖 ${zh ? `茶博士導賞 (${step + 1} / ${slides.length})` : `Welcome Tour (${step + 1} / ${slides.length})`}
+        </span>
+        <div style="display:flex;gap:0.35rem;">
+          <button type="button" class="chip-btn" id="tourSpeakBtn" style="min-height:36px;padding:0.2rem 0.65rem;font-size:0.78rem;">
+            🔊 ${zh ? '朗讀' : 'Listen'}
+          </button>
+          <button type="button" class="chip-btn" id="tourSkipBtn" style="min-height:36px;padding:0.2rem 0.65rem;font-size:0.78rem;">
+            ${zh ? '跳過 ✕' : 'Skip ✕'}
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.65rem;">
+        <div style="width:68px;height:68px;flex-shrink:0;">${renderMasterBoSvg(s.mood)}</div>
+        <h2 style="margin:0;font-size:1.22rem;line-height:1.28;">${s.title}</h2>
+      </div>
+
+      <div class="tour-step-dots">${dots}</div>
+
+      ${s.bodyHtml}
+
+      <div class="action-row" style="margin-top:0.95rem;">
+        ${
+          step > 0
+            ? `<button type="button" class="btn btn-outline btn-sm" id="tourPrevBtn">← ${zh ? '上一步' : 'Back'}</button>`
+            : ''
+        }
+        ${
+          step < slides.length - 1
+            ? `<button type="button" class="btn btn-primary btn-sm" id="tourNextBtn">${zh ? '下一步 →' : 'Next →'}</button>`
+            : `<button type="button" class="btn btn-primary btn-sm" id="tourFinishBtn">🎉 ${zh ? '開始嘆早茶！' : "Let's Play!"}</button>`
+        }
+      </div>
+    `,
+      card => {
+        card.querySelector('#tourSpeakBtn').addEventListener('click', () => {
+          speakText(s.voice, state.lang);
+        });
+
+        card.querySelector('#tourSkipBtn').addEventListener('click', () => {
+          stopSpeaking();
+          state.onboardingDone = true;
+          saveState(state);
+          closeModal();
+          renderMain();
+        });
+
+        card.querySelectorAll('[data-tlang]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSfx('switch', state.sound);
+            state.lang = btn.dataset.tlang;
+            saveState(state);
+            syncChrome();
+            renderMain();
+            renderSlide();
+          });
+        });
+
+        card.querySelectorAll('[data-tfont]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSfx('switch', state.sound);
+            state.fontSize = btn.dataset.tfont;
+            saveState(state);
+            syncChrome();
+            renderSlide();
+          });
+        });
+
+        card.querySelectorAll('[data-treg]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSfx('switch', state.sound);
+            state.region = btn.dataset.treg;
+            saveState(state);
+            syncChrome();
+            renderMain();
+            renderSlide();
+          });
+        });
+
+        const prevB = card.querySelector('#tourPrevBtn');
+        if (prevB) {
+          prevB.addEventListener('click', () => {
+            stopSpeaking();
+            playSfx('switch', state.sound);
+            step -= 1;
+            renderSlide();
+          });
+        }
+
+        const nextB = card.querySelector('#tourNextBtn');
+        if (nextB) {
+          nextB.addEventListener('click', () => {
+            stopSpeaking();
+            playSfx('switch', state.sound);
+            step += 1;
+            renderSlide();
+          });
+        }
+
+        const finB = card.querySelector('#tourFinishBtn');
+        if (finB) {
+          finB.addEventListener('click', () => {
+            stopSpeaking();
+            state.onboardingDone = true;
+            saveState(state);
+            closeModal();
+            playSfx('fanfare', state.sound);
+            spawnConfettiBurst(36);
+            renderMain();
+            showToast(state.lang === 'zh' ? '🎉 導賞完成！祝你玩得開心醒神！' : '🎉 Tour complete! Have fun playing!');
+          });
+        }
+      }
+    );
+  }
+
+  renderSlide();
+}
+
+function openSettingsModal() {
+  stopSpeaking();
+  if (!state.prefs) {
+    state.prefs = {
+      speechRate: 'normal',
+      defaultDifficulty: 1,
+      autoLevelUp: true,
+      sudokuDimSumIcons: false,
+      reducedMotion: false,
+      skipTitleScreen: false
+    };
+  }
+
+  function renderPrefs() {
+    const lang = state.lang;
+    const zh = lang === 'zh';
+    const p = state.prefs;
+
+    openModal(
+      `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.65rem;">
+        <h2 style="margin:0;font-size:1.28rem;">⚙️ ${zh ? '茶客偏好設定' : 'User Preferences & Settings'}</h2>
+        <button type="button" class="chip-btn" id="closeSettingsTopBtn" style="min-height:36px;padding:0.2rem 0.65rem;">✕</button>
+      </div>
+
+      <!-- 1. Language & Region -->
+      <div class="pref-section">
+        <div class="pref-section-title">🌐 ${zh ? '語言與地區內容' : 'Language & Region'}</div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '介面語言' : 'App Language'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${zh ? 'active' : ''}" data-plang="zh">粵語 / 繁體</button>
+            <button type="button" class="pref-seg-btn ${!zh ? 'active' : ''}" data-plang="en">English</button>
+          </div>
+        </div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '新聞與歷史地區' : 'Story Region'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${state.region === 'both' ? 'active' : ''}" data-preg="both">${zh ? '港×溫' : 'HK×YVR'}</button>
+            <button type="button" class="pref-seg-btn ${state.region === 'hk' ? 'active' : ''}" data-preg="hk">🇭🇰 HK</button>
+            <button type="button" class="pref-seg-btn ${state.region === 'yvr' ? 'active' : ''}" data-preg="yvr">🇨🇦 YVR</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Display & Visual Comfort -->
+      <div class="pref-section">
+        <div class="pref-section-title">🔠 ${zh ? '字體大小與視覺舒適度' : 'Text Size & Motion'}</div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '字體大小' : 'Font Size'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${state.fontSize === 'md' ? 'active' : ''}" data-pfont="md">${zh ? '標準 A' : 'Normal A'}</button>
+            <button type="button" class="pref-seg-btn ${state.fontSize === 'lg' ? 'active' : ''}" data-pfont="lg">${zh ? '大字 A+' : 'Large A+'}</button>
+            <button type="button" class="pref-seg-btn ${state.fontSize === 'xl' ? 'active' : ''}" data-pfont="xl">${zh ? '特大 A++' : 'Extra A++'}</button>
+          </div>
+        </div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '動畫效果' : 'Animations'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${!p.reducedMotion ? 'active' : ''}" data-pmotion="full">✨ ${zh ? '活潑動畫' : 'Lively'}</button>
+            <button type="button" class="pref-seg-btn ${p.reducedMotion ? 'active' : ''}" data-pmotion="calm">🌿 ${zh ? '柔和減少動態' : 'Calm'}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Audio & Read-Aloud Speed -->
+      <div class="pref-section">
+        <div class="pref-section-title">🔊 ${zh ? '音效與語音朗讀' : 'Sound & Voice Read-Aloud'}</div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '遊戲按鍵音效' : 'Game Sound Effects'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${state.sound ? 'active' : ''}" data-psound="on">🔔 ${zh ? '開啟' : 'On'}</button>
+            <button type="button" class="pref-seg-btn ${!state.sound ? 'active' : ''}" data-psound="off">🔕 ${zh ? '靜音' : 'Mute'}</button>
+          </div>
+        </div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '朗讀語速' : 'Voice Speed'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${p.speechRate === 'slow' ? 'active' : ''}" data-prate="slow">🐢 ${zh ? '慢速清晰' : 'Slow'}</button>
+            <button type="button" class="pref-seg-btn ${p.speechRate === 'normal' ? 'active' : ''}" data-prate="normal">🫖 ${zh ? '適中' : 'Normal'}</button>
+            <button type="button" class="pref-seg-btn ${p.speechRate === 'fast' ? 'active' : ''}" data-prate="fast">🐇 ${zh ? '輕快' : 'Brisk'}</button>
+            <button type="button" class="chip-btn" id="testVoicePrefBtn" style="min-height:38px;padding:0.2rem 0.65rem;font-size:0.8rem;">
+              🔊 ${zh ? '試聽' : 'Test'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Gameplay & Comfort Rules -->
+      <div class="pref-section">
+        <div class="pref-section-title">🀄 ${zh ? '遊戲難度與玩法習慣' : 'Gameplay & Difficulty'}</div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '一鍵設定全部難度' : 'Set All Games Difficulty'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${p.defaultDifficulty === 0 ? 'active' : ''}" data-pdiff="0">${t(lang, 'lvlEasy')}</button>
+            <button type="button" class="pref-seg-btn ${p.defaultDifficulty === 1 ? 'active' : ''}" data-pdiff="1">${t(lang, 'lvlMed')}</button>
+            <button type="button" class="pref-seg-btn ${p.defaultDifficulty === 2 ? 'active' : ''}" data-pdiff="2">${t(lang, 'lvlHard')}</button>
+          </div>
+        </div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '連贏自動進階難度' : 'Auto-Advance Difficulty'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${p.autoLevelUp !== false ? 'active' : ''}" data-pauto="on">${zh ? '開啟' : 'On'}</button>
+            <button type="button" class="pref-seg-btn ${p.autoLevelUp === false ? 'active' : ''}" data-pauto="off">${zh ? '固定難度' : 'Lock Level'}</button>
+          </div>
+        </div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '數獨預設圖案' : 'Sudoku Default Symbols'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${!p.sudokuDimSumIcons ? 'active' : ''}" data-psudoku="num">🔢 ${zh ? '數字' : 'Numbers'}</button>
+            <button type="button" class="pref-seg-btn ${p.sudokuDimSumIcons ? 'active' : ''}" data-psudoku="icon">🥟 ${zh ? '點心圖案' : 'Dim Sum'}</button>
+          </div>
+        </div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '每次打開顯示開始畫面' : 'Show Start Screen on Launch'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${!p.skipTitleScreen ? 'active' : ''}" data-ptitle="show">${zh ? '顯示' : 'Show'}</button>
+            <button type="button" class="pref-seg-btn ${p.skipTitleScreen ? 'active' : ''}" data-ptitle="skip">${zh ? '直接入茶樓' : 'Skip'}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions: Tour, Profile, Start Screen -->
+      <div class="action-row" style="margin-top:0.85rem;">
+        <button type="button" class="btn btn-outline btn-sm" id="prefReplayTourBtn">
+          📖 ${zh ? '重溫新手導賞' : 'Welcome Tour'}
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="prefOpenProfileBtn">
+          👤 ${zh ? '個人檔案／登入' : 'Profile & Cloud'}
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="prefShowStartBtn">
+          🏠 ${zh ? '返回開始畫面' : 'Title Screen'}
+        </button>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-full btn-sm" id="saveCloseSettingsBtn" style="margin-top:0.8rem;">
+        ✅ ${zh ? '完成並返回遊戲' : 'Save & Done'}
+      </button>
+    `,
+      card => {
+        const refreshAll = () => {
+          saveState(state);
+          syncChrome();
+          if (currentTab === 'playing' && activeGameId) launchGame(activeGameId);
+          else renderMain();
+          if (startScreenEl && !startScreenEl.classList.contains('hidden')) {
+            showStartScreen();
+          }
+          renderPrefs();
+        };
+
+        card.querySelector('#closeSettingsTopBtn').addEventListener('click', closeModal);
+        card.querySelector('#saveCloseSettingsBtn').addEventListener('click', () => {
+          playSfx('switch', state.sound);
+          closeModal();
+        });
+
+        card.querySelectorAll('[data-plang]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.lang = b.dataset.plang;
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-preg]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.region = b.dataset.preg;
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-pfont]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.fontSize = b.dataset.pfont;
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-pmotion]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.prefs.reducedMotion = b.dataset.pmotion === 'calm';
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-psound]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.sound = b.dataset.psound === 'on';
+            if (state.sound) playSfx('switch', true);
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-prate]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.prefs.speechRate = b.dataset.prate;
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelector('#testVoicePrefBtn').addEventListener('click', () => {
+          const sample =
+            state.lang === 'zh'
+              ? '早晨！飲啖靚茶，動下腦筋，祝你今日精靈醒目！'
+              : 'Good morning! Enjoy a cup of tea and a relaxing brain workout!';
+          speakText(sample, state.lang, state.prefs.speechRate);
+        });
+
+        card.querySelectorAll('[data-pdiff]').forEach(b => {
+          b.addEventListener('click', () => {
+            const lvl = Number(b.dataset.pdiff);
+            state.prefs.defaultDifficulty = lvl;
+            GAME_CATALOG.forEach(g => {
+              state.stats.perGameLevel[g.id] = lvl;
+            });
+            playSfx('switch', state.sound);
+            showToast(
+              state.lang === 'zh'
+                ? '✅ 已將全部 15 款點心設為所選難度！'
+                : '✅ Updated difficulty across all 15 games!'
+            );
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-pauto]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.prefs.autoLevelUp = b.dataset.pauto === 'on';
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-psudoku]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.prefs.sudokuDimSumIcons = b.dataset.psudoku === 'icon';
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-ptitle]').forEach(b => {
+          b.addEventListener('click', () => {
+            state.prefs.skipTitleScreen = b.dataset.ptitle === 'skip';
+            playSfx('switch', state.sound);
+            refreshAll();
+          });
+        });
+
+        card.querySelector('#prefReplayTourBtn').addEventListener('click', () => {
+          playSfx('switch', state.sound);
+          if (startScreenEl) startScreenEl.classList.add('hidden');
+          openWelcomeTourModal(0);
+        });
+
+        card.querySelector('#prefOpenProfileBtn').addEventListener('click', () => {
+          playSfx('switch', state.sound);
+          openProfileModal();
+        });
+
+        card.querySelector('#prefShowStartBtn').addEventListener('click', () => {
+          playSfx('switch', state.sound);
+          closeModal();
+          showStartScreen();
+        });
+      }
+    );
+  }
+
+  renderPrefs();
+}
+
+/* =========================================================================
    MAIN ROUTER & EVENT WIRING
    ========================================================================= */
 function renderMain() {
@@ -1241,6 +1872,11 @@ document.getElementById('soundToggleBtn').addEventListener('click', () => {
   if (state.sound) playSfx('tap', true);
 });
 
+document.getElementById('settingsHeaderBtn').addEventListener('click', () => {
+  playSfx('switch', state.sound);
+  openSettingsModal();
+});
+
 document.getElementById('profileHeaderBtn').addEventListener('click', openProfileModal);
 
 document.querySelectorAll('.region-pill').forEach(btn => {
@@ -1273,6 +1909,9 @@ setInterval(updateClocks, 20000);
 checkUrlInvite();
 syncChrome();
 renderMain();
+if (!state.prefs || !state.prefs.skipTitleScreen) {
+  showStartScreen();
+}
 
 initFirebaseIfConfigured().then(() => {
   onUserChanged(user => {

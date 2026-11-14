@@ -41,6 +41,15 @@ export function createDefaultState() {
     fontSize: 'md', // md | lg | xl
     sound: true,
     region: 'both', // both | hk | yvr
+    onboardingDone: false,
+    prefs: {
+      speechRate: 'normal', // slow | normal | fast
+      defaultDifficulty: 1, // 0=Relaxed, 1=Standard, 2=Challenge
+      autoLevelUp: true,
+      sudokuDimSumIcons: false,
+      reducedMotion: false,
+      skipTitleScreen: false
+    },
     profile: {
       displayName: '醒神茶客',
       avatar: '🫖',
@@ -91,6 +100,7 @@ export function loadState() {
       state = {
         ...state,
         ...parsed,
+        prefs: { ...state.prefs, ...(parsed.prefs || {}) },
         profile: { ...state.profile, ...(parsed.profile || {}) },
         stats: {
           ...state.stats,
@@ -153,15 +163,18 @@ export function recordGameCompletion(state, gameId, earnedPoints, stars, allAlbu
   state.stats.gamesCompleted += 1;
   state.stats.perGamePlays[gameId] = (state.stats.perGamePlays[gameId] || 0) + 1;
 
-  // Gentle auto-adaptive level progression
-  if (stars === 3) {
-    state.stats.perGameCleanStreak[gameId] = (state.stats.perGameCleanStreak[gameId] || 0) + 1;
-    if (state.stats.perGameCleanStreak[gameId] >= 2 && state.stats.perGameLevel[gameId] < 2) {
-      state.stats.perGameLevel[gameId] += 1;
+  // Gentle auto-adaptive level progression (if enabled in user preferences)
+  const allowAutoLevel = !state.prefs || state.prefs.autoLevelUp !== false;
+  if (allowAutoLevel) {
+    if (stars === 3) {
+      state.stats.perGameCleanStreak[gameId] = (state.stats.perGameCleanStreak[gameId] || 0) + 1;
+      if (state.stats.perGameCleanStreak[gameId] >= 2 && state.stats.perGameLevel[gameId] < 2) {
+        state.stats.perGameLevel[gameId] += 1;
+        state.stats.perGameCleanStreak[gameId] = 0;
+      }
+    } else if (stars === 1 && state.stats.perGameLevel[gameId] > 0) {
       state.stats.perGameCleanStreak[gameId] = 0;
     }
-  } else if (stars === 1 && state.stats.perGameLevel[gameId] > 0) {
-    state.stats.perGameCleanStreak[gameId] = 0;
   }
 
   // Update Daily Streak on first game played today

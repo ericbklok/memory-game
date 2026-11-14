@@ -162,6 +162,7 @@ export function renderMasterBoSvg(mood) {
 
 export function spawnFloatingPop(x, y, text, color) {
   if (typeof document === 'undefined') return;
+  if (document.documentElement.dataset.motion === 'calm') return;
   const el = document.createElement('div');
   el.className = 'nintendo-pop-badge';
   el.textContent = text;
@@ -178,6 +179,7 @@ export function spawnFloatingPop(x, y, text, color) {
 
 export function spawnConfettiBurst(count) {
   if (typeof document === 'undefined') return;
+  if (document.documentElement.dataset.motion === 'calm') return;
   const total = count || 38;
   const colors = ['#E63946', '#F4A261', '#2A9D8F', '#F6BD60', '#457B9D', '#9B5DE5'];
   const wrap = document.createElement('div');

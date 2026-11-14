@@ -36,6 +36,9 @@
         <button type="button" class="chip-btn icon-only" id="soundToggleBtn" title="Sound / 音效" aria-label="Toggle Sound">
           <span id="soundIcon">🔔</span>
         </button>
+        <button type="button" class="chip-btn icon-only" id="settingsHeaderBtn" title="Settings / 偏好設定" aria-label="Settings">
+          <span>⚙️</span>
+        </button>
         <button type="button" class="profile-pill" id="profileHeaderBtn">
           <span id="headerAvatar">🫖</span>
           <span id="headerUserLabel">茶客</span>
@@ -84,7 +87,10 @@
     </nav>
   </div>
 
-  <!-- Modal Container (Profile/Auth, Family Photos, Celebrations, Firebase Info) -->
+  <!-- Nintendo Title / Play Starting Screen -->
+  <div id="startScreenOverlay" class="start-screen-overlay hidden" role="dialog" aria-modal="true" aria-label="Daily MindSum Title Screen"></div>
+
+  <!-- Modal Container (Welcome Tour, Settings, Profile/Auth, Family Photos, Firebase Info) -->
   <div id="modalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
     <div id="modalCard" class="modal-card"></div>
   </div>

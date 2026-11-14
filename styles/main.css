@@ -1906,3 +1906,233 @@ button, input, select {
   70% { transform: scale(1.28) rotate(8deg); opacity: 1; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
+
+/* =========================================================================
+   NINTENDO TITLE / STARTING SCREEN, WELCOME TOUR & USER PREFERENCES
+   ========================================================================= */
+
+.start-screen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background-color: #FAF1DE;
+  background-image:
+    radial-gradient(#DECAA5 1.6px, transparent 1.6px),
+    linear-gradient(180deg, #FFFDF7 0%, #FAF0DA 55%, #F2DFBD 100%);
+  background-size: 24px 24px, 100% 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.start-card {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF8EA 100%);
+  border: 3.5px solid #2B2118;
+  border-radius: 30px;
+  padding: 1.55rem 1.35rem 1.4rem;
+  text-align: center;
+  box-shadow: inset 0 4px 0 #FFFFFF, 0 10px 0 #C5AE87, 0 22px 48px rgba(43, 33, 24, 0.22);
+  overflow: hidden;
+}
+
+.start-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.9rem;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  border: 2px solid var(--gold);
+  color: var(--gold-dark);
+  font-weight: 900;
+  font-size: 0.82rem;
+  margin-bottom: 0.55rem;
+}
+
+.start-title-zh {
+  margin: 0;
+  font-size: 2.15rem;
+  font-weight: 900;
+  color: var(--red-chop-dark);
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  text-shadow: 0 2px 0 #FFE6E2;
+}
+
+.start-title-en {
+  margin: 0.2rem 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--jade-dark);
+  letter-spacing: 0.04em;
+}
+
+.start-mascot-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin: 0.6rem auto 0.95rem;
+}
+
+.start-float-icon {
+  font-size: 1.85rem;
+  animation: startIconFloat 2.8s ease-in-out infinite;
+  user-select: none;
+}
+
+.start-float-icon.delay-1 { animation-delay: 0.5s; }
+.start-float-icon.delay-2 { animation-delay: 1s; }
+
+@keyframes startIconFloat {
+  0%, 100% { transform: translateY(0px) rotate(-5deg); }
+  50% { transform: translateY(-7px) rotate(6deg); }
+}
+
+.btn-play-mega {
+  width: 100%;
+  min-height: 68px;
+  font-size: 1.32rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  border: 3px solid #7C1710;
+  background: linear-gradient(180deg, #F04B3E 0%, #C82B20 100%);
+  color: #FFFFFF;
+  box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.45), 0 8px 0 #7C1710, 0 14px 26px rgba(200, 43, 32, 0.32);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  animation: playPulse 2.4s ease-in-out infinite;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease;
+}
+
+.btn-play-mega:hover {
+  transform: translateY(-3px) scale(1.02);
+}
+
+.btn-play-mega:active {
+  transform: translateY(5px);
+  box-shadow: 0 2px 0 #7C1710;
+  animation: none;
+}
+
+@keyframes playPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025); }
+}
+
+/* Welcome Tour Carousel & Cards */
+.tour-step-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0.6rem 0 0.85rem;
+}
+
+.tour-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #DFD2BA;
+  border: 1.5px solid #B6A17E;
+  transition: all 0.2s ease;
+}
+
+.tour-dot.active {
+  width: 30px;
+  background: var(--red-chop);
+  border-color: var(--red-chop-dark);
+}
+
+.tour-showcase-box {
+  background: #FFFDF7;
+  border: 2px solid #D8C4A0;
+  border-radius: 18px;
+  padding: 0.9rem;
+  margin: 0.75rem 0;
+  text-align: left;
+}
+
+/* User Preferences / Settings Controls */
+.pref-section {
+  background: #FFFDF8;
+  border: 2px solid #DDD0B8;
+  border-radius: 16px;
+  padding: 0.85rem 0.95rem;
+  margin-bottom: 0.75rem;
+}
+
+.pref-section-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--jade-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0;
+}
+
+.pref-row + .pref-row {
+  border-top: 1px dashed #E5D9C3;
+  margin-top: 0.35rem;
+  padding-top: 0.6rem;
+}
+
+.pref-label {
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.pref-seg-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pref-seg-btn {
+  min-height: 40px;
+  padding: 0.3rem 0.72rem;
+  border-radius: 999px;
+  border: 2px solid #C8B492;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #C8B492;
+}
+
+.pref-seg-btn.active {
+  background: var(--jade);
+  border-color: var(--jade-dark);
+  color: #FFFFFF;
+  box-shadow: 0 2px 0 var(--jade-dark);
+}
+
+/* Reduced Motion Accessibility Mode */
+html[data-motion="calm"] *,
+html[data-motion="calm"] *::before,
+html[data-motion="calm"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.05s !important;
+}

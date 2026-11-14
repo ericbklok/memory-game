@@ -86,7 +86,7 @@ export function mountSudokuGame(ctx) {
 
   let sel = coords.find(([r, c]) => !given[r][c]) || [0, 0];
   let noteMode = false;
-  let iconMode = false;
+  let iconMode = Boolean(state.prefs && state.prefs.sudokuDimSumIcons);
   let mistakes = 0;
   let hintMsg = '';
 

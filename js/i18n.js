@@ -258,12 +258,18 @@ export function playPentatonicNote(noteIdx, soundEnabled = true) {
   osc.stop(now + 0.44);
 }
 
-/* Native Cantonese (zh-HK) & English Read-Aloud */
-export function speakText(text, lang) {
+/* Native Cantonese (zh-HK) & English Read-Aloud (honors user speechRate preference) */
+export function speakText(text, lang, rateOverride) {
   if (!('speechSynthesis' in window)) return false;
   window.speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   const voices = window.speechSynthesis.getVoices() || [];
+
+  const prefMode =
+    rateOverride ||
+    (typeof document !== 'undefined' && document.documentElement.dataset.speechRate) ||
+    'normal';
+  const speedNum = prefMode === 'slow' ? 0.76 : prefMode === 'fast' ? 1.06 : 0.92;
 
   if (lang === 'zh') {
     utter.lang = 'zh-HK';
@@ -271,12 +277,12 @@ export function speakText(text, lang) {
       voices.find(v => /zh[-_]?HK|yue|cantonese/i.test(v.lang + ' ' + v.name)) ||
       voices.find(v => /zh[-_]?TW|zh/i.test(v.lang));
     if (hkVoice) utter.voice = hkVoice;
-    utter.rate = 0.92;
+    utter.rate = speedNum;
   } else {
     utter.lang = 'en-US';
     const enVoice = voices.find(v => /^en[-_](CA|GB|US)/i.test(v.lang));
     if (enVoice) utter.voice = enVoice;
-    utter.rate = 0.94;
+    utter.rate = speedNum + 0.02;
   }
 
   window.speechSynthesis.speak(utter);
