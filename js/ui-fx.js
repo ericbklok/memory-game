@@ -305,3 +305,153 @@ export function renderBrainRadarSvg(perGamePlays, lang) {
     '</svg>'
   );
 }
+
+/* =========================================================================
+   AGE-RELATIVE PERFORMANCE ESTIMATOR (BRAIN AGE / PEER BENCHMARKING)
+   ========================================================================= */
+export function evaluateAgePerformance(opts) {
+  const rawAge = Number(opts && opts.age);
+  const cleanAge = rawAge && rawAge >= 8 && rawAge <= 110 ? Math.round(rawAge) : 68;
+  const lang = (opts && opts.lang) || 'zh';
+  const zh = lang === 'zh';
+
+  // Determine cohort bracket label
+  let cohortLabel = '';
+  if (cleanAge < 40) {
+    cohortLabel = zh ? '40 歲以下組別' : 'Under-40 Group';
+  } else if (cleanAge >= 90) {
+    cohortLabel = zh ? '90+ 歲長青組' : '90+ Evergreen Group';
+  } else {
+    const low = Math.floor(cleanAge / 5) * 5;
+    const high = low + 4;
+    cohortLabel = zh ? low + '–' + high + ' 歲同齡組' : 'Ages ' + low + '–' + high + ' Peers';
+  }
+
+  // Use either explicit round score or average of recent rounds
+  let scoreVal = typeof (opts && opts.score) === 'number' ? opts.score : null;
+  let starsVal = typeof (opts && opts.stars) === 'number' ? opts.stars : 3;
+  let levelVal = typeof (opts && opts.level) === 'number' ? opts.level : 1;
+
+  const recent = opts && Array.isArray(opts.recentRounds) ? opts.recentRounds : [];
+  if (scoreVal === null) {
+    if (recent.length > 0) {
+      let sumS = 0;
+      let sumSt = 0;
+      let sumLv = 0;
+      for (let i = 0; i < recent.length; i++) {
+        sumS += recent[i].score || 100;
+        sumSt += recent[i].stars || 2;
+        sumLv += typeof recent[i].level === 'number' ? recent[i].level : 1;
+      }
+      scoreVal = sumS / recent.length;
+      starsVal = sumSt / recent.length;
+      levelVal = sumLv / recent.length;
+    } else {
+      scoreVal = 108;
+      starsVal = 3;
+      levelVal = 1;
+    }
+  }
+
+  // Age-calibrated reference median (older cohorts earn higher relative standing for equal raw scores)
+  const peerMedian = Math.max(70, 106 - Math.max(0, cleanAge - 45) * 0.54);
+  const diffBonus = levelVal >= 1.6 ? 12 : levelVal >= 0.8 ? 4 : 0;
+  const starBonus = starsVal >= 2.7 ? 10 : starsVal >= 1.8 ? 3 : -3;
+  const delta = scoreVal + diffBonus + starBonus - peerMedian;
+
+  const logistic = 2 / (1 + Math.exp(-delta / 18)) - 1;
+  const percentile = Math.max(55, Math.min(99, Math.round(60 + 39 * logistic)));
+  const topPct = Math.max(1, 100 - percentile);
+
+  const showVitalityAge = cleanAge >= 35;
+  const yearsYounger = showVitalityAge ? Math.max(1, Math.min(18, Math.round((percentile - 50) * 0.35))) : 0;
+  const vitalityAge = showVitalityAge ? Math.max(22, cleanAge - yearsYounger) : cleanAge;
+
+  let badge = '';
+  let comment = '';
+  if (percentile >= 90) {
+    badge = zh ? '👑 同齡頂尖級' : '👑 Top-Tier for Age';
+    comment = zh
+      ? '反應、準繩度與腦筋靈活度遠超同齡平均水平！'
+      : 'Accuracy and mental agility are way ahead of your age cohort!';
+  } else if (percentile >= 78) {
+    badge = zh ? '🌟 非常醒神' : '🌟 Well Above Peers';
+    comment = zh
+      ? '表現相當亮眼，思考清晰又穩陣！'
+      : 'Sharp, steady, and noticeably above average for your age group!';
+  } else if (percentile >= 65) {
+    badge = zh ? '✨ 表現優秀' : '✨ Above Average';
+    comment = zh
+      ? '發揮好穩定，繼續每日嘆茶動腦會更精靈！'
+      : 'Solid performance — daily brain dim sum keeps you right on track!';
+  } else {
+    badge = zh ? '🫖 穩健熱身' : '🫖 Steady & Active';
+    comment = zh
+      ? '輕鬆熱身完成，狀態穩健！'
+      : 'Great warm-up round — steady and active!';
+  }
+
+  return {
+    age: cleanAge,
+    cohortLabel: cohortLabel,
+    percentile: percentile,
+    topPct: topPct,
+    showVitalityAge: showVitalityAge,
+    vitalityAge: vitalityAge,
+    yearsYounger: yearsYounger,
+    badge: badge,
+    comment: comment
+  };
+}
+
+export function renderAgeComparisonCard(evalData, lang) {
+  const zh = lang === 'zh';
+  const vitHtml = evalData.showVitalityAge
+    ? '<div class="vitality-age-pill">' +
+      '⚡ ' +
+      (zh
+        ? '腦力活力年齡：<strong>' + evalData.vitalityAge + ' 歲</strong>（比實際年齡年輕 ' + evalData.yearsYounger + ' 年！）'
+        : 'Brain Vitality Age: <strong>' + evalData.vitalityAge + '</strong> (' + evalData.yearsYounger + ' yrs younger!)') +
+      '</div>'
+    : '<div class="vitality-age-pill">⚡ ' +
+      (zh ? '黃金腦力敏捷狀態（同齡前 ' + evalData.topPct + '%）' : 'Peak Agility Zone (Top ' + evalData.topPct + '% of peers)') +
+      '</div>';
+
+  return (
+    '<div class="age-bench-card">' +
+    '<div class="age-bench-top">' +
+    '<span class="age-cohort-tag">🎂 ' +
+    evalData.cohortLabel +
+    '</span>' +
+    '<span class="age-grade-tag">' +
+    evalData.badge +
+    '</span>' +
+    '</div>' +
+    '<div class="age-pct-headline">' +
+    (zh
+      ? '超越約 <strong>' + evalData.percentile + '%</strong> 同齡茶友（位列前 ' + evalData.topPct + '%）'
+      : 'Ahead of ~<strong>' + evalData.percentile + '%</strong> of peers your age (Top ' + evalData.topPct + '%)') +
+    '</div>' +
+    '<div class="age-meter-track" aria-hidden="true">' +
+    '<div class="age-meter-fill" style="width:' +
+    evalData.percentile +
+    '%;"></div>' +
+    '</div>' +
+    '<div class="age-meter-scale">' +
+    '<span>' +
+    (zh ? '同齡基準' : 'Peer Avg') +
+    '</span>' +
+    '<span>' +
+    (zh ? '你嘅表現 ▲' : 'You ▲') +
+    '</span>' +
+    '<span>' +
+    (zh ? '同齡頂尖' : 'Top 1%') +
+    '</span>' +
+    '</div>' +
+    vitHtml +
+    '<div style="font-size:0.82rem;color:var(--ink-muted);margin-top:0.35rem;font-weight:700;">' +
+    evalData.comment +
+    '</div>' +
+    '</div>'
+  );
+}

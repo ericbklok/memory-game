@@ -5,7 +5,9 @@ import {
   MASTER_BO_QUIPS,
   spawnConfettiBurst,
   renderBrainRadarSvg,
-  resetComboStreak
+  resetComboStreak,
+  evaluateAgePerformance,
+  renderAgeComparisonCard
 } from './ui-fx.js';
 import {
   loadState,
@@ -293,6 +295,15 @@ function renderHomeView() {
 
   const quipPool = MASTER_BO_QUIPS[lang] || MASTER_BO_QUIPS.zh;
   const curQuip = quipPool[boQuipIdx % quipPool.length];
+  const shownName = state.profile.displayName || (lang === 'zh' ? '醒神茶客' : 'Tea Guest');
+  const overallEval =
+    state.stats.gamesCompleted > 0
+      ? evaluateAgePerformance({
+          age: state.profile.age,
+          recentRounds: state.stats.recentRounds,
+          lang
+        })
+      : null;
 
   const wrap = document.createElement('div');
   wrap.innerHTML = `
@@ -301,7 +312,9 @@ function renderHomeView() {
         <div>
           <h1 class="greeting-title">${state.profile.avatar} ${t(lang, greetKey)}</h1>
           <p class="greeting-sub">
-            ${state.profile.homeBadge} <strong>${state.profile.displayName}</strong> · ${rank}
+            ${state.profile.homeBadge} <strong>${escapeHtml(shownName)}</strong>${
+              state.profile.age ? ` (${state.profile.age}${lang === 'zh' ? '歲' : 'y'})` : ''
+            } · ${rank}
           </p>
         </div>
         <div class="streak-badges">
@@ -337,11 +350,21 @@ function renderHomeView() {
           <div class="stamp-grid" id="dailyStampGrid"></div>
         </div>
         <div class="radar-panel">
-          <div class="radar-title">🧠 ${lang === 'zh' ? '腦力五維活力圖' : 'Brain Vitality Radar'}</div>
+          <div class="radar-title">🧠 ${lang === 'zh' ? '腦力五維與同齡評估' : 'Brain Radar & Age Standing'}</div>
           ${renderBrainRadarSvg(state.stats.perGamePlays, lang)}
-          <div style="font-size:0.75rem;color:var(--ink-muted);font-weight:700;">
-            ${lang === 'zh' ? `已完成 ${state.stats.gamesCompleted} 局健腦練習` : `${state.stats.gamesCompleted} Brain Rounds Played`}
-          </div>
+          ${
+            overallEval
+              ? `<div style="margin-top:0.25rem;padding:0.35rem 0.55rem;border-radius:10px;background:#E6F4EF;border:1.5px solid #8CCAB6;font-size:0.78rem;font-weight:900;color:var(--jade-dark);">
+                   ${
+                     lang === 'zh'
+                       ? `同齡超越 ${overallEval.percentile}%${overallEval.showVitalityAge ? ` · 活力 ${overallEval.vitalityAge} 歲` : ''}`
+                       : `Ahead of ${overallEval.percentile}% peers${overallEval.showVitalityAge ? ` · Vitality ${overallEval.vitalityAge}` : ''}`
+                   }
+                 </div>`
+              : `<div style="font-size:0.75rem;color:var(--ink-muted);font-weight:700;">
+                   ${lang === 'zh' ? '玩完第一局即顯示同齡表現評估！' : 'Play 1 round to see your age standing!'}
+                 </div>`
+          }
         </div>
       </div>
 
@@ -606,6 +629,9 @@ async function handleDishCompleted(gameId, score, stars) {
   playSfx('fanfare', state.sound);
   spawnConfettiBurst(42);
 
+  const usedLevel =
+    typeof state.stats.perGameLevel[gameId] === 'number' ? state.stats.perGameLevel[gameId] : 1;
+
   const allAlbumIds = COLLECTIBLE_ALBUM.map(x => x.id);
   const { newlyCompletedAllFour, newlyUnlockedId } = recordGameCompletion(
     state,
@@ -625,6 +651,14 @@ async function handleDishCompleted(gameId, score, stars) {
   const gameMeta = GAME_CATALOG.find(g => g.id === gameId);
   const nextDailyDish = state.daily.dishes.find(d => !state.daily.stamps[d]);
   const unlockedItem = newlyUnlockedId ? COLLECTIBLE_ALBUM.find(x => x.id === newlyUnlockedId) : null;
+
+  const ageEval = evaluateAgePerformance({
+    age: state.profile.age,
+    score,
+    stars,
+    level: usedLevel,
+    lang
+  });
 
   let starsHtml = '';
   for (let i = 0; i < stars; i++) {
@@ -647,6 +681,8 @@ async function handleDishCompleted(gameId, score, stars) {
         +<span id="winScoreTicker">0</span> ${t(lang, 'pointsUnit')}
         ${newlyCompletedAllFour ? (lang === 'zh' ? '（另加齊印獎賞 +50 分！🎊）' : ' (+50 Full Card Bonus! 🎊)') : ''}
       </p>
+
+      ${renderAgeComparisonCard(ageEval, lang)}
 
       ${
         unlockedItem
@@ -895,7 +931,7 @@ async function handleGoogleLoginClick() {
   try {
     const user = await signInWithGoogle();
     if (user) {
-      if (state.profile.displayName === '醒神茶客' && user.displayName) {
+      if ((!state.profile.displayName || state.profile.displayName === '醒神茶客') && user.displayName) {
         state.profile.displayName = user.displayName.slice(0, 18);
         saveState(state);
       }
@@ -975,10 +1011,19 @@ function openProfileModal() {
   openModal(
     `
     <h2 style="margin-top:0;">${lang === 'zh' ? '👤 茶客個人檔案與登入' : '👤 Player Profile & Cloud Login'}</h2>
-    <label style="font-weight:800;display:block;margin-top:0.6rem;">
-      ${lang === 'zh' ? '顯示名稱（龍虎榜暱稱）：' : 'Display Name:'}
-      <input type="text" id="profNameInput" class="input-field" maxlength="20" value="${escapeHtml(state.profile.displayName)}" />
-    </label>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:0.65rem;margin-top:0.6rem;">
+      <label style="font-weight:800;display:block;">
+        ${lang === 'zh' ? '顯示名稱：' : 'User Name:'}
+        <input type="text" id="profNameInput" class="input-field" maxlength="20" value="${escapeHtml(state.profile.displayName || '')}" placeholder="${lang === 'zh' ? '例如：陳太' : 'e.g. Auntie May'}" />
+      </label>
+      <label style="font-weight:800;display:block;">
+        ${lang === 'zh' ? '年齡（計算同齡表現）：' : 'Age (Peer Scoring):'}
+        <input type="number" id="profAgeInput" class="input-field" min="8" max="108" value="${state.profile.age || ''}" placeholder="68" />
+      </label>
+    </div>
+    <div style="font-size:0.78rem;color:var(--ink-muted);margin-top:0.25rem;">
+      🔒 ${lang === 'zh' ? '年齡只會儲存喺你部機用嚟評估同齡腦力表現，絕不會公開上龍虎榜。' : 'Your age stays 100% private on this device for age-relative scoring and is never shown publicly.'}
+    </div>
 
     <div style="margin-top:0.85rem;">
       <strong style="display:block;margin-bottom:0.35rem;">${lang === 'zh' ? '揀個頭像：' : 'Choose Avatar:'}</strong>
@@ -1072,7 +1117,9 @@ function openProfileModal() {
       card.querySelector('#profCancelBtn').addEventListener('click', closeModal);
       card.querySelector('#profSaveBtn').addEventListener('click', async () => {
         const val = card.querySelector('#profNameInput').value.trim();
+        const ageVal = parseInt(card.querySelector('#profAgeInput').value, 10);
         if (val) state.profile.displayName = val;
+        if (ageVal >= 8 && ageVal <= 108) state.profile.age = ageVal;
         state.profile.avatar = pickedAv;
         state.profile.homeBadge = pickedBg;
         saveState(state);
@@ -1218,63 +1265,106 @@ function showStartScreen() {
   stopSpeaking();
   const lang = state.lang;
   const zh = lang === 'zh';
-  const isNewcomer = !state.onboardingDone;
+  const hasSavedProfile = Boolean(state.profile.displayName && state.profile.age);
+  const prefillName =
+    state.profile.displayName && !(state.profile.displayName === '醒神茶客' && !state.profile.age)
+      ? state.profile.displayName
+      : '';
+  const prefillAge = state.profile.age ? String(state.profile.age) : '';
   const rank = getRankTitle(state.stats.totalPoints, lang);
 
   startScreenEl.classList.remove('hidden');
   startScreenEl.innerHTML = `
     <div class="start-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.45rem;flex-wrap:wrap;">
         <span class="start-ribbon" style="margin-bottom:0;">
           🌏 ${zh ? '港 × 溫 雙語健腦樂園' : 'HK × Vancouver Brain Clubhouse'}
         </span>
-        <div class="pref-seg-group">
-          <button type="button" class="pref-seg-btn ${zh ? 'active' : ''}" id="startLangZhBtn">粵語 中文</button>
-          <button type="button" class="pref-seg-btn ${!zh ? 'active' : ''}" id="startLangEnBtn">English</button>
-        </div>
+        <button type="button" class="chip-btn" id="startLangSwapBtn" style="min-height:34px;padding:0.15rem 0.65rem;font-size:0.78rem;">
+          🌐 ${zh ? 'English' : '粵語 中文'}
+        </button>
       </div>
 
       <h1 class="start-title-zh">每日腦點心</h1>
       <div class="start-title-en">DAILY MINDSUM · 15 BRAIN GAMES</div>
 
-      <div class="start-mascot-stage">
+      <div class="start-mascot-stage" style="margin:0.45rem auto 0.65rem;">
         <span class="start-float-icon">🥟</span>
         <span class="start-float-icon delay-1">🀄</span>
-        <div style="width:98px;height:98px;">${renderMasterBoSvg('cheer')}</div>
+        <div style="width:88px;height:88px;">${renderMasterBoSvg('cheer')}</div>
         <span class="start-float-icon delay-2">🫖</span>
         <span class="start-float-icon delay-1">🍁</span>
       </div>
 
-      <div style="background:#FFFDF6;border:2px solid #DECAA4;border-radius:16px;padding:0.7rem 0.9rem;margin-bottom:1rem;">
-        ${
-          isNewcomer
-            ? `<div style="font-weight:900;font-size:0.98rem;color:var(--ink);">
-                 👋 ${zh ? '歡迎新茶客光臨！' : 'Welcome, First-Time Guest!'}
-               </div>
-               <div style="font-size:0.86rem;color:var(--ink-muted);margin-top:0.15rem;">
-                 ${
-                   zh
-                     ? '撳下面「開枱飲茶」，茶博士阿波會帶你做 1 分鐘輕鬆導賞！'
-                     : 'Press PLAY below for a quick 1-minute Welcome Tour with Master Bo!'
-                 }
-               </div>`
-            : `<div style="font-weight:900;font-size:0.98rem;color:var(--ink);">
-                 ${state.profile.avatar} ${zh ? `歡迎返嚟，${escapeHtml(state.profile.displayName)}！` : `Welcome back, ${escapeHtml(state.profile.displayName)}!`}
-               </div>
-               <div style="font-size:0.85rem;color:var(--ink-muted);margin-top:0.15rem;">
-                 ${rank} · 🔥 ${state.stats.streak} ${t(lang, 'streakUnit')} · ⭐ ${state.stats.totalPoints} ${t(lang, 'pointsUnit')}
-               </div>`
-        }
+      ${
+        hasSavedProfile
+          ? `<div style="font-size:0.84rem;font-weight:800;color:var(--jade-dark);margin-bottom:0.55rem;">
+               ${state.profile.avatar} ${zh ? `歡迎返嚟！目前稱號：${rank}` : `Welcome back! Rank: ${rank}`} · 🔥 ${state.stats.streak} ${t(lang, 'streakUnit')} · ⭐ ${state.stats.totalPoints} ${t(lang, 'pointsUnit')}
+             </div>`
+          : ''
+      }
+
+      <div class="start-entry-box">
+        <div style="font-size:0.84rem;font-weight:800;color:var(--jade-dark);margin-bottom:0.55rem;">
+          ✨ ${
+            zh
+              ? '只需輸入稱呼同年齡即可開局（用於計算同齡腦力表現評估）'
+              : 'Only your Name & Age are needed to start (used to estimate performance for your age)'
+          }
+        </div>
+
+        <div class="start-entry-grid">
+          <div>
+            <label class="start-field-label" for="startNameInput">
+              👤 ${zh ? '玩家稱呼 User Name' : 'User Name'}
+            </label>
+            <input
+              id="startNameInput"
+              class="input-field start-input"
+              type="text"
+              maxlength="18"
+              autocomplete="nickname"
+              placeholder="${zh ? '例如：陳太 / Uncle Chan' : 'e.g. Grandma Lee / Sam'}"
+              value="${escapeHtml(prefillName)}"
+            />
+          </div>
+
+          <div>
+            <label class="start-field-label" for="startAgeInput">
+              🎂 ${zh ? '年齡 Age（8–108 歲）' : 'Age (8–108)'}
+            </label>
+            <div class="age-stepper-wrap">
+              <button type="button" class="age-step-btn" id="ageMinusBtn" aria-label="Decrease age">−</button>
+              <input
+                id="startAgeInput"
+                class="input-field start-input"
+                type="number"
+                inputmode="numeric"
+                min="8"
+                max="108"
+                placeholder="${zh ? '例如 68' : 'e.g. 68'}"
+                value="${escapeHtml(prefillAge)}"
+                style="text-align:center;font-weight:900;padding-left:0.4rem;padding-right:0.4rem;"
+              />
+              <button type="button" class="age-step-btn" id="agePlusBtn" aria-label="Increase age">＋</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="startErrorMsg" style="display:none;margin-top:0.55rem;font-size:0.84rem;font-weight:800;color:var(--red-chop-dark);"></div>
+        <div style="margin-top:0.45rem;font-size:0.75rem;color:var(--ink-muted);">
+          🔒 ${zh ? '年齡只會私密儲存喺你部機入面，絕對唔會公開顯示。' : 'Your age stays 100% private on your device and is never shown publicly.'}
+        </div>
       </div>
 
       <button type="button" class="btn-play-mega" id="startMegaPlayBtn">
         <span>▶</span>
-        <span>${zh ? (isNewcomer ? '開枱飲茶！（新手導賞）' : '開枱飲茶！開始遊戲') : isNewcomer ? 'PLAY! (Welcome Tour)' : 'PRESS PLAY!'}</span>
+        <span>${zh ? (!state.onboardingDone ? '開枱飲茶！（新手導賞）' : '開枱飲茶！開始遊戲') : !state.onboardingDone ? 'PLAY! (Welcome Tour)' : 'PRESS PLAY!'}</span>
       </button>
 
-      <div class="action-row" style="margin-top:0.85rem;">
+      <div class="action-row" style="margin-top:0.8rem;">
         <button type="button" class="btn btn-outline btn-sm" id="startTourBtn">
-          📖 ${zh ? '玩法導賞' : 'How to Play'}
+          📖 ${zh ? '玩法導賞' : 'Welcome Tour'}
         </button>
         <button type="button" class="btn btn-outline btn-sm" id="startSettingsBtn">
           ⚙️ ${zh ? '偏好設定' : 'Settings'}
@@ -1283,36 +1373,103 @@ function showStartScreen() {
     </div>
   `;
 
-  startScreenEl.querySelector('#startLangZhBtn').addEventListener('click', () => {
+  const nameInput = startScreenEl.querySelector('#startNameInput');
+  const ageInput = startScreenEl.querySelector('#startAgeInput');
+  const errEl = startScreenEl.querySelector('#startErrorMsg');
+
+  startScreenEl.querySelector('#startLangSwapBtn').addEventListener('click', () => {
+    // Preserve any partially typed values across language toggle
+    const draftName = nameInput.value.trim();
+    const draftAge = parseInt(ageInput.value, 10);
+    if (draftName) state.profile.displayName = draftName.slice(0, 18);
+    if (!isNaN(draftAge) && draftAge >= 8 && draftAge <= 108) state.profile.age = draftAge;
     playSfx('switch', state.sound);
-    state.lang = 'zh';
+    state.lang = zh ? 'en' : 'zh';
     saveState(state);
     syncChrome();
     renderMain();
     showStartScreen();
   });
 
-  startScreenEl.querySelector('#startLangEnBtn').addEventListener('click', () => {
-    playSfx('switch', state.sound);
-    state.lang = 'en';
+  function stepAge(delta) {
+    playSfx('tap', state.sound);
+    const cur = parseInt(ageInput.value, 10);
+    const base = isNaN(cur) ? 65 : cur;
+    const next = Math.max(8, Math.min(108, base + delta));
+    ageInput.value = String(next);
+    ageInput.classList.remove('input-error');
+    errEl.style.display = 'none';
+  }
+
+  startScreenEl.querySelector('#ageMinusBtn').addEventListener('click', () => stepAge(-1));
+  startScreenEl.querySelector('#agePlusBtn').addEventListener('click', () => stepAge(1));
+
+  nameInput.addEventListener('input', () => {
+    nameInput.classList.remove('input-error');
+    errEl.style.display = 'none';
+  });
+  ageInput.addEventListener('input', () => {
+    ageInput.classList.remove('input-error');
+    errEl.style.display = 'none';
+  });
+
+  function validateAndProceed(forceTour) {
+    const cleanName = nameInput.value.trim().slice(0, 18);
+    const cleanAge = parseInt(ageInput.value, 10);
+    const validName = cleanName.length > 0;
+    const validAge = !isNaN(cleanAge) && cleanAge >= 8 && cleanAge <= 108;
+
+    nameInput.classList.toggle('input-error', !validName);
+    ageInput.classList.toggle('input-error', !validAge);
+
+    if (!validName || !validAge) {
+      playSfx('gentle', state.sound);
+      errEl.style.display = 'block';
+      if (!validName && !validAge) {
+        errEl.textContent = zh
+          ? '⚠️ 請先輸入你嘅「稱呼」同「年齡（8–108 歲）」再開始啦 😊'
+          : '⚠️ Please enter both your User Name and Age (8–108) to start!';
+        nameInput.focus();
+      } else if (!validName) {
+        errEl.textContent = zh ? '⚠️ 請輸入你嘅玩家稱呼（例如：陳太）😊' : '⚠️ Please enter your User Name!';
+        nameInput.focus();
+      } else {
+        errEl.textContent = zh
+          ? '⚠️ 請輸入有效年齡（8 至 108 歲），以便計算同齡腦力表現！'
+          : '⚠️ Please enter a valid Age between 8 and 108!';
+        ageInput.focus();
+      }
+      return;
+    }
+
+    state.profile.displayName = cleanName;
+    state.profile.age = cleanAge;
     saveState(state);
     syncChrome();
     renderMain();
-    showStartScreen();
-  });
 
-  startScreenEl.querySelector('#startMegaPlayBtn').addEventListener('click', () => {
     playSfx('fanfare', state.sound);
     startScreenEl.classList.add('hidden');
-    if (!state.onboardingDone) {
+    if (forceTour || !state.onboardingDone) {
       openWelcomeTourModal(0);
     }
+  }
+
+  startScreenEl.querySelector('#startMegaPlayBtn').addEventListener('click', () => {
+    validateAndProceed(false);
   });
 
   startScreenEl.querySelector('#startTourBtn').addEventListener('click', () => {
-    playSfx('switch', state.sound);
-    startScreenEl.classList.add('hidden');
-    openWelcomeTourModal(0);
+    validateAndProceed(true);
+  });
+
+  [nameInput, ageInput].forEach(inp => {
+    inp.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        validateAndProceed(false);
+      }
+    });
   });
 
   startScreenEl.querySelector('#startSettingsBtn').addEventListener('click', () => {
@@ -1327,55 +1484,23 @@ function openWelcomeTourModal(initialStep) {
   function renderSlide() {
     const lang = state.lang;
     const zh = lang === 'zh';
+    const userName = state.profile.displayName || (zh ? '茶友' : 'Friend');
+    const userAge = state.profile.age || 65;
+    const sampleEval = evaluateAgePerformance({
+      age: userAge,
+      score: 130,
+      stars: 3,
+      level: 1,
+      lang: lang
+    });
 
     const slides = [
       {
-        mood: 'greet',
-        title: zh ? '歡迎光臨《每日腦點心》！' : 'Welcome to Daily MindSum!',
-        voice: zh
-          ? '歡迎光臨每日腦點心！我係茶博士阿波。首先揀選你睇得最舒服嘅語言、字體大細同地區啦！'
-          : 'Welcome to Daily MindSum! I am Tea Master Bo. First, pick your preferred language, comfortable text size, and city focus!',
-        bodyHtml: `
-          <p style="margin:0 0 0.65rem;color:var(--ink-muted);font-size:0.92rem;">
-            ${
-              zh
-                ? '專為香港同溫哥華屋企人設計嘅早茶健腦館！開波前，先校好最啱你心水嘅畫面設定：'
-                : 'Crafted for Hong Kong & Vancouver families! Pick what feels most comfortable right here:'
-            }
-          </p>
-          <div class="tour-showcase-box">
-            <div class="pref-row">
-              <span class="pref-label">🌐 ${zh ? '語言 Language' : 'Language'}</span>
-              <div class="pref-seg-group">
-                <button type="button" class="pref-seg-btn ${zh ? 'active' : ''}" data-tlang="zh">粵語 中文</button>
-                <button type="button" class="pref-seg-btn ${!zh ? 'active' : ''}" data-tlang="en">English</button>
-              </div>
-            </div>
-            <div class="pref-row">
-              <span class="pref-label">🔠 ${zh ? '字體大小' : 'Text Size'}</span>
-              <div class="pref-seg-group">
-                <button type="button" class="pref-seg-btn ${state.fontSize === 'md' ? 'active' : ''}" data-tfont="md">${zh ? '標準 A' : 'Normal A'}</button>
-                <button type="button" class="pref-seg-btn ${state.fontSize === 'lg' ? 'active' : ''}" data-tfont="lg">${zh ? '大字 A+' : 'Large A+'}</button>
-                <button type="button" class="pref-seg-btn ${state.fontSize === 'xl' ? 'active' : ''}" data-tfont="xl">${zh ? '特大 A++' : 'Extra A++'}</button>
-              </div>
-            </div>
-            <div class="pref-row">
-              <span class="pref-label">🌏 ${zh ? '地區內容' : 'City Focus'}</span>
-              <div class="pref-seg-group">
-                <button type="button" class="pref-seg-btn ${state.region === 'both' ? 'active' : ''}" data-treg="both">${zh ? '港×溫' : 'HK×YVR'}</button>
-                <button type="button" class="pref-seg-btn ${state.region === 'hk' ? 'active' : ''}" data-treg="hk">🇭🇰 HK</button>
-                <button type="button" class="pref-seg-btn ${state.region === 'yvr' ? 'active' : ''}" data-treg="yvr">🇨🇦 YVR</button>
-              </div>
-            </div>
-          </div>
-        `
-      },
-      {
         mood: 'happy',
-        title: zh ? '📋 每日四道腦點心紙 · 儲紅印仔' : "📋 Today's 4-Dish Stamp Card",
+        title: zh ? `歡迎光臨，${escapeHtml(userName)}！每日四籠腦點心` : `Welcome, ${escapeHtml(userName)}! Today's 4 Brain Dishes`,
         voice: zh
-          ? '每日我哋會為你精選四道健腦點心。每完成一道就蓋一個頂點紅印仔，集齊四個仲有額外五十分同保溫壺保障連續紀錄！'
-          : 'Each day features 4 balanced Brain Dishes. Finish a dish to earn a red TOP chop! Complete all 4 for bonus points and Warm Teapot Streak Shields!',
+          ? `歡迎光臨，${userName}！我係茶博士阿波。每日我哋會為你精選四道健腦點心，每完成一道就蓋一個頂點紅印仔，集齊四個仲有額外五十分同保溫壺護盾！`
+          : `Welcome, ${userName}! I am Tea Master Bo. Each day features 4 balanced Brain Dishes. Finish a dish to earn a red TOP chop, bonus points, and Warm Teapot Streak Shields!`,
         bodyHtml: `
           <div class="tour-showcase-box">
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;margin-bottom:0.65rem;">
@@ -1398,33 +1523,42 @@ function openWelcomeTourModal(initialStep) {
         `
       },
       {
-        mood: 'cheer',
-        title: zh ? '🕹️ 十五款遊戲 · 零計時壓力＋語音貼士' : '🕹️ 15 Relaxed Games · Voice & Hints',
+        mood: 'proud',
+        title: zh ? '📊 專屬同齡腦力表現評估' : '📊 Age-Relative Performance Scoring',
         voice: zh
-          ? '全部十五款遊戲都唔限時間，只需要輕輕一撳就玩得。隨時撳藍色喇叭聽廣東話或英文朗讀，有需要仲可以撳燈膽睇貼士！'
-          : 'All 15 games are untimed and tap-only — never any rush or dragging! Tap Read Aloud anytime to listen, or tap Hint whenever you want a nudge.',
+          ? `每次過關之後，系統會根據你嘅年齡組別，估算你喺同齡茶友之中嘅表現百分比，同埋你嘅腦力活力年齡！你嘅年齡只會私密留喺本機。`
+          : `After every dish, we estimate how your score compares with peers in your ${sampleEval.cohortLabel} group — plus your Brain Vitality Age! Your age stays completely private on your device.`,
         bodyHtml: `
           <div class="tour-showcase-box">
-            <p style="margin:0;font-size:0.9rem;line-height:1.6;">
-              • <strong>👆 ${zh ? '一指輕撳即玩' : 'Simple Single-Tap'}：</strong>${zh ? '無須拖拉、無倒數催促，答錯都會溫馨提示再試！' : 'No dragging, no countdown clocks — gentle encouragement on every try!'}<br/>
-              • <strong>🔊 ${zh ? '真人語音朗讀' : 'Cantonese & English Audio'}：</strong>${zh ? '新聞、歷史同詞匯題目都支援廣東話及英文發音！' : 'Listen to stories, idioms, and vocabulary read aloud!'}<br/>
-              • <strong>💡 ${zh ? '隨時睇貼士 & 🎲 隨機抽點心' : 'Smart Hints & 🎲 Surprise Roulette'}：</strong>${zh ? '唔知玩邊款？撳「隨機抽一籠」好似扭蛋咁開局！' : 'Not sure what to pick? Spin the Surprise Roulette button!'}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;flex-wrap:wrap;gap:0.35rem;">
+              <span class="age-cohort-tag">👥 ${sampleEval.cohortLabel}</span>
+              <span class="age-grade-tag">${sampleEval.badge}</span>
+            </div>
+            <div style="font-size:0.95rem;font-weight:800;margin-bottom:0.4rem;">
+              ${zh ? '過關示範：超越約 <strong>92%</strong> 同齡茶友！' : 'Example Clear: Outperforming ~<strong>92%</strong> of peers your age!'}
+            </div>
+            <div class="age-meter-track" style="margin-bottom:0.55rem;">
+              <div class="age-meter-fill" style="width:92%;"></div>
+            </div>
+            <p style="margin:0;font-size:0.88rem;line-height:1.55;color:var(--ink-muted);">
+              • <strong>🧠 ${zh ? '腦力活力年齡' : 'Brain Vitality Age'}：</strong>${zh ? '首頁雷達圖同過關畫面都會即時顯示你嘅同齡表現指標！' : 'Tracked live on both stage-clear screens and your Home Brain Radar!'}<br/>
+              • <strong>🔒 ${zh ? '私隱保障' : 'Privacy First'}：</strong>${zh ? '全球龍虎榜只會顯示稱呼同總分，絕唔會公開年齡。' : 'Leaderboards only show your nickname and points — never your age.'}
             </p>
           </div>
         `
       },
       {
-        mood: 'proud',
-        title: zh ? '🏆 免登入即玩 · 親友圈跨洋同樂' : '🏆 Instant Local Play & Family Circles',
+        mood: 'cheer',
+        title: zh ? '🕹️ 零計時壓力 · 語音貼士與設定' : '🕹️ Stress-Free Play, Voice & Settings',
         voice: zh
-          ? '你可以唔使登入直接免費任玩，仲可以加入孫仔孫女相片玩翻牌！如果想同香港、溫哥華親友比拼分數，隨時一鍵分享或者用 Google 登入龍虎榜就得喇！'
-          : 'Play locally right away with zero sign-up — even add private family photos for Memory Match! Share stamp cards on WhatsApp or sign in with Google to join your Family Circle scoreboard!',
+          ? '全部十五款遊戲都唔限時間，輕輕一撳就玩得。隨時撳喇叭聽廣東話或英文朗讀，或者撳右上角齒輪調整字體大細、語速同地區！即刻開波嘆早茶啦！'
+          : 'All 15 games are untimed and single-tap. Tap Read Aloud anytime to listen, use Hints freely, or tap the top-right Gear icon to customize text size, voice speed, and city focus!',
         bodyHtml: `
           <div class="tour-showcase-box">
             <p style="margin:0;font-size:0.9rem;line-height:1.6;">
-              • <strong>🏠 ${zh ? '本地免費任玩' : 'Open Local Play'}：</strong>${zh ? '無須註冊即可儲存進度同解鎖 18 款港溫珍藏圖鑑！' : 'Play freely right away and unlock 18 HK × Vancouver keepsakes!'}<br/>
-              • <strong>📸 ${zh ? '私密屋企相片卡' : 'Private Family Photo Cards'}：</strong>${zh ? '可加入屋企人靚相玩配對（100% 留喺本機，唔會上傳）！' : 'Add grandkids or travel photos to Memory Match (stays 100% on your device)!'}<br/>
-              • <strong>👨‍👩‍👧‍👦 ${zh ? '親友圈龍虎榜' : 'Family & Global Leaderboard'}：</strong>${zh ? '傳送邀請連結畀親友，香港溫哥華一齊嘆茶較量！' : 'Send your invite link so family in HK & Vancouver can play together!'}
+              • <strong>👆 ${zh ? '一指輕撳即玩' : 'Simple Single-Tap'}：</strong>${zh ? '無須拖拉、無倒數催促，答錯都會溫馨提示再試！' : 'No dragging, no countdown clocks — gentle encouragement on every try!'}<br/>
+              • <strong>🔊 ${zh ? '真人語音朗讀 & 💡 貼士' : 'Read Aloud & 💡 Smart Hints'}：</strong>${zh ? '支援廣東話及英文發音，卡關隨時撳燈膽！' : 'Cantonese & English voice support plus helpful hints anytime!'}<br/>
+              • <strong>⚙️ ${zh ? '右上角偏好設定' : 'Top-Right ⚙️ Settings'}：</strong>${zh ? '隨時更改特大字體 (A++)、朗讀語速、港／溫地區或親友圈！' : 'Adjust Extra-Large text (A++), voice speed, HK/YVR focus, or Family Circles anytime!'}
             </p>
           </div>
         `
@@ -1455,7 +1589,7 @@ function openWelcomeTourModal(initialStep) {
 
       <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.65rem;">
         <div style="width:68px;height:68px;flex-shrink:0;">${renderMasterBoSvg(s.mood)}</div>
-        <h2 style="margin:0;font-size:1.22rem;line-height:1.28;">${s.title}</h2>
+        <h2 style="margin:0;font-size:1.2rem;line-height:1.28;">${s.title}</h2>
       </div>
 
       <div class="tour-step-dots">${dots}</div>
@@ -1486,38 +1620,6 @@ function openWelcomeTourModal(initialStep) {
           saveState(state);
           closeModal();
           renderMain();
-        });
-
-        card.querySelectorAll('[data-tlang]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            playSfx('switch', state.sound);
-            state.lang = btn.dataset.tlang;
-            saveState(state);
-            syncChrome();
-            renderMain();
-            renderSlide();
-          });
-        });
-
-        card.querySelectorAll('[data-tfont]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            playSfx('switch', state.sound);
-            state.fontSize = btn.dataset.tfont;
-            saveState(state);
-            syncChrome();
-            renderSlide();
-          });
-        });
-
-        card.querySelectorAll('[data-treg]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            playSfx('switch', state.sound);
-            state.region = btn.dataset.treg;
-            saveState(state);
-            syncChrome();
-            renderMain();
-            renderSlide();
-          });
         });
 
         const prevB = card.querySelector('#tourPrevBtn');
@@ -1909,7 +2011,8 @@ setInterval(updateClocks, 20000);
 checkUrlInvite();
 syncChrome();
 renderMain();
-if (!state.prefs || !state.prefs.skipTitleScreen) {
+const needsStartEntry = !state.profile.displayName || !state.profile.age;
+if (needsStartEntry || !state.prefs || !state.prefs.skipTitleScreen) {
   showStartScreen();
 }
 

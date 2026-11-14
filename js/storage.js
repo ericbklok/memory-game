@@ -51,7 +51,8 @@ export function createDefaultState() {
       skipTitleScreen: false
     },
     profile: {
-      displayName: '醒神茶客',
+      displayName: '',
+      age: null,
       avatar: '🫖',
       homeBadge: '🇭🇰',
       myCircleCode: randomInviteCode(),
@@ -67,6 +68,7 @@ export function createDefaultState() {
       teapotShields: 1, // Start every parent with 1 Warm Teapot Streak Freeze!
       gamesCompleted: 0,
       dailySetsCompleted: 0,
+      recentRounds: [],
       perGamePlays: {
         news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
         sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0
@@ -162,6 +164,12 @@ export function recordGameCompletion(state, gameId, earnedPoints, stars, allAlbu
   state.stats.todayPoints += earnedPoints;
   state.stats.gamesCompleted += 1;
   state.stats.perGamePlays[gameId] = (state.stats.perGamePlays[gameId] || 0) + 1;
+
+  const curLvl = typeof state.stats.perGameLevel[gameId] === 'number' ? state.stats.perGameLevel[gameId] : 1;
+  const prevRecent = Array.isArray(state.stats.recentRounds) ? state.stats.recentRounds : [];
+  state.stats.recentRounds = prevRecent
+    .concat([{ gameId, score: earnedPoints, stars, level: curLvl }])
+    .slice(-12);
 
   // Gentle auto-adaptive level progression (if enabled in user preferences)
   const allowAutoLevel = !state.prefs || state.prefs.autoLevelUp !== false;

@@ -2136,3 +2136,167 @@ html[data-motion="calm"] *::after {
   animation-iteration-count: 1 !important;
   transition-duration: 0.05s !important;
 }
+
+/* =========================================================================
+   START SCREEN 2-FIELD ENTRY (NAME + AGE ONLY) & AGE BENCHMARK REPORT CARD
+   ========================================================================= */
+
+.start-entry-box {
+  background: #FFFDF7;
+  border: 2.5px solid #D5BE93;
+  border-radius: 20px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 4px 0 #E4D4B5;
+}
+
+.start-entry-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 0.7rem;
+  align-items: end;
+}
+
+@media (max-width: 480px) {
+  .start-entry-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.start-field-label {
+  display: block;
+  font-weight: 900;
+  font-size: 0.86rem;
+  color: var(--ink);
+  margin-bottom: 0.28rem;
+}
+
+.age-stepper-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.age-step-btn {
+  width: 44px;
+  height: 50px;
+  border-radius: 12px;
+  border: 2px solid #C5B290;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #C5B290;
+  flex-shrink: 0;
+}
+
+.age-step-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.input-field.start-input {
+  margin-top: 0;
+  background: #FFFFFF;
+  border-width: 2.5px;
+}
+
+.input-field.input-error {
+  border-color: var(--red-chop) !important;
+  background: #FFF5F4 !important;
+}
+
+/* Age-Relative Performance Benchmark Card */
+.age-bench-card {
+  margin: 0.9rem auto;
+  max-width: 440px;
+  padding: 0.95rem 1.05rem;
+  background: linear-gradient(180deg, #FFFDF9 0%, #F4FBF8 100%);
+  border: 2.5px solid #8CCAB6;
+  border-radius: 20px;
+  text-align: left;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 5px 0 rgba(27, 110, 86, 0.18);
+}
+
+.age-bench-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.45rem;
+}
+
+.age-cohort-tag {
+  display: inline-block;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: var(--jade-soft);
+  border: 1.5px solid #7BC4AD;
+  color: var(--jade-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.age-grade-tag {
+  display: inline-block;
+  padding: 0.15rem 0.65rem;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  border: 1.5px solid #E6B45C;
+  color: var(--gold-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.age-pct-headline {
+  font-size: 1.04rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 0.45rem;
+}
+
+.age-pct-headline strong {
+  font-size: 1.24rem;
+  font-weight: 900;
+  color: var(--jade-dark);
+}
+
+.age-meter-track {
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: #E4ECE8;
+  border: 2px solid #9EC5B8;
+  overflow: hidden;
+  position: relative;
+}
+
+.age-meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2A9D8F 0%, #1D7A5F 60%, #E76F51 100%);
+  transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.age-meter-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+  margin-top: 0.22rem;
+}
+
+.vitality-age-pill {
+  margin-top: 0.55rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: 12px;
+  background: #FFF8E6;
+  border: 1.5px solid #E6C073;
+  color: #6B4200;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
