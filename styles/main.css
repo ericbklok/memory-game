@@ -2430,6 +2430,7 @@ body {
   width: 2.35rem;
   height: 2.35rem;
   border-radius: 50%;
+  object-fit: cover;
   border: 2px solid #2B2118;
   box-shadow: 0 2px 0 rgba(43, 33, 24, 0.22);
 }

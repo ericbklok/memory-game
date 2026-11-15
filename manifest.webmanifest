@@ -1,7 +1,7 @@
 {
   "name": "每日腦點心 · Daily MindSum",
   "short_name": "腦點心 MindSum",
-  "description": "Engaging Cantonese & English daily brain exercises, news recall, memory, math, and HK × Vancouver trivia.",
+  "description": "Engaging Cantonese & English daily brain exercises, news recall, memory, math, and HK × Vancouver trivia with Mochi the 3D Calico Tea Cat.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -10,10 +10,28 @@
   "theme_color": "#C8372D",
   "icons": [
     {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "./assets/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

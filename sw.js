@@ -1,9 +1,13 @@
-const CACHE_NAME = 'daily-mindsum-v14';
+const CACHE_NAME = 'daily-mindsum-v15';
 const CORE_ASSETS = [
   './',
   './index.html',
   './styles/main.css',
   './assets/icon.svg',
+  './assets/favicon-64.png',
+  './assets/apple-touch-icon.png',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
   './manifest.webmanifest',
   './js/app.js',
   './js/i18n.js',
