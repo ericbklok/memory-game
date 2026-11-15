@@ -395,7 +395,7 @@ function renderHomeView() {
 
         <div class="plaza-comic-bubble" id="boBubbleBtn">
           <div class="plaza-bubble-head">
-            <span class="bo-name-tag">🐾 ${zh ? '招財茶貓阿喵 3D' : '3D Lucky Cat Mochi'}</span>
+            <span class="bo-name-tag">🐾 ${zh ? '三色招財貓阿喵 3D' : '3D Calico Cat Mochi'}</span>
             <div style="display:flex;gap:0.3rem;">
               <button type="button" class="baobo-voice-chip" id="plazaBoSpeakBtn">🔊 ${zh ? '朗讀' : 'Listen'}</button>
               <button type="button" class="baobo-voice-chip" id="plazaBoNextTipBtn">💬 ${zh ? '換貼士' : 'Next Tip'}</button>

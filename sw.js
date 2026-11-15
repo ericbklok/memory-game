@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-mindsum-v11';
+const CACHE_NAME = 'daily-mindsum-v12';
 const CORE_ASSETS = [
   './',
   './index.html',

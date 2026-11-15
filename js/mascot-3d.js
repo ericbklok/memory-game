@@ -533,10 +533,11 @@ function renderBaoBoFrame(inst, nowMs) {
     gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
   }
 
-  // Palette constants for Ginger-Apricot & Snow-Cream Lucky Cat Mochi
-  const FUR_GINGER = [0.99, 0.63, 0.25];
-  const FUR_STRIPE = [0.73, 0.33, 0.10];
-  const FUR_CREAM = [1.0, 0.98, 0.94];
+  // Palette constants for Tri-Color Calico Lucky Cat Mochi (三色招財貓：雪白底＋暖柑橘斑＋濃可可黑斑)
+  const FUR_CREAM = [1.0, 0.98, 0.95];
+  const PATCH_GINGER = [0.99, 0.59, 0.21];
+  const PATCH_ESPRESSO = [0.20, 0.14, 0.12];
+  const WHISKER_DARK = [0.24, 0.16, 0.13];
   const PINK_SAKURA = [1.0, 0.58, 0.66];
   const PINK_NOSE = [0.98, 0.42, 0.52];
   const COLLAR_RED = [0.86, 0.17, 0.17];
@@ -562,7 +563,7 @@ function renderBaoBoFrame(inst, nowMs) {
   root = mat4RotateY(root, spinY + inst.yaw * 0.42);
   root = mat4Scale(root, sqXZ, sqY, sqXZ);
 
-  // 2. Articulated 6-Segment 3D Swishing Cat Tail (sweeping S-curve with white tip!)
+  // 2. Articulated 6-Segment Tri-Color Calico Swishing Tail (Cream -> Ginger -> Espresso Tip!)
   const wagSpeed = mood === 'cheer' || mood === 'celebrate' ? 8.2 : mood === 'happy' || mood === 'proud' ? 5.4 : 3.2;
   const wagAmp = (mood === 'cheer' || mood === 'celebrate' ? 0.16 : 0.085) * animScale;
   for (let seg = 0; seg < 6; seg++) {
@@ -572,7 +573,7 @@ function renderBaoBoFrame(inst, nowMs) {
     const ty = -0.78 + u * u * 0.68 + wave * 0.55;
     const tz = -0.22 + u * 0.12 + wave * 0.65;
     const rad = seg === 5 ? 0.118 : 0.110 - u * 0.010;
-    const tailCol = seg >= 4 ? FUR_CREAM : seg === 2 ? FUR_STRIPE : FUR_GINGER;
+    const tailCol = seg >= 4 ? PATCH_ESPRESSO : seg >= 2 ? PATCH_GINGER : FUR_CREAM;
     let tailSeg = mat4Translate(root, tx, ty, tz);
     tailSeg = mat4Scale(tailSeg, rad, rad, rad);
     drawPart(meshes.lowSphere, tailSeg, tailCol, 0.022, 0.36, 1.0);
@@ -591,20 +592,20 @@ function renderBaoBoFrame(inst, nowMs) {
     drawPart(meshes.lowSphere, pad, PINK_SAKURA, 0.0, 0.45, 1.0);
   });
 
-  // 4. Plump Sitting Ginger Cat Body + Fluffy Snow-White Belly Bib
+  // 4. Plump Snow-Cream Calico Cat Body + Asymmetric Ginger & Espresso Fur Patches!
   let torso = mat4Translate(root, 0, -0.54, 0);
   torso = mat4Scale(torso, 0.54, 0.46, 0.48);
-  drawPart(meshes.sphere, torso, FUR_GINGER, 0.028, 0.35, 1.0);
+  drawPart(meshes.sphere, torso, FUR_CREAM, 0.028, 0.34, 1.0);
 
-  [-1, 1].forEach(function (side) {
-    let sideStripe = mat4Translate(root, side * 0.44, -0.50, 0.05);
-    sideStripe = mat4Scale(sideStripe, 0.12, 0.046, 0.18);
-    drawPart(meshes.lowSphere, sideStripe, FUR_STRIPE, 0.0, 0.4, 1.0);
-  });
+  // Right hip warm ginger-apricot calico patch
+  let rBodyPatch = mat4Translate(root, 0.26, -0.50, 0.02);
+  rBodyPatch = mat4Scale(rBodyPatch, 0.33, 0.30, 0.39);
+  drawPart(meshes.lowSphere, rBodyPatch, PATCH_GINGER, 0.0, 0.36, 1.0);
 
-  let belly = mat4Translate(root, 0, -0.53, 0.24);
-  belly = mat4Scale(belly, 0.38, 0.35, 0.28);
-  drawPart(meshes.lowSphere, belly, FUR_CREAM, 0.0, 0.40, 1.0);
+  // Left flank rich espresso-charcoal calico spot
+  let lBodyPatch = mat4Translate(root, -0.29, -0.60, 0.04);
+  lBodyPatch = mat4Scale(lBodyPatch, 0.28, 0.24, 0.36);
+  drawPart(meshes.lowSphere, lBodyPatch, PATCH_ESPRESSO, 0.0, 0.38, 1.0);
 
   // 5. Crimson Silk Lucky Collar + Jingling 3D Golden Suzu Bell
   let collar = mat4Translate(root, 0, -0.17, 0.02);
@@ -620,11 +621,11 @@ function renderBaoBoFrame(inst, nowMs) {
   bellSlit = mat4Scale(bellSlit, 0.036, 0.022, 0.02);
   drawPart(meshes.lowSphere, bellSlit, [0.18, 0.10, 0.06], 0.0, 0.4, 1.0);
 
-  // 6. Left Front Paw — Classic Maneki-Neko Lucky Cat Beckoning Wave + Pink Toe Beans!
+  // 6. Left Front Paw — Ginger Shoulder Patch + White Beckoning Paw + Pink Toe Beans!
   if (mood === 'think') {
     let lShoulder = mat4Translate(root, -0.38, -0.28, 0.28);
     lShoulder = mat4RotateZ(lShoulder, -0.65);
-    drawPart(meshes.lowSphere, mat4Scale(lShoulder, 0.13, 0.18, 0.13), FUR_GINGER, 0.022, 0.35, 1.0);
+    drawPart(meshes.lowSphere, mat4Scale(lShoulder, 0.13, 0.18, 0.13), PATCH_GINGER, 0.022, 0.35, 1.0);
     let chinPaw = mat4Translate(root, -0.24, -0.12, 0.44);
     drawPart(meshes.lowSphere, mat4Scale(chinPaw, 0.13, 0.13, 0.12), FUR_CREAM, 0.022, 0.35, 1.0);
   } else {
@@ -633,7 +634,7 @@ function renderBaoBoFrame(inst, nowMs) {
 
     let lUpper = mat4Translate(root, -0.49, -0.24, 0.16);
     lUpper = mat4RotateZ(lUpper, 0.42);
-    drawPart(meshes.lowSphere, mat4Scale(lUpper, 0.135, 0.20, 0.135), FUR_GINGER, 0.022, 0.35, 1.0);
+    drawPart(meshes.lowSphere, mat4Scale(lUpper, 0.135, 0.20, 0.135), PATCH_GINGER, 0.022, 0.35, 1.0);
 
     let lPawPivot = mat4Translate(root, -0.56, -0.03 + Math.sin(t * waveFreq) * 0.03 * animScale, 0.27);
     lPawPivot = mat4RotateX(lPawPivot, 0.24 + beckon);
@@ -650,14 +651,14 @@ function renderBaoBoFrame(inst, nowMs) {
     });
   }
 
-  // 7. Right Front Paw Holding Steaming Porcelain Teacup
+  // 7. Right Front Paw — Espresso Shoulder Patch + White Paw Holding Steaming Teacup
   let rArm = mat4Translate(root, 0.50, -0.39, 0.16);
   rArm = mat4RotateZ(rArm, 0.40 - Math.sin(t * 2.7) * 0.06 * animScale);
   rArm = mat4RotateY(rArm, -0.36);
 
   let rUpper = mat4Translate(rArm, 0.11, 0, 0);
   rUpper = mat4Scale(rUpper, 0.18, 0.13, 0.13);
-  drawPart(meshes.lowSphere, rUpper, FUR_GINGER, 0.022, 0.36, 1.0);
+  drawPart(meshes.lowSphere, rUpper, PATCH_ESPRESSO, 0.022, 0.38, 1.0);
 
   let rPaw = mat4Translate(rArm, 0.26, 0.02, 0.08);
   rPaw = mat4Scale(rPaw, 0.125, 0.125, 0.125);
@@ -683,16 +684,30 @@ function renderBaoBoFrame(inst, nowMs) {
     }
   }
 
-  // 8. Big Expressive 3D Cat Head (tracks pointer in 3D!)
+  // 8. Big Expressive 3D Calico Cat Head + Asymmetric Espresso & Ginger Brow Patches!
   let head = mat4Translate(root, 0, 0.21, 0.04);
   head = mat4RotateY(head, inst.yaw * 0.65);
   head = mat4RotateX(head, inst.pitch * 0.55);
   head = mat4RotateZ(head, headTiltZ);
 
   let cranium = mat4Scale(head, 0.75, 0.61, 0.64);
-  drawPart(meshes.sphere, cranium, FUR_GINGER, 0.030, 0.34, 1.0);
+  drawPart(meshes.sphere, cranium, FUR_CREAM, 0.030, 0.33, 1.0);
 
-  // 9. Pointed 3D Cat Ears + Sakura-Pink Inner Cones + Ear-Flick Physics!
+  // Left temple/crown Espresso-Charcoal Calico patch (hugs upper-left forehead cleanly above eye)
+  let lHeadPatch = mat4Translate(head, -0.33, 0.27, 0.08);
+  lHeadPatch = mat4Scale(lHeadPatch, 0.44, 0.35, 0.50);
+  drawPart(meshes.sphere, lHeadPatch, PATCH_ESPRESSO, 0.0, 0.38, 1.0);
+
+  // Right temple/crown Warm Ginger-Apricot Calico patch + side cheek spot
+  let rHeadPatch = mat4Translate(head, 0.34, 0.25, 0.06);
+  rHeadPatch = mat4Scale(rHeadPatch, 0.45, 0.36, 0.49);
+  drawPart(meshes.sphere, rHeadPatch, PATCH_GINGER, 0.0, 0.36, 1.0);
+
+  let rCheekSpot = mat4Translate(head, 0.54, -0.02, 0.14);
+  rCheekSpot = mat4Scale(rCheekSpot, 0.24, 0.20, 0.26);
+  drawPart(meshes.lowSphere, rCheekSpot, PATCH_GINGER, 0.0, 0.36, 1.0);
+
+  // 9. Asymmetric Tri-Color 3D Cat Ears (Left = Espresso, Right = Ginger) + Sakura-Pink Inner Cones!
   [-1, 1].forEach(function (side) {
     const flickRaw = Math.sin(t * 2.3 + (side === -1 ? 0.0 : 2.1) + inst.seed);
     const earFlick = !calm && flickRaw > 0.86 ? ((flickRaw - 0.86) / 0.14) * 0.22 : 0;
@@ -703,36 +718,28 @@ function renderBaoBoFrame(inst, nowMs) {
     earMat = mat4RotateX(earMat, 0.10);
 
     let outerEar = mat4Scale(earMat, 0.26, 0.45, 0.19);
-    drawPart(meshes.earCone, outerEar, FUR_GINGER, 0.028, 0.36, 1.0);
+    drawPart(meshes.earCone, outerEar, side === -1 ? PATCH_ESPRESSO : PATCH_GINGER, 0.028, 0.36, 1.0);
 
     let innerEar = mat4Translate(earMat, 0, -0.04, 0.068);
     innerEar = mat4Scale(innerEar, 0.155, 0.31, 0.105);
     drawPart(meshes.earCone, innerEar, PINK_SAKURA, 0.0, 0.48, 1.0);
   });
 
-  // 10. Three Caramel Forehead Tabby Stripes
-  let midStripe = mat4Translate(head, 0, 0.42, 0.48);
-  midStripe = mat4RotateX(midStripe, -0.56);
-  midStripe = mat4Scale(midStripe, 0.046, 0.135, 0.038);
-  drawPart(meshes.lowSphere, midStripe, FUR_STRIPE, 0.0, 0.4, 1.0);
+  // Cute tiny ginger beauty spot between brows
+  let browDot = mat4Translate(head, 0.05, 0.38, 0.51);
+  browDot = mat4RotateX(browDot, -0.52);
+  browDot = mat4Scale(browDot, 0.075, 0.058, 0.04);
+  drawPart(meshes.lowSphere, browDot, PATCH_GINGER, 0.0, 0.38, 1.0);
 
-  [-1, 1].forEach(function (side) {
-    let sStripe = mat4Translate(head, side * 0.15, 0.39, 0.46);
-    sStripe = mat4RotateZ(sStripe, side * -0.28);
-    sStripe = mat4RotateX(sStripe, -0.54);
-    sStripe = mat4Scale(sStripe, 0.040, 0.115, 0.036);
-    drawPart(meshes.lowSphere, sStripe, FUR_STRIPE, 0.0, 0.4, 1.0);
-  });
-
-  // 11. Six Crisp 3D Cat Whiskers (3 per cheek sticking past silhouette!)
+  // 10. Six Crisp Espresso 3D Cat Whiskers (3 per cheek sticking past silhouette!)
   [-1, 1].forEach(function (side) {
     [-1, 0, 1].forEach(function (wIdx) {
       const wWig = Math.sin(t * 6.5 + wIdx) * 0.035 * animScale;
       let wMat = mat4Translate(head, side * 0.66, -0.08 + wIdx * 0.072, 0.32);
       wMat = mat4RotateY(wMat, side * 0.22);
       wMat = mat4RotateZ(wMat, Math.PI / 2 + side * (wIdx * 0.16 + wWig));
-      wMat = mat4Scale(wMat, 0.017, 0.21, 0.017);
-      drawPart(meshes.cyl, wMat, FUR_CREAM, 0.011, 0.30, 1.0);
+      wMat = mat4Scale(wMat, 0.016, 0.21, 0.016);
+      drawPart(meshes.cyl, wMat, WHISKER_DARK, 0.006, 0.35, 1.0);
     });
   });
 
@@ -847,7 +854,7 @@ function renderBaoBo2DFallback(inst, nowMs) {
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
 
-  // Swishing cat tail
+  // Swishing tri-color calico tail
   ctx.beginPath();
   ctx.moveTo(22, 24);
   ctx.bezierCurveTo(50, 22, 56 + wag * 0.5, -6, 46 + wag, -20);
@@ -855,26 +862,31 @@ function renderBaoBo2DFallback(inst, nowMs) {
   ctx.strokeStyle = '#2B1D14';
   ctx.stroke();
   ctx.lineWidth = 7;
-  ctx.strokeStyle = '#FCA140';
+  ctx.strokeStyle = '#FA9832';
   ctx.stroke();
   ctx.lineWidth = 3.4;
   ctx.strokeStyle = '#2B1D14';
 
-  // Plump body + white belly + crimson collar & gold bell
-  ctx.fillStyle = '#FCA140';
+  // Plump cream body + ginger & espresso patches
+  ctx.fillStyle = '#FFFDF7';
   ctx.beginPath();
   ctx.ellipse(0, 24, 28, 22, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = '#FFFDF7';
+  ctx.fillStyle = '#FA9832';
   ctx.beginPath();
-  ctx.ellipse(0, 26, 18, 15, 0, 0, Math.PI * 2);
+  ctx.ellipse(16, 20, 10, 8, 0.3, 0, Math.PI * 2);
   ctx.fill();
 
-  // Cat ears
+  ctx.fillStyle = '#33241F';
+  ctx.beginPath();
+  ctx.ellipse(-16, 26, 9, 7, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Asymmetric Calico Ears (Left = Espresso, Right = Ginger)
   [-1, 1].forEach(function (s) {
-    ctx.fillStyle = '#FCA140';
+    ctx.fillStyle = s === -1 ? '#33241F' : '#FA9832';
     ctx.beginPath();
     ctx.moveTo(s * 14, -44);
     ctx.lineTo(s * 36, -64);
@@ -892,15 +904,32 @@ function renderBaoBo2DFallback(inst, nowMs) {
     ctx.fill();
   });
 
-  // 3D shaded ginger cat head
-  const g = ctx.createRadialGradient(-12, -26, 6, 0, -14, 44);
-  g.addColorStop(0, '#FFBE73');
-  g.addColorStop(0.7, '#FCA140');
-  g.addColorStop(1, '#DF7A1C');
+  // 3D shaded snow-cream calico head + brow patches
+  const g = ctx.createRadialGradient(-10, -26, 6, 0, -14, 44);
+  g.addColorStop(0, '#FFFFFF');
+  g.addColorStop(0.75, '#FFFBF2');
+  g.addColorStop(1, '#EADEC9');
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.ellipse(0, -16, 40, 33, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0, -16, 39, 32, 0, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = '#33241F';
+  ctx.beginPath();
+  ctx.ellipse(-24, -38, 22, 16, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FA9832';
+  ctx.beginPath();
+  ctx.ellipse(25, -36, 22, 16, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.beginPath();
+  ctx.ellipse(0, -16, 40, 33, 0, 0, Math.PI * 2);
   ctx.stroke();
 
   // Emerald eyes + catchlights

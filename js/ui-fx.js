@@ -22,14 +22,14 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
 export const MASTER_BO_QUIPS = {
   zh: [
-    { mood: 'greet', text: '早晨喵～！我係招財茶貓阿喵 🐾 每日嘆四籠腦點心，記性同心算都越玩越精靈！' },
+    { mood: 'greet', text: '早晨喵～！我係三色招財茶貓阿喵 🐾 每日嘆四籠腦點心，記性同心算都越玩越精靈！' },
     { mood: 'happy', text: '貓貓貼士：慢慢玩唔使急，最緊要開心動腦筋！撳錯咗都唔緊要㗎 😊' },
-    { mood: 'cheer', text: '試下「🎲 扭蛋抽關」，等阿喵搖隻肉球幫你抽款新點心玩下啦！' },
+    { mood: 'cheer', text: '試下「🎲 扭蛋抽關」，等阿喵搖隻招財肉球幫你抽款新點心玩下啦！' },
     { mood: 'proud', text: '無論喺香港定溫哥華，叫埋屋企人入「親友圈」一齊蓋印仔最熱鬧喵！' },
     { mood: 'think', text: '想練英文同靚成語？試下「📖 雅言詞匯館」，仲有真人發音朗讀添！' }
   ],
   en: [
-    { mood: 'greet', text: "Meow~! I'm Mochi the Lucky Tea Cat 🐾 Enjoy 4 Brain Dim Sum dishes a day to stay sharp!" },
+    { mood: 'greet', text: "Meow~! I'm Mochi the Calico Lucky Cat 🐾 Enjoy 4 Brain Dim Sum dishes a day to stay sharp!" },
     { mood: 'happy', text: 'Cat tip: Take your time — zero timers, zero pressure, pure brain-tingling fun! 😊' },
     { mood: 'cheer', text: 'Feeling adventurous? Tap "🎲 Gacha Spin" and let my lucky paw pick a random game!' },
     { mood: 'proud', text: 'From Hong Kong to Vancouver, invite family into your Circle to compare stamps!' },
@@ -110,21 +110,25 @@ export function renderMasterBoSvg(mood) {
   return `
     <svg viewBox="0 0 128 128" class="master-bo-svg mood-${m}" aria-hidden="true">
       <circle cx="64" cy="64" r="58" fill="#FFD984" stroke="#2B2118" stroke-width="4"/>
-      <!-- Ginger Cat Body & Collar -->
-      <path d="M32 114 Q38 84 64 84 Q90 84 96 114" fill="#FCA140" stroke="#2B2118" stroke-width="3.8"/>
-      <ellipse cx="64" cy="102" rx="18" ry="13" fill="#FFFDF7"/>
+      <!-- Tri-Color Calico Cat Body & Collar -->
+      <path d="M32 114 Q38 84 64 84 Q90 84 96 114" fill="#FFFDF7" stroke="#2B2118" stroke-width="3.8"/>
+      <ellipse cx="46" cy="103" rx="9" ry="7" fill="#33241F"/>
+      <ellipse cx="81" cy="100" rx="10" ry="7.5" fill="#FA9832"/>
       <rect x="44" y="83" width="40" height="7" rx="3.5" fill="#DC2B2B" stroke="#2B2118" stroke-width="2.4"/>
       <circle cx="64" cy="90" r="6" fill="#FFD034" stroke="#2B2118" stroke-width="2.4"/>
-      <!-- Pointed Cat Ears -->
-      <polygon points="36,46 28,18 52,32" fill="#FCA140" stroke="#2B2118" stroke-width="3.6" stroke-linejoin="round"/>
+      <!-- Asymmetric Calico Cat Ears (Left Espresso, Right Ginger) -->
+      <polygon points="36,46 28,18 52,32" fill="#33241F" stroke="#2B2118" stroke-width="3.6" stroke-linejoin="round"/>
       <polygon points="38,42 33,25 48,34" fill="#FF94A8"/>
-      <polygon points="92,46 100,18 76,32" fill="#FCA140" stroke="#2B2118" stroke-width="3.6" stroke-linejoin="round"/>
+      <polygon points="92,46 100,18 76,32" fill="#FA9832" stroke="#2B2118" stroke-width="3.6" stroke-linejoin="round"/>
       <polygon points="90,42 95,25 80,34" fill="#FF94A8"/>
-      <!-- Ginger Cat Head & Tabby Stripes -->
-      <ellipse cx="64" cy="58" rx="34" ry="28" fill="#FCA140" stroke="#2B2118" stroke-width="3.8"/>
-      <line x1="64" y1="32" x2="64" y2="41" stroke="#BA561A" stroke-width="3.6" stroke-linecap="round"/>
-      <line x1="56" y1="34" x2="58" y2="41" stroke="#BA561A" stroke-width="3.2" stroke-linecap="round"/>
-      <line x1="72" y1="34" x2="70" y2="41" stroke="#BA561A" stroke-width="3.2" stroke-linecap="round"/>
+      <!-- Snow-Cream Calico Head & Brow Patches -->
+      <defs><clipPath id="calicoHeadClip"><ellipse cx="64" cy="58" rx="34" ry="28"/></clipPath></defs>
+      <ellipse cx="64" cy="58" rx="34" ry="28" fill="#FFFDF7"/>
+      <g clip-path="url(#calicoHeadClip)">
+        <ellipse cx="41" cy="36" rx="19" ry="13" fill="#33241F"/>
+        <ellipse cx="87" cy="36" rx="19" ry="13" fill="#FA9832"/>
+      </g>
+      <ellipse cx="64" cy="58" rx="34" ry="28" fill="none" stroke="#2B2118" stroke-width="3.8"/>
       <!-- Whiskers -->
       <line x1="22" y1="58" x2="36" y2="60" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"/>
       <line x1="22" y1="65" x2="36" y2="64" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"/>
@@ -133,8 +137,8 @@ export function renderMasterBoSvg(mood) {
       <!-- Blush + White Muzzle + Pink Nose -->
       <ellipse cx="41" cy="65" rx="5.5" ry="3.5" fill="#FF8FA0" opacity="0.78"/>
       <ellipse cx="87" cy="65" rx="5.5" ry="3.5" fill="#FF8FA0" opacity="0.78"/>
-      <circle cx="58" cy="67" r="6.8" fill="#FFFDF8" stroke="#2B2118" stroke-width="2.2"/>
-      <circle cx="70" cy="67" r="6.8" fill="#FFFDF8" stroke="#2B2118" stroke-width="2.2"/>
+      <circle cx="58" cy="67" r="6.8" fill="#FFFFFF" stroke="#2B2118" stroke-width="2.2"/>
+      <circle cx="70" cy="67" r="6.8" fill="#FFFFFF" stroke="#2B2118" stroke-width="2.2"/>
       <ellipse cx="64" cy="62" rx="4.5" ry="3.2" fill="#FA6B84" stroke="#2B2118" stroke-width="2"/>
       ${eyes}
     </svg>
