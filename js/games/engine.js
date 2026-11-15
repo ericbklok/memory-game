@@ -93,7 +93,7 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
       <div class="baobo-stage-3d-slot" id="stageBaoBo3DSlot"></div>
       <div class="baobo-stage-dialogue">
         <div class="baobo-stage-toprow">
-          <span class="bo-name-tag">🫖 ${zh ? '阿波領航' : 'Master Bo'}</span>
+          <span class="bo-name-tag">🐾 ${zh ? '阿喵領航' : 'Mochi Guide'}</span>
           <button type="button" class="baobo-voice-chip" id="stageBoSpeakBtn">🔊 ${zh ? '聽講解' : 'Voice'}</button>
         </div>
         <div class="baobo-stage-line" id="stageBaoBoSpeechText">${introLine}</div>
@@ -119,7 +119,7 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
     role: 'stage',
     mood: curCombo >= 2 ? 'cheer' : 'wave',
     onTap: function () {
-      playSfx('tap', true);
+      playSfx('meow', true);
       const txtEl = header.querySelector('#stageBaoBoSpeechText');
       if (txtEl) {
         boCtrl.setTalking(true);

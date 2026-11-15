@@ -236,6 +236,32 @@ export function playSfx(type, soundEnabled = true) {
       bell.start(now + note.t);
       bell.stop(now + note.t + note.d + 0.02);
     });
+  } else if (type === 'meow') {
+    // Melodic Nintendo Lucky Cat "Mee-ow~" chirp + golden Suzu collar bell tinkle!
+    const meowOsc = ctx.createOscillator();
+    const meowGain = ctx.createGain();
+    meowOsc.type = 'triangle';
+    meowOsc.frequency.setValueAtTime(560, now);
+    meowOsc.frequency.exponentialRampToValueAtTime(880, now + 0.085);
+    meowOsc.frequency.exponentialRampToValueAtTime(630, now + 0.24);
+    meowGain.gain.setValueAtTime(0.01, now);
+    meowGain.gain.linearRampToValueAtTime(0.16, now + 0.03);
+    meowGain.gain.exponentialRampToValueAtTime(0.001, now + 0.27);
+    meowOsc.connect(meowGain).connect(ctx.destination);
+    meowOsc.start(now);
+    meowOsc.stop(now + 0.28);
+
+    [2349.3, 2793.8].forEach((bf, bIdx) => {
+      const suzu = ctx.createOscillator();
+      const sGain = ctx.createGain();
+      suzu.type = 'sine';
+      suzu.frequency.setValueAtTime(bf, now + 0.02 + bIdx * 0.045);
+      sGain.gain.setValueAtTime(0.06, now + 0.02 + bIdx * 0.045);
+      sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11 + bIdx * 0.045);
+      suzu.connect(sGain).connect(ctx.destination);
+      suzu.start(now + 0.02 + bIdx * 0.045);
+      suzu.stop(now + 0.12 + bIdx * 0.045);
+    });
   }
 }
 

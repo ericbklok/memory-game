@@ -289,7 +289,7 @@ function openGachaRouletteModal() {
     `
     <div style="text-align:center;padding:0.4rem 0.2rem;">
       <div class="start-ribbon" style="margin-bottom:0.55rem;">
-        🎲 ${zh ? '茶博士扭蛋選關機' : 'Master Bo Gacha Roulette'}
+        🎲 ${zh ? '招財貓扭蛋選關機' : 'Lucky Cat Gacha Roulette'}
       </div>
       <div id="gachaBoSlot" style="width:120px;height:120px;margin:0 auto;"></div>
       <div id="gachaCapsuleStage" class="gacha-capsule-box">
@@ -390,12 +390,12 @@ function renderHomeView() {
         <div class="plaza-3d-pedestal-wrap" id="plazaBoStageWrap">
           <div class="plaza-spotlight-ring"></div>
           <div id="plazaBo3DMount" class="plaza-bo-3d-mount"></div>
-          <span class="plaza-poke-pill">👆 ${zh ? '輕撳阿波互動' : 'Tap Bo!'}</span>
+          <span class="plaza-poke-pill">👆 ${zh ? '輕撳阿喵摸摸頭' : 'Pet 3D Mochi!'}</span>
         </div>
 
         <div class="plaza-comic-bubble" id="boBubbleBtn">
           <div class="plaza-bubble-head">
-            <span class="bo-name-tag">🫖 ${zh ? '茶博士阿波 3D' : '3D Master Bo'}</span>
+            <span class="bo-name-tag">🐾 ${zh ? '招財茶貓阿喵 3D' : '3D Lucky Cat Mochi'}</span>
             <div style="display:flex;gap:0.3rem;">
               <button type="button" class="baobo-voice-chip" id="plazaBoSpeakBtn">🔊 ${zh ? '朗讀' : 'Listen'}</button>
               <button type="button" class="baobo-voice-chip" id="plazaBoNextTipBtn">💬 ${zh ? '換貼士' : 'Next Tip'}</button>
@@ -453,19 +453,19 @@ function renderHomeView() {
     </section>
   `;
 
-  // Mount 3D BaoBo on the Plaza Pedestal!
+  // Mount 3D Lucky Cat Mochi on the Plaza Pedestal!
   const boMountEl = wrap.querySelector('#plazaBo3DMount');
   const plazaBo = mountBaoBo3D(boMountEl, {
     size: 184,
     role: 'plaza',
     mood: doneCount === 4 ? 'cheer' : curQuip.mood,
     onTap: function () {
-      cycleBoQuip();
+      cycleBoQuip(true);
     }
   });
 
-  const cycleBoQuip = () => {
-    playSfx('switch', state.sound);
+  const cycleBoQuip = isPetTap => {
+    playSfx(isPetTap ? 'meow' : 'switch', state.sound);
     boQuipIdx = (boQuipIdx + 1) % quipPool.length;
     const nextQ = quipPool[boQuipIdx];
     plazaBo.setMood(nextQ.mood);
@@ -874,7 +874,7 @@ async function renderLeaderboardView() {
           <div style="display:flex;align-items:center;gap:0.65rem;">
             <div id="boardBo3DSlot" style="width:84px;height:84px;flex-shrink:0;"></div>
             <div>
-              <div style="font-weight:900;font-size:1.1rem;">${zh ? '茶博士腦力體檢報告' : "Master Bo's Brain Checkup"}</div>
+              <div style="font-weight:900;font-size:1.1rem;">${zh ? '阿喵腦力體檢報告' : "Mochi's Brain Checkup"}</div>
               <div style="font-size:0.84rem;color:var(--ink-muted);font-weight:700;">
                 ${zh ? `已完成 ${state.stats.gamesCompleted} 局健腦點心` : `${state.stats.gamesCompleted} brain dishes completed`}
               </div>
@@ -1566,7 +1566,11 @@ function showStartScreen(forceEditProfile) {
   const startBo = mountBaoBo3D(startScreenEl.querySelector('#startBo3DSlot'), {
     size: 148,
     role: 'start',
-    mood: !showForm ? 'happy' : 'wave'
+    mood: !showForm ? 'happy' : 'wave',
+    onTap: function () {
+      playSfx('meow', state.sound);
+      startBo.setMood('cheer');
+    }
   });
 
   const nameInput = startScreenEl.querySelector('#startNameInput');
@@ -1718,8 +1722,8 @@ function openWelcomeTourModal(initialStep) {
         mood: 'happy',
         title: zh ? `歡迎光臨，${escapeHtml(userName)}！每日四籠腦點心` : `Welcome, ${escapeHtml(userName)}! Today's 4 Brain Dishes`,
         voice: zh
-          ? `歡迎光臨，${userName}！我係茶博士阿波。每日我哋會為你精選四道健腦點心，每完成一道就蓋一個頂點紅印仔，集齊四個仲有額外五十分同保溫壺護盾！`
-          : `Welcome, ${userName}! I am Tea Master Bo. Each day features 4 balanced Brain Dishes. Finish a dish to earn a red TOP chop, bonus points, and Warm Teapot Streak Shields!`,
+          ? `歡迎光臨，${userName}！喵～我係招財茶貓阿喵。每日我哋會為你精選四道健腦點心，每完成一道就蓋一個頂點紅印仔，集齊四個仲有額外五十分同保溫壺護盾！`
+          : `Welcome, ${userName}! Meow~ I am Mochi the Lucky Tea Cat. Each day features 4 balanced Brain Dishes. Finish a dish to earn a red TOP chop, bonus points, and Warm Teapot Streak Shields!`,
         bodyHtml: `
           <div class="tour-showcase-box">
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.5rem;margin-bottom:0.65rem;">
@@ -1794,7 +1798,7 @@ function openWelcomeTourModal(initialStep) {
       `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <span style="font-size:0.8rem;font-weight:900;color:var(--jade-dark);">
-          🫖 ${zh ? `茶博士導賞 (${step + 1} / ${slides.length})` : `Welcome Tour (${step + 1} / ${slides.length})`}
+          🐾 ${zh ? `阿喵導賞 (${step + 1} / ${slides.length})` : `Mochi's Tour (${step + 1} / ${slides.length})`}
         </span>
         <div style="display:flex;gap:0.35rem;">
           <button type="button" class="chip-btn" id="tourSpeakBtn" style="min-height:36px;padding:0.2rem 0.65rem;font-size:0.78rem;">

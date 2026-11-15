@@ -1,4 +1,4 @@
-/* Nintendo-inspired Visual Juice: Master Bo Character, Particle Bursts, Floating Score Pops, Combo HUD & Brain Radar */
+/* Nintendo-inspired Visual Juice: Lucky Cat Mochi 3D Mascot, Particle Bursts, Floating Score Pops, Combo HUD & Brain Radar */
 import { notifyStageBaoBo } from './mascot-3d.js';
 
 let lastPointerX = 180;
@@ -22,16 +22,16 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
 export const MASTER_BO_QUIPS = {
   zh: [
-    { mood: 'greet', text: '早晨呀！我係茶博士阿波 🫖 每日嘆四籠腦點心，記性同心算都越玩越精靈！' },
-    { mood: 'happy', text: '貼士：慢慢玩唔使急，最緊要開心動腦筋！撳錯咗都唔緊要㗎 😊' },
-    { mood: 'cheer', text: '試下「🎲 隨機抽一籠」，好似扭蛋咁揀款新點心玩下啦！' },
-    { mood: 'proud', text: '無論喺香港定溫哥華，叫埋屋企人入「親友圈」一齊蓋印仔最熱鬧！' },
+    { mood: 'greet', text: '早晨喵～！我係招財茶貓阿喵 🐾 每日嘆四籠腦點心，記性同心算都越玩越精靈！' },
+    { mood: 'happy', text: '貓貓貼士：慢慢玩唔使急，最緊要開心動腦筋！撳錯咗都唔緊要㗎 😊' },
+    { mood: 'cheer', text: '試下「🎲 扭蛋抽關」，等阿喵搖隻肉球幫你抽款新點心玩下啦！' },
+    { mood: 'proud', text: '無論喺香港定溫哥華，叫埋屋企人入「親友圈」一齊蓋印仔最熱鬧喵！' },
     { mood: 'think', text: '想練英文同靚成語？試下「📖 雅言詞匯館」，仲有真人發音朗讀添！' }
   ],
   en: [
-    { mood: 'greet', text: "Hello! I'm Tea Master Bo 🫖 Enjoy 4 relaxing Brain Dim Sum dishes a day to stay sharp!" },
-    { mood: 'happy', text: 'Pro tip: Take your time — zero timers, zero pressure, pure brain-tingling fun! 😊' },
-    { mood: 'cheer', text: 'Feeling adventurous? Tap "🎲 Surprise Me!" to spin up a random game cartridge!' },
+    { mood: 'greet', text: "Meow~! I'm Mochi the Lucky Tea Cat 🐾 Enjoy 4 Brain Dim Sum dishes a day to stay sharp!" },
+    { mood: 'happy', text: 'Cat tip: Take your time — zero timers, zero pressure, pure brain-tingling fun! 😊' },
+    { mood: 'cheer', text: 'Feeling adventurous? Tap "🎲 Gacha Spin" and let my lucky paw pick a random game!' },
     { mood: 'proud', text: 'From Hong Kong to Vancouver, invite family into your Circle to compare stamps!' },
     { mood: 'think', text: 'Want to brush up on idioms & expressive words? Try Vocabulary Builder with audio!' }
   ]
@@ -92,73 +92,51 @@ export function updateStageComboHud(combo, mood) {
 
 export function renderMasterBoSvg(mood) {
   const m = mood || 'greet';
-  // moods: 'greet' | 'happy' | 'cheer' | 'think' | 'proud'
   const eyes =
     m === 'happy' || m === 'cheer' || m === 'proud'
       ? `
-        <path d="M44 54 Q50 47 56 54" stroke="#241B15" stroke-width="3.4" stroke-linecap="round" fill="none"/>
-        <path d="M72 54 Q78 47 84 54" stroke="#241B15" stroke-width="3.4" stroke-linecap="round" fill="none"/>
-      `
-      : m === 'think'
-      ? `
-        <circle cx="50" cy="52" r="3.6" fill="#241B15"/>
-        <path d="M72 53 Q78 49 84 53" stroke="#241B15" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path d="M44 57 Q50 50 56 57" stroke="#241B15" stroke-width="3.4" stroke-linecap="round" fill="none"/>
+        <path d="M72 57 Q78 50 84 57" stroke="#241B15" stroke-width="3.4" stroke-linecap="round" fill="none"/>
       `
       : `
-        <circle class="bo-eye" cx="50" cy="53" r="4" fill="#241B15"/>
-        <circle cx="51.4" cy="51.6" r="1.3" fill="#FFFFFF"/>
-        <circle class="bo-eye" cx="78" cy="53" r="4" fill="#241B15"/>
-        <circle cx="79.4" cy="51.6" r="1.3" fill="#FFFFFF"/>
+        <ellipse cx="50" cy="56" rx="5.5" ry="6.5" fill="#1B9E75" stroke="#241B15" stroke-width="2"/>
+        <ellipse cx="50" cy="56" rx="3" ry="4.8" fill="#241B15"/>
+        <circle cx="52" cy="53.8" r="1.6" fill="#FFFFFF"/>
+        <ellipse cx="78" cy="56" rx="5.5" ry="6.5" fill="#1B9E75" stroke="#241B15" stroke-width="2"/>
+        <ellipse cx="78" cy="56" rx="3" ry="4.8" fill="#241B15"/>
+        <circle cx="80" cy="53.8" r="1.6" fill="#FFFFFF"/>
       `;
-
-  const mouth =
-    m === 'cheer'
-      ? `<path d="M55 66 Q64 78 73 66 Z" fill="#C8372D" stroke="#241B15" stroke-width="2.4"/>`
-      : m === 'think'
-      ? `<circle cx="65" cy="68" r="3.2" fill="#C8372D"/>`
-      : `<path d="M56 65 Q64 73 72 65" stroke="#241B15" stroke-width="3" stroke-linecap="round" fill="none"/>`;
 
   return `
     <svg viewBox="0 0 128 128" class="master-bo-svg mood-${m}" aria-hidden="true">
       <circle cx="64" cy="64" r="58" fill="#FFD984" stroke="#2B2118" stroke-width="4"/>
-      <circle cx="64" cy="64" r="52" fill="none" stroke="#FFF9EA" stroke-width="2.5" stroke-dasharray="6 5"/>
-
-      <!-- Jade Tea-Master Vest -->
-      <path d="M28 114 Q34 84 64 84 Q94 84 100 114" fill="#1D7A5F" stroke="#2B2118" stroke-width="3.8"/>
-      <path d="M52 85 L64 102 L76 85" fill="#FFFDF7" stroke="#2B2118" stroke-width="3"/>
-      <circle cx="64" cy="106" r="3.5" fill="#F4A623" stroke="#2B2118" stroke-width="2"/>
-
-      <!-- Head & Ears -->
-      <circle cx="33" cy="56" r="8" fill="#FFE0BD" stroke="#2B2118" stroke-width="3.4"/>
-      <circle cx="95" cy="56" r="8" fill="#FFE0BD" stroke="#2B2118" stroke-width="3.4"/>
-      <rect x="35" y="26" width="58" height="54" rx="27" fill="#FFE3C2" stroke="#2B2118" stroke-width="3.8"/>
-
-      <!-- Cozy Dim Sum Master Cap -->
-      <path d="M34 45 Q38 18 64 18 Q90 18 94 45 Q80 35 64 35 Q48 35 34 45 Z" fill="#C8372D" stroke="#2B2118" stroke-width="3.6"/>
-      <circle cx="64" cy="16" r="6" fill="#F6B93B" stroke="#2B2118" stroke-width="3"/>
-
-      <!-- Friendly Silver Eyebrows -->
-      <path d="M43 42 Q50 38 56 41" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
-      <path d="M72 41 Q78 38 85 42" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none"/>
-
-      <!-- Rosy Cheeks -->
-      <ellipse cx="44" cy="62" rx="5.5" ry="3.5" fill="#FF9A8B" opacity="0.72"/>
-      <ellipse cx="84" cy="62" rx="5.5" ry="3.5" fill="#FF9A8B" opacity="0.72"/>
-
-      <!-- Round Gold-Rim Glasses -->
-      <circle cx="50" cy="53" r="10.5" fill="rgba(255,255,255,0.35)" stroke="#8A5412" stroke-width="2.8"/>
-      <circle cx="78" cy="53" r="10.5" fill="rgba(255,255,255,0.35)" stroke="#8A5412" stroke-width="2.8"/>
-      <line x1="60.5" y1="53" x2="67.5" y2="53" stroke="#8A5412" stroke-width="2.8"/>
-
+      <!-- Ginger Cat Body & Collar -->
+      <path d="M32 114 Q38 84 64 84 Q90 84 96 114" fill="#FCA140" stroke="#2B2118" stroke-width="3.8"/>
+      <ellipse cx="64" cy="102" rx="18" ry="13" fill="#FFFDF7"/>
+      <rect x="44" y="83" width="40" height="7" rx="3.5" fill="#DC2B2B" stroke="#2B2118" stroke-width="2.4"/>
+      <circle cx="64" cy="90" r="6" fill="#FFD034" stroke="#2B2118" stroke-width="2.4"/>
+      <!-- Pointed Cat Ears -->
+      <polygon points="36,46 28,18 52,32" fill="#FCA140" stroke="#2B2118" stroke-width="3.6" stroke-linejoin="round"/>
+      <polygon points="38,42 33,25 48,34" fill="#FF94A8"/>
+      <polygon points="92,46 100,18 76,32" fill="#FCA140" stroke="#2B2118" stroke-width="3.6" stroke-linejoin="round"/>
+      <polygon points="90,42 95,25 80,34" fill="#FF94A8"/>
+      <!-- Ginger Cat Head & Tabby Stripes -->
+      <ellipse cx="64" cy="58" rx="34" ry="28" fill="#FCA140" stroke="#2B2118" stroke-width="3.8"/>
+      <line x1="64" y1="32" x2="64" y2="41" stroke="#BA561A" stroke-width="3.6" stroke-linecap="round"/>
+      <line x1="56" y1="34" x2="58" y2="41" stroke="#BA561A" stroke-width="3.2" stroke-linecap="round"/>
+      <line x1="72" y1="34" x2="70" y2="41" stroke="#BA561A" stroke-width="3.2" stroke-linecap="round"/>
+      <!-- Whiskers -->
+      <line x1="22" y1="58" x2="36" y2="60" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="22" y1="65" x2="36" y2="64" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="106" y1="58" x2="92" y2="60" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"/>
+      <line x1="106" y1="65" x2="92" y2="64" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"/>
+      <!-- Blush + White Muzzle + Pink Nose -->
+      <ellipse cx="41" cy="65" rx="5.5" ry="3.5" fill="#FF8FA0" opacity="0.78"/>
+      <ellipse cx="87" cy="65" rx="5.5" ry="3.5" fill="#FF8FA0" opacity="0.78"/>
+      <circle cx="58" cy="67" r="6.8" fill="#FFFDF8" stroke="#2B2118" stroke-width="2.2"/>
+      <circle cx="70" cy="67" r="6.8" fill="#FFFDF8" stroke="#2B2118" stroke-width="2.2"/>
+      <ellipse cx="64" cy="62" rx="4.5" ry="3.2" fill="#FA6B84" stroke="#2B2118" stroke-width="2"/>
       ${eyes}
-      ${mouth}
-
-      <!-- Steaming Porcelain Teacup -->
-      <g class="bo-cup">
-        <path d="M90 88 L112 88 L109 104 Q101 109 93 104 Z" fill="#FFFDF9" stroke="#2B2118" stroke-width="3"/>
-        <path d="M96 82 Q98 76 95 72" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-        <path d="M104 81 Q106 75 103 70" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-      </g>
     </svg>
   `;
 }
