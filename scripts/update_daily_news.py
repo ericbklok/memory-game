@@ -54,8 +54,10 @@ DISTRACTOR_POOL = [
 
 
 def strip_html(raw: str) -> str:
-    cleaned = re.sub(r"<[^>]+>", " ", raw or "")
-    cleaned = html.unescape(cleaned)
+    # Unescape HTML entities BEFORE stripping tags so encoded tags (&lt;script&gt;) cannot survive
+    cleaned = html.unescape(html.unescape(raw or ""))
+    cleaned = re.sub(r"<[^>]*>", " ", cleaned)
+    cleaned = cleaned.replace("<", "").replace(">", "")
     return re.sub(r"\s+", " ", cleaned).strip()
 
 
@@ -64,7 +66,10 @@ def fetch_rss_items(url: str, max_items: int = 3):
     cafile = "/etc/ssl/cert.pem" if pathlib.Path("/etc/ssl/cert.pem").exists() else None
     ctx = ssl.create_default_context(cafile=cafile) if cafile else ssl.create_default_context()
     with urllib.request.urlopen(req, timeout=12, context=ctx) as resp:
-        xml_bytes = resp.read()
+        # Bound response read to 1 MiB max and reject XML entity declarations (XXE / Billion Laughs protection)
+        xml_bytes = resp.read(1_048_576)
+    if b"<!ENTITY" in xml_bytes.upper():
+        raise ValueError("Rejected XML feed containing ENTITY declarations")
     root = ET.fromstring(xml_bytes)
     items = []
     for item in root.findall(".//item"):

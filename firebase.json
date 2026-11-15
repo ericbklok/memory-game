@@ -11,8 +11,7 @@
         "oAuthBrandDisplayName": "Daily MindSum",
         "supportEmail": "ericbklok@gmail.com",
         "authorizedRedirectUris": [
-          "https://memory-game-f80b6.firebaseapp.com/__/auth/handler",
-          "http://localhost:8123"
+          "https://memory-game-f80b6.firebaseapp.com/__/auth/handler"
         ]
       }
     }

@@ -29,6 +29,12 @@ function shuffle(arr) {
   return copy;
 }
 
+function escHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, function (ch) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+  });
+}
+
 let cachedNewsData = null;
 export async function fetchDailyNews() {
   if (cachedNewsData) return cachedNewsData;
@@ -213,11 +219,11 @@ export async function mountNewsGame(ctx) {
         const sum = pickText(st.summary, lang);
         card.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-            <span class="news-tag">${pickText(st.tag, lang)}</span>
+            <span class="news-tag">${escHtml(pickText(st.tag, lang))}</span>
             <button type="button" class="tts-btn" data-idx="${idx}">${t(lang, 'listenCantonese')}</button>
           </div>
-          <h3 style="margin:0.35rem 0 0.4rem;font-size:1.12rem;">${hl}</h3>
-          <p style="margin:0;">${sum}</p>
+          <h3 style="margin:0.35rem 0 0.4rem;font-size:1.12rem;">${escHtml(hl)}</h3>
+          <p style="margin:0;">${escHtml(sum)}</p>
         `;
         card.querySelector('.tts-btn').addEventListener('click', () => {
           speakText(`${hl}。${sum}`, lang);
@@ -239,15 +245,15 @@ export async function mountNewsGame(ctx) {
       body.innerHTML = `
         <div class="prompt-box">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;">
-            <span class="news-tag">${pickText(st.tag, lang)} · Q${qIdx + 1}/${stories.length}</span>
+            <span class="news-tag">${escHtml(pickText(st.tag, lang))} · Q${qIdx + 1}/${stories.length}</span>
             <div style="display:flex;gap:0.4rem;">
               <button type="button" class="tts-btn" id="qSpeakBtn">${t(lang, 'listenCantonese')}</button>
               <button type="button" class="chip-btn" id="peekStoryBtn">${t(lang, 'hintBtn')}</button>
             </div>
           </div>
-          <p class="prompt-title" style="margin-bottom:0;">${qText}</p>
+          <p class="prompt-title" style="margin-bottom:0;">${escHtml(qText)}</p>
           <div id="peekBox" class="${peekShown ? '' : 'hidden'}" style="margin-top:0.7rem;padding:0.7rem;background:#FFFDF6;border-radius:10px;border:1.5px dashed var(--gold);font-size:0.92rem;">
-            ${pickText(st.summary, lang)}
+            ${escHtml(pickText(st.summary, lang))}
           </div>
         </div>
         <div class="choices-list" id="choicesWrap"></div>
@@ -268,7 +274,7 @@ export async function mountNewsGame(ctx) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'choice-btn';
-        btn.innerHTML = `<span>${ch.text}</span><span>○</span>`;
+        btn.innerHTML = `<span>${escHtml(ch.text)}</span><span>○</span>`;
         btn.addEventListener('click', () => {
           if (answered) return;
           if (ch.isCorrect) {
@@ -453,13 +459,13 @@ export async function mountMemoryGame(ctx) {
         btn.type = 'button';
         btn.className = `mem-tile ${tile.revealed ? 'revealed' : ''} ${tile.matched ? 'matched' : ''}`;
         if (tile.revealed || tile.matched) {
-          if (tile.item.isPhoto) {
-            btn.innerHTML = `<img src="${tile.item.dataUrl}" alt="${pickText(tile.item.label, lang)}" class="mem-tile-photo" />`;
+          if (tile.item.isPhoto && /^data:image\/(jpeg|png|webp|gif);base64,/i.test(String(tile.item.dataUrl || ''))) {
+            btn.innerHTML = `<img src="${escHtml(tile.item.dataUrl)}" alt="${escHtml(pickText(tile.item.label, lang))}" class="mem-tile-photo" />`;
           } else {
-            const sym = tile.item.display || tile.item.symbol;
+            const sym = tile.item.display || tile.item.symbol || '🖼️';
             btn.innerHTML = `
-              <span class="mem-tile-symbol" style="color:${tile.item.color || 'var(--ink)'}">${sym}</span>
-              <span class="mem-tile-label">${pickText(tile.item.label, lang)}</span>
+              <span class="mem-tile-symbol" style="color:${escHtml(tile.item.color || 'var(--ink)')}">${escHtml(sym)}</span>
+              <span class="mem-tile-label">${escHtml(pickText(tile.item.label, lang))}</span>
             `;
           }
         } else {

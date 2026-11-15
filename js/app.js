@@ -109,39 +109,44 @@ function updateClocks() {
 /* URL Invite Detection (?invite=TEA-XXXX&from=Name) */
 function checkUrlInvite() {
   const params = new URLSearchParams(window.location.search);
-  const code = (params.get('invite') || params.get('circle') || '').trim().toUpperCase();
-  const fromName = (params.get('from') || '').trim();
-  if (!code) return;
+  const rawCode = (params.get('invite') || params.get('circle') || '').trim().toUpperCase();
+  const fromName = (params.get('from') || '').replace(/[<>&"']/g, '').trim().slice(0, 24);
+  if (!rawCode) return;
+
+  // Clean URL query gracefully without reloading
+  const cleanUrl = window.location.origin + window.location.pathname;
+  window.history.replaceState({}, document.title, cleanUrl);
+
+  // Strict allowlist format for invite/circle codes (blocks reflected XSS & malformed circles)
+  if (!/^[A-Z0-9-]{3,16}$/.test(rawCode)) return;
+  const code = rawCode;
 
   const alreadyJoined =
     state.profile.myCircleCode === code || (state.profile.joinedCircles || []).includes(code);
 
   if (!alreadyJoined) {
-    state.profile.joinedCircles = Array.from(new Set([...(state.profile.joinedCircles || []), code]));
+    state.profile.joinedCircles = Array.from(new Set([...(state.profile.joinedCircles || []), code])).slice(0, 9);
     if (fromName) state.profile.invitedBy = fromName;
   }
 
   let gotBonus = false;
   if (!state.inviteBonusClaimedCodes.includes(code) && state.profile.myCircleCode !== code) {
-    state.inviteBonusClaimedCodes.push(code);
+    state.inviteBonusClaimedCodes = state.inviteBonusClaimedCodes.slice(-49).concat([code]);
     state.stats.totalPoints += 50;
     state.stats.todayPoints += 50;
     gotBonus = true;
   }
   saveState(state);
 
-  // Clean URL query gracefully without reloading
-  const cleanUrl = window.location.origin + window.location.pathname;
-  window.history.replaceState({}, document.title, cleanUrl);
-
   inviteBannerEl.classList.remove('hidden');
-  const senderLabel = fromName || (state.lang === 'zh' ? '親友' : 'A friend');
+  const senderLabel = escapeHtml(fromName || (state.lang === 'zh' ? '親友' : 'A friend'));
+  const safeCode = escapeHtml(code);
   inviteBannerEl.innerHTML = `
     <div>
       <strong>🎉 ${
         state.lang === 'zh'
-          ? `${senderLabel} 邀請你加入親友圈「${code}」！${gotBonus ? '（已送你 +50 迎新積分！）' : ''}`
-          : `${senderLabel} invited you to Circle "${code}"! ${gotBonus ? '(+50 Welcome Bonus pts!)' : ''}`
+          ? `${senderLabel} 邀請你加入親友圈「${safeCode}」！${gotBonus ? '（已送你 +50 迎新積分！）' : ''}`
+          : `${senderLabel} invited you to Circle "${safeCode}"! ${gotBonus ? '(+50 Welcome Bonus pts!)' : ''}`
       }</strong>
       <div style="font-size:0.86rem;color:var(--ink-muted);">
         ${
@@ -377,10 +382,10 @@ function renderHomeView() {
       <div class="plaza-character-wing">
         <div class="plaza-player-banner">
           <div class="plaza-player-id">
-            <span class="plaza-avatar-badge">${state.profile.avatar}</span>
+            <span class="plaza-avatar-badge">${escapeHtml(state.profile.avatar || '🫖')}</span>
             <div>
-              <div class="plaza-player-name">${state.profile.homeBadge} ${escapeHtml(shownName)}${
-                state.profile.age ? ` <small>(${state.profile.age}${zh ? '歲' : 'y'})</small>` : ''
+              <div class="plaza-player-name">${escapeHtml(state.profile.homeBadge || '🇭🇰')} ${escapeHtml(shownName)}${
+                state.profile.age ? ` <small>(${Number(state.profile.age) || ''}${zh ? '歲' : 'y'})</small>` : ''
               }</div>
               <div class="plaza-player-rank">${rank} · ${t(lang, greetKey)}</div>
             </div>
@@ -961,7 +966,7 @@ async function renderLeaderboardView() {
   } else {
     authArea.innerHTML = `
       <div style="padding:0.7rem 0.95rem;background:var(--jade-soft);border:2px solid var(--jade);border-radius:14px;display:flex;justify-content:space-between;align-items:center;gap:0.6rem;flex-wrap:wrap;">
-        <span>✅ ${lang === 'zh' ? `已登入雲端：${authUser.email || state.profile.displayName}` : `Cloud Synced: ${authUser.email || state.profile.displayName}`}</span>
+        <span>✅ ${lang === 'zh' ? `已登入雲端：${escapeHtml(authUser.email || state.profile.displayName)}` : `Cloud Synced: ${escapeHtml(authUser.email || state.profile.displayName)}`}</span>
         <div style="display:flex;gap:0.4rem;">
           <button type="button" class="chip-btn" id="editProfileBtn">✏️ ${lang === 'zh' ? '改名／頭像' : 'Edit Profile'}</button>
           <button type="button" class="chip-btn" id="syncNowBtn">🔄 ${lang === 'zh' ? '同步分數' : 'Sync'}</button>
@@ -970,7 +975,7 @@ async function renderLeaderboardView() {
     `;
     authArea.querySelector('#editProfileBtn').addEventListener('click', openProfileModal);
     authArea.querySelector('#syncNowBtn').addEventListener('click', async () => {
-      await syncScoreToCloud(state);
+      await syncScoreToCloud(state, true);
       showToast(lang === 'zh' ? '✅ 分數已同步上龍虎榜！' : '✅ Score synced to cloud!');
       renderLeaderboardView();
     });
@@ -978,7 +983,9 @@ async function renderLeaderboardView() {
 
   // Circle controls when on 'circle' sub-tab
   const circleArea = mainEl.querySelector('#circleControlsArea');
-  const allCircles = Array.from(new Set([state.profile.myCircleCode, ...(state.profile.joinedCircles || [])]));
+  const allCircles = Array.from(new Set([state.profile.myCircleCode, ...(state.profile.joinedCircles || [])])).filter(c =>
+    /^[A-Z0-9-]{3,16}$/.test(String(c || ''))
+  );
   let selectedCircle = allCircles[0];
 
   if (boardSubTab === 'circle') {
@@ -987,18 +994,18 @@ async function renderLeaderboardView() {
         <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
           <span>
             <strong>${lang === 'zh' ? '我嘅專屬邀請碼：' : 'Your Invite Code:'}</strong>
-            <code style="font-size:1.05rem;padding:0.15rem 0.5rem;background:#fff;border-radius:6px;border:1px solid var(--border-strong);">${state.profile.myCircleCode}</code>
+            <code style="font-size:1.05rem;padding:0.15rem 0.5rem;background:#fff;border-radius:6px;border:1px solid var(--border-strong);">${escapeHtml(state.profile.myCircleCode)}</code>
           </span>
           <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
             ${allCircles
               .map(
-                c => `<span class="news-tag" style="margin:0;">🏷️ ${c}</span>`
+                c => `<span class="news-tag" style="margin:0;">🏷️ ${escapeHtml(c)}</span>`
               )
               .join('')}
           </div>
         </div>
         <div style="display:flex;gap:0.5rem;margin-top:0.65rem;flex-wrap:wrap;">
-          <input type="text" id="joinCircleInput" class="input-field" style="flex:1;margin:0;min-height:44px;" placeholder="${
+          <input type="text" id="joinCircleInput" class="input-field" maxlength="16" style="flex:1;margin:0;min-height:44px;" placeholder="${
             lang === 'zh' ? '輸入親友代碼（例如 TEA-8888）' : 'Enter friend circle code (e.g. TEA-8888)'
           }" />
           <button type="button" class="btn btn-jade btn-sm" id="joinCircleBtn">${lang === 'zh' ? '加入親友圈' : 'Join Circle'}</button>
@@ -1007,8 +1014,11 @@ async function renderLeaderboardView() {
     `;
     circleArea.querySelector('#joinCircleBtn').addEventListener('click', async () => {
       const val = circleArea.querySelector('#joinCircleInput').value.trim().toUpperCase();
-      if (!val) return;
-      state.profile.joinedCircles = Array.from(new Set([...(state.profile.joinedCircles || []), val]));
+      if (!/^[A-Z0-9-]{3,16}$/.test(val)) {
+        showToast(lang === 'zh' ? '⚠️ 請輸入有效邀請碼（3–16 位英文字母、數字或連字號）' : '⚠️ Enter a valid 3–16 character invite code (A–Z, 0–9, -)');
+        return;
+      }
+      state.profile.joinedCircles = Array.from(new Set([...(state.profile.joinedCircles || []), val])).slice(0, 9);
       saveState(state);
       if (getCurrentAuthUser()) await syncScoreToCloud(state);
       showToast(lang === 'zh' ? `✅ 已加入親友圈 ${val}！` : `✅ Joined Circle ${val}!`);
@@ -1053,17 +1063,18 @@ async function renderLeaderboardView() {
   rowsArea.innerHTML = rows
     .map((r, idx) => {
       const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
-      const pts = boardSubTab === 'today' ? r.todayPoints || 0 : r.totalPoints || 0;
+      const pts = Math.max(0, Number(boardSubTab === 'today' ? r.todayPoints || 0 : r.totalPoints || 0) || 0);
+      const safeStreak = Math.max(0, Number(r.streak || 0) || 0);
       const isMe = r.uid === myUid;
       return `
         <div class="board-row ${isMe ? 'me' : ''}">
           <div style="display:flex;align-items:center;gap:0.65rem;">
             <span class="rank-num">${medal}</span>
-            <span style="font-size:1.5rem;">${r.avatar || '🫖'}</span>
+            <span style="font-size:1.5rem;">${escapeHtml(r.avatar || '🫖')}</span>
             <div>
-              <strong>${r.homeBadge || ''} ${escapeHtml(r.displayName || '茶客')}</strong>
+              <strong>${escapeHtml(r.homeBadge || '')} ${escapeHtml(r.displayName || '茶客')}</strong>
               ${r.isLocalPreview ? `<span style="font-size:0.75rem;color:var(--ink-muted);"> (${lang === 'zh' ? '本地' : 'Local'})</span>` : ''}
-              <div style="font-size:0.78rem;color:var(--ink-muted);">🔥 ${r.streak || 0} ${t(lang, 'streakUnit')}</div>
+              <div style="font-size:0.78rem;color:var(--ink-muted);">🔥 ${safeStreak} ${t(lang, 'streakUnit')}</div>
             </div>
           </div>
           <strong style="font-size:1.1rem;color:var(--red-chop-dark);">${pts} ${t(lang, 'pointsUnit')}</strong>
@@ -1221,7 +1232,7 @@ function openProfileModal() {
             }</button>`
           : authUser
           ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-               <span style="font-size:0.88rem;color:var(--jade-dark);font-weight:700;">✅ ${authUser.email}</span>
+               <span style="font-size:0.88rem;color:var(--jade-dark);font-weight:700;">✅ ${escapeHtml(authUser.email || '')}</span>
                <button type="button" class="chip-btn" id="profSignOutBtn">${t(lang, 'signOut')}</button>
              </div>`
           : `<button type="button" class="btn btn-jade btn-full btn-sm" id="profSignInBtn">${t(lang, 'signInGoogle')}</button>`
@@ -1319,12 +1330,13 @@ async function openFamilyPhotosModal(onAfterClose) {
 
     <div class="item-grid" id="savedPhotosGrid" style="margin-top:0.9rem;">
       ${photos
+        .filter(p => /^data:image\/(jpeg|png|webp|gif);base64,/i.test(String(p.dataUrl || '')))
         .map(
           p => `
         <div class="item-chip" style="cursor:default;padding:0.45rem;">
-          <img src="${p.dataUrl}" alt="${escapeHtml(p.label)}" style="width:100%;height:74px;object-fit:cover;border-radius:8px;" />
+          <img src="${escapeHtml(p.dataUrl)}" alt="${escapeHtml(p.label)}" style="width:100%;height:74px;object-fit:cover;border-radius:8px;" />
           <span style="font-size:0.8rem;">${escapeHtml(p.label)}</span>
-          <button type="button" class="chip-btn del-photo-btn" data-id="${p.id}" style="min-height:32px;font-size:0.75rem;padding:0.15rem 0.5rem;">🗑️</button>
+          <button type="button" class="chip-btn del-photo-btn" data-id="${escapeHtml(p.id)}" style="min-height:32px;font-size:0.75rem;padding:0.15rem 0.5rem;">🗑️</button>
         </div>`
         )
         .join('')}
@@ -1470,7 +1482,7 @@ function showStartScreen(forceEditProfile) {
                <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;padding:0.6rem 0.85rem;border-radius:14px;background:var(--surface);border:2px solid var(--border-strong);flex-wrap:wrap;">
                  <div style="text-align:left;">
                    <div style="font-size:1.08rem;font-weight:900;color:var(--ink);">
-                     ${state.profile.avatar || '🫖'} ${escapeHtml(state.profile.displayName)} <span style="font-size:0.88rem;color:var(--ink-muted);">(${state.profile.age} ${zh ? '歲' : 'yrs'})</span>
+                     ${escapeHtml(state.profile.avatar || '🫖')} ${escapeHtml(state.profile.displayName)} <span style="font-size:0.88rem;color:var(--ink-muted);">(${Number(state.profile.age) || ''} ${zh ? '歲' : 'yrs'})</span>
                    </div>
                    <div style="font-size:0.78rem;font-weight:800;color:var(--jade-dark);margin-top:0.1rem;">
                      ${rank} · 🔥 ${state.stats.streak} ${t(lang, 'streakUnit')} · ⭐ ${state.stats.totalPoints} ${t(lang, 'pointsUnit')}
