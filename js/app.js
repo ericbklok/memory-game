@@ -2230,10 +2230,23 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
   });
 });
 
-// Service Worker registration for offline PWA support on iPad / iPhone
+// Service Worker registration with immediate update check & seamless reload on upgrade
 if ('serviceWorker' in navigator) {
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (hadController && !swRefreshing) {
+      swRefreshing = true;
+      window.location.reload();
+    }
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker
+      .register('./sw.js', { updateViaCache: 'none' })
+      .then(reg => {
+        reg.update().catch(() => {});
+      })
+      .catch(() => {});
   });
 }
 

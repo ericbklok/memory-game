@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-mindsum-v12';
+const CACHE_NAME = 'daily-mindsum-v13';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -25,55 +25,82 @@ const CORE_ASSETS = [
   './data/daily-news.json'
 ];
 
-self.addEventListener('install', event => {
+self.addEventListener('install', function (event) {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting())
+    caches
+      .open(CACHE_NAME)
+      .then(function (cache) {
+        // Bypass browser HTTP disk cache (e.g. GitHub Pages max-age=600) so fresh JS/CSS is always stored
+        return Promise.all(
+          CORE_ASSETS.map(function (assetUrl) {
+            return fetch(new Request(assetUrl, { cache: 'reload' })).then(function (res) {
+              if (res && res.ok) {
+                return cache.put(assetUrl, res);
+              }
+            });
+          })
+        );
+      })
+      .then(function () {
+        return self.skipWaiting();
+      })
   );
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches
       .keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+      .then(function (keys) {
+        const oldKeys = keys.filter(function (k) {
+          return k !== CACHE_NAME;
+        });
+        return Promise.all(
+          oldKeys.map(function (k) {
+            return caches.delete(k);
+          })
+        ).then(function () {
+          return oldKeys.length > 0;
+        });
+      })
+      .then(function (hadOldCaches) {
+        return self.clients.claim().then(function () {
+          if (!hadOldCaches) return;
+          return self.clients.matchAll({ type: 'window' }).then(function (windowClients) {
+            windowClients.forEach(function (client) {
+              if (client && typeof client.navigate === 'function') {
+                client.navigate(client.url).catch(function () {});
+              }
+            });
+          });
+        });
+      })
   );
 });
 
-self.addEventListener('fetch', event => {
+self.addEventListener('fetch', function (event) {
   const req = event.request;
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for daily news JSON so fresh stories appear immediately when online
-  if (url.pathname.endsWith('/daily-news.json')) {
-    event.respondWith(
-      fetch(req)
-        .then(res => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(req, clone));
-          return res;
-        })
-        .catch(() => caches.match(req))
-    );
-    return;
-  }
-
-  // Stale-while-revalidate for fast PWA startup
+  // Network-first (revalidating with server, instant offline fallback) so deployments appear immediately!
   event.respondWith(
-    caches.match(req).then(cached => {
-      const fetched = fetch(req)
-        .then(res => {
-          if (res && res.status === 200) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then(c => c.put(req, clone));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fetched;
-    })
+    fetch(req, { cache: 'no-cache' })
+      .then(function (res) {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(function (c) {
+            c.put(req, clone);
+          });
+        }
+        return res;
+      })
+      .catch(function () {
+        return caches.match(req).then(function (exact) {
+          return exact || caches.match(req, { ignoreSearch: true });
+        });
+      })
   );
 });
