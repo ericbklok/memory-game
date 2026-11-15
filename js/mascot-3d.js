@@ -315,6 +315,7 @@ function createCylinderMesh(radTop, radBot, height, segs) {
    WEBGL TOON + GLOSSY VINYL SHADER PIPELINE
    ========================================================================= */
 const VERT_SRC = [
+  'precision mediump float;',
   'attribute vec3 aPos;',
   'attribute vec3 aNorm;',
   'uniform mat4 uProj;',
@@ -323,7 +324,8 @@ const VERT_SRC = [
   'varying vec3 vNorm;',
   'varying vec3 vWorldPos;',
   'void main() {',
-  '  vec3 nWorld = normalize((uModel * vec4(aNorm, 0.0)).xyz);',
+  '  vec3 nRaw = (uModel * vec4(aNorm, 0.0)).xyz;',
+  '  vec3 nWorld = nRaw / max(length(nRaw), 0.0001);',
   '  vec4 wp = uModel * vec4(aPos, 1.0);',
   '  if (uOutline > 0.0) {',
   '    wp.xyz += nWorld * uOutline;',
@@ -354,8 +356,8 @@ const FRAG_SRC = [
   '  float ndl = dot(N, L) * 0.5 + 0.5;',
   '  float toon = smoothstep(0.30, 0.42, ndl) * 0.28 + smoothstep(0.66, 0.78, ndl) * 0.17 + 0.66;',
   '  vec3 warmSky = mix(vec3(0.95, 0.85, 0.78), vec3(1.04, 1.01, 0.96), clamp(N.y * 0.5 + 0.5, 0.0, 1.0));',
-  '  float spec = pow(max(dot(N, H), 0.0), mix(46.0, 10.0, uRough)) * (1.0 - uRough * 0.72);',
-  '  float rim = pow(1.0 - max(dot(N, V), 0.0), 3.0) * 0.25;',
+  '  float spec = pow(max(dot(N, H), 0.0001), mix(46.0, 10.0, uRough)) * (1.0 - uRough * 0.72);',
+  '  float rim = pow(max(1.0 - max(dot(N, V), 0.0), 0.0001), 3.0) * 0.25;',
   '  vec3 col = uColor * toon * warmSky + vec3(1.0, 0.98, 0.92) * spec * 0.44 + vec3(1.0, 0.92, 0.75) * rim;',
   '  gl_FragColor = vec4(col, uAlpha);',
   '}'
@@ -367,6 +369,9 @@ function compileGlProgram(gl) {
     gl.shaderSource(sh, src);
     gl.compileShader(sh);
     if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('Mochi 3D shader compile error:', gl.getShaderInfoLog(sh));
+      }
       gl.deleteShader(sh);
       return null;
     }
@@ -379,7 +384,12 @@ function compileGlProgram(gl) {
   gl.attachShader(prog, vs);
   gl.attachShader(prog, fs);
   gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    if (typeof console !== 'undefined' && console.warn) {
+      console.warn('Mochi 3D program link error:', gl.getProgramInfoLog(prog));
+    }
+    return null;
+  }
   return prog;
 }
 
@@ -417,7 +427,11 @@ function initWebGLScene(canvas) {
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  if (typeof gl.blendFuncSeparate === 'function') {
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  } else {
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  }
 
   const locs = {
     aPos: gl.getAttribLocation(prog, 'aPos'),
@@ -1012,8 +1026,10 @@ export function mountBaoBo3D(containerEl, opts) {
 
   const options = opts || {};
   const size = options.size || 136;
-  const canvas = document.createElement('canvas');
+  let canvas = document.createElement('canvas');
   canvas.className = 'baobo-3d-canvas';
+  canvas.width = size * 2;
+  canvas.height = size * 2;
   if (canvas.style) {
     canvas.style.width = size + 'px';
     canvas.style.height = size + 'px';
@@ -1024,19 +1040,35 @@ export function mountBaoBo3D(containerEl, opts) {
     canvas.setAttribute('aria-label', '3D Lucky Tea Cat Mochi');
   }
 
+  const glCtx = initWebGLScene(canvas);
+  let ctx2d = null;
+  if (!glCtx) {
+    // Replace canvas because calling getContext('webgl') locks the first canvas's context mode in HTML5
+    canvas = document.createElement('canvas');
+    canvas.className = 'baobo-3d-canvas';
+    canvas.width = 160;
+    canvas.height = 160;
+    if (canvas.style) {
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+      canvas.style.display = 'block';
+      canvas.style.cursor = 'pointer';
+    }
+    if (typeof canvas.setAttribute === 'function') {
+      canvas.setAttribute('aria-label', '3D Lucky Tea Cat Mochi');
+    }
+    if (typeof canvas.getContext === 'function') {
+      try {
+        ctx2d = canvas.getContext('2d');
+      } catch (e) {
+        ctx2d = null;
+      }
+    }
+  }
+
   containerEl.innerHTML = '';
   if (typeof containerEl.appendChild === 'function') {
     containerEl.appendChild(canvas);
-  }
-
-  const glCtx = initWebGLScene(canvas);
-  let ctx2d = null;
-  if (!glCtx && typeof canvas.getContext === 'function') {
-    try {
-      ctx2d = canvas.getContext('2d');
-    } catch (e) {
-      ctx2d = null;
-    }
   }
 
   const inst = {
@@ -1056,6 +1088,11 @@ export function mountBaoBo3D(containerEl, opts) {
     seed: Math.random() * 6.28,
     mountedAt: Date.now()
   };
+
+  // Render initial frame synchronously so canvas is immediately populated
+  const initTs = typeof performance !== 'undefined' && performance.now ? performance.now() : 0;
+  if (inst.glCtx) renderBaoBoFrame(inst, initTs);
+  else if (inst.ctx2d) renderBaoBo2DFallback(inst, initTs);
 
   if (typeof canvas.addEventListener === 'function') {
     canvas.addEventListener('click', function (ev) {
