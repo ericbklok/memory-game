@@ -35,6 +35,79 @@ function randomInviteCode() {
   return out;
 }
 
+export const OTHER_DAILY_GAMES = [
+  'memory',
+  'math',
+  'history',
+  'words',
+  'eagle',
+  'sudoku',
+  'tenpai',
+  'shisen',
+  'make24',
+  'wordsearch',
+  'blocks',
+  'stroop',
+  'melody',
+  'vocab',
+  'spotdiff'
+];
+
+function shuffleList(arr) {
+  const copy = arr.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+  return copy;
+}
+
+export function buildShuffledDailyDishes(excludeIds, keepAfterNews) {
+  const excl = new Set(Array.isArray(excludeIds) ? excludeIds : []);
+  const kept = [];
+  if (Array.isArray(keepAfterNews)) {
+    for (let i = 0; i < keepAfterNews.length; i++) {
+      const id = keepAfterNews[i];
+      if (id !== 'news' && OTHER_DAILY_GAMES.indexOf(id) !== -1 && kept.indexOf(id) === -1 && kept.length < 3) {
+        kept.push(id);
+      }
+    }
+  }
+  const needed = Math.max(0, 3 - kept.length);
+  const freshPreferred = shuffleList(
+    OTHER_DAILY_GAMES.filter(function (id) {
+      return kept.indexOf(id) === -1 && !excl.has(id);
+    })
+  );
+  const picked = freshPreferred.slice(0, needed);
+  if (picked.length < needed) {
+    const fallback = shuffleList(
+      OTHER_DAILY_GAMES.filter(function (id) {
+        return kept.indexOf(id) === -1 && picked.indexOf(id) === -1;
+      })
+    );
+    for (let k = 0; k < fallback.length && picked.length < needed; k++) {
+      picked.push(fallback[k]);
+    }
+  }
+  return ['news'].concat(kept, picked);
+}
+
+export function reshuffleDailyDishes(state) {
+  if (!state || !state.daily) return [];
+  const stamps = state.daily.stamps || {};
+  const current = Array.isArray(state.daily.dishes) ? state.daily.dishes : [];
+  const stampedNonNews = current.filter(function (id) {
+    return id !== 'news' && Boolean(stamps[id]);
+  });
+  state.daily.dishes = buildShuffledDailyDishes(current.slice(1), stampedNonNews);
+  state.daily.shuffledV2 = true;
+  saveState(state);
+  return state.daily.dishes;
+}
+
 export function createDefaultState() {
   return {
     lang: 'zh',
@@ -85,9 +158,10 @@ export function createDefaultState() {
     },
     daily: {
       date: getTodayDateStr(),
-      // Today's 4 core Brain Dim Sum dishes
-      dishes: ['news', 'sudoku', 'tenpai', 'history'],
-      stamps: {} // e.g. { news: { score: 90, stars: 3 } }
+      // 'news' is pinned as #1 daily; the remaining 3 dishes are shuffled!
+      dishes: buildShuffledDailyDishes([], []),
+      stamps: {}, // e.g. { news: { score: 90, stars: 3 } }
+      shuffledV2: true
     },
     unlockedAlbumIds: ['har-gow', 'puer'], // Give 2 welcoming starter collectibles!
     inviteBonusClaimedCodes: [],
@@ -113,7 +187,11 @@ export function loadState() {
           perGameLevel: { ...state.stats.perGameLevel, ...((parsed.stats && parsed.stats.perGameLevel) || {}) },
           perGameCleanStreak: { ...state.stats.perGameCleanStreak, ...((parsed.stats && parsed.stats.perGameCleanStreak) || {}) }
         },
-        daily: { ...state.daily, ...(parsed.daily || {}) },
+        daily: {
+          ...state.daily,
+          ...(parsed.daily || {}),
+          shuffledV2: Boolean(parsed.daily && parsed.daily.shuffledV2)
+        },
         seen: { ...(parsed.seen || {}) }
       };
       // Migrate existing profiles so Make 24 starts at gentle Relaxed (0) by default
@@ -127,22 +205,28 @@ export function loadState() {
   }
 
   const today = getTodayDateStr();
-  // Rotate daily dishes deterministically across 4 balanced cognitive pillars each day!
+  // Keep 'news' pinned as #1 daily, and shuffle the remaining 3 dishes from all other 15 games!
   if (state.daily.date !== today) {
-    const daySeed = Number(today.replace(/-/g, ''));
-    const memPool = ['memory', 'shisen', 'melody'];
-    const logicPool = ['sudoku', 'math', 'make24', 'blocks'];
-    const wisdomPool = ['vocab', 'history', 'tenpai', 'words', 'wordsearch', 'stroop', 'eagle', 'spotdiff'];
+    const prevOthers = Array.isArray(state.daily.dishes) ? state.daily.dishes.slice(1) : [];
     state.daily = {
       date: today,
-      dishes: [
-        'news',
-        memPool[daySeed % memPool.length],
-        logicPool[daySeed % logicPool.length],
-        wisdomPool[daySeed % wisdomPool.length]
-      ],
-      stamps: {}
+      dishes: buildShuffledDailyDishes(prevOthers, []),
+      stamps: {},
+      shuffledV2: true
     };
+  } else if (
+    !state.daily.shuffledV2 ||
+    !Array.isArray(state.daily.dishes) ||
+    state.daily.dishes.length !== 4 ||
+    state.daily.dishes[0] !== 'news'
+  ) {
+    const curStamps = state.daily.stamps || {};
+    const prevDishes = Array.isArray(state.daily.dishes) ? state.daily.dishes : [];
+    const stampedOthers = prevDishes.filter(function (id) {
+      return id !== 'news' && Boolean(curStamps[id]);
+    });
+    state.daily.dishes = buildShuffledDailyDishes(prevDishes.slice(1), stampedOthers);
+    state.daily.shuffledV2 = true;
   }
   if (state.stats.todayDate !== today) {
     state.stats.todayDate = today;

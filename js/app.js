@@ -13,6 +13,7 @@ import { mountBaoBo3D } from './mascot-3d.js';
 import {
   loadState,
   saveState,
+  reshuffleDailyDishes,
   recordGameCompletion,
   getFamilyPhotos,
   addFamilyPhoto,
@@ -431,7 +432,16 @@ function renderHomeView() {
         <div class="stamp-slip focused-quest-slip">
           <div class="stamp-slip-header">
             <span>${t(lang, 'slipTitle')}</span>
-            <span class="quest-progress-badge">${doneCount} / ${dishes.length} ${zh ? '完成' : 'Clear'}</span>
+            <div style="display:flex;align-items:center;gap:0.4rem;">
+              ${
+                dishes.slice(1).some(dId => !state.daily.stamps[dId])
+                  ? `<button type="button" class="slip-shuffle-btn" id="shuffleDailyRestBtn" title="${
+                      zh ? '保留時事必玩，重新洗牌其餘點心' : 'Keep News pinned & shuffle the other dishes'
+                    }">🔀 ${zh ? '換菜' : 'Shuffle'}</button>`
+                  : ''
+              }
+              <span class="quest-progress-badge">${doneCount} / ${dishes.length} ${zh ? '完成' : 'Clear'}</span>
+            </div>
           </div>
           <div class="stamp-grid quest-2x2-grid" id="dailyStampGrid"></div>
         </div>
@@ -500,16 +510,28 @@ function renderHomeView() {
     });
   }
 
+  const shufBtn = wrap.querySelector('#shuffleDailyRestBtn');
+  if (shufBtn) {
+    shufBtn.addEventListener('click', () => {
+      playSfx('roulette', state.sound);
+      reshuffleDailyDishes(state);
+      renderHomeView();
+    });
+  }
+
   const stampGrid = wrap.querySelector('#dailyStampGrid');
   dishes.forEach((dId, idx) => {
     const meta = GAME_CATALOG.find(g => g.id === dId);
     const stamped = state.daily.stamps[dId];
     const isNext = dId === nextUnstamped;
+    const isPinnedNews = idx === 0 && dId === 'news';
     const slot = document.createElement('button');
     slot.type = 'button';
     slot.className = `stamp-slot ${stamped ? 'done' : ''} ${isNext ? 'next-up-slot' : ''}`;
     slot.innerHTML = `
-      <span class="quest-num-badge">#${idx + 1}</span>
+      <span class="quest-num-badge ${isPinnedNews ? 'pinned-dish' : ''}">${
+        isPinnedNews ? (zh ? '📌 每日必玩' : '📌 Daily') : `#${idx + 1}`
+      }</span>
       <span class="stamp-slot-icon">${meta.icon}</span>
       <span class="stamp-slot-name">${pickText(meta.shortName, lang)}</span>
       <span class="stamp-slot-sub">
