@@ -2,13 +2,17 @@ import {
   GAME_CATALOG,
   MAHJONG_AND_DIMSUM_TILES,
   WET_MARKET_ITEMS,
+  MARKET_CHATS,
   YUM_CHA_MENU,
+  EXACT_CHANGE_SCENARIOS,
+  TARGET_PAIR_PUZZLES,
   HISTORY_QUESTIONS,
   TIMELINE_SETS,
   IDIOM_QUESTIONS,
   CATEGORY_BOARDS,
   EAGLE_PAIRS
 } from '../data/content.js';
+import { drawFreshItems, hasSeenSignature, markSeenSignature } from '../data/seed-tracker.js';
 import { t, pickText, randomPraise, playSfx, speakText, stopSpeaking } from '../i18n.js';
 import { getFamilyPhotos } from '../storage.js';
 import { renderMasterBoSvg, getLiveComboCount } from '../ui-fx.js';
@@ -110,7 +114,7 @@ export async function mountNewsGame(ctx) {
   }
 
   const count = level === 0 ? 2 : 3;
-  const stories = shuffle(pool).slice(0, Math.min(count, pool.length));
+  const stories = drawFreshItems(state, 'news_stories', pool, Math.min(count, pool.length), s => s.id);
   let phase = 'read'; // 'read' | 'quiz'
   let qIdx = 0;
   let mistakes = 0;
@@ -311,8 +315,22 @@ export async function mountMemoryGame(ctx) {
       }));
     }
     const neededRemaining = Math.max(0, pairCount - sourcePool.length);
-    const tilePicks = shuffle(MAHJONG_AND_DIMSUM_TILES).slice(0, neededRemaining);
-    const chosenPairs = shuffle([...sourcePool.slice(0, pairCount), ...tilePicks]).slice(0, pairCount);
+    let tilePicks = drawFreshItems(state, 'mem_tiles', MAHJONG_AND_DIMSUM_TILES, neededRemaining, tl => tl.id);
+    let chosenPairs = shuffle([...sourcePool.slice(0, pairCount), ...tilePicks]).slice(0, pairCount);
+    let comboSig = chosenPairs.map(p => p.id).sort().join('|');
+    if (hasSeenSignature(state, 'mem_pair_combos', comboSig) && neededRemaining > 0) {
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const altTiles = shuffle(MAHJONG_AND_DIMSUM_TILES).slice(0, neededRemaining);
+        const altChosen = shuffle([...sourcePool.slice(0, pairCount), ...altTiles]).slice(0, pairCount);
+        const altSig = altChosen.map(p => p.id).sort().join('|');
+        if (!hasSeenSignature(state, 'mem_pair_combos', altSig)) {
+          chosenPairs = altChosen;
+          comboSig = altSig;
+          break;
+        }
+      }
+    }
+    markSeenSignature(state, 'mem_pair_combos', comboSig, 500);
 
     const deck = shuffle(
       chosenPairs.flatMap((item, idx) => [
@@ -440,20 +458,32 @@ export async function mountMemoryGame(ctx) {
 
   function runMarketRecallMode() {
     const targetCount = level === 0 ? 3 : level === 1 ? 4 : 5;
-    const pool = shuffle(WET_MARKET_ITEMS).slice(0, 9);
-    const targets = pool.slice(0, targetCount);
+    let targets = drawFreshItems(state, 'market_targets', WET_MARKET_ITEMS, targetCount, it => it.id);
+    let mktSig = targets.map(x => x.id).sort().join('|');
+    if (hasSeenSignature(state, 'market_list_combos', mktSig)) {
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const alt = shuffle(WET_MARKET_ITEMS).slice(0, targetCount);
+        const altSig = alt.map(x => x.id).sort().join('|');
+        if (!hasSeenSignature(state, 'market_list_combos', altSig)) {
+          targets = alt;
+          mktSig = altSig;
+          break;
+        }
+      }
+    }
+    markSeenSignature(state, 'market_list_combos', mktSig, 500);
     const targetIds = new Set(targets.map(x => x.id));
-    const stallItems = shuffle(pool);
+    const decoys = shuffle(WET_MARKET_ITEMS.filter(x => !targetIds.has(x.id))).slice(0, Math.max(4, 9 - targetCount));
+    const stallItems = shuffle([...targets, ...decoys]);
 
     let step = 'study'; // 'study' | 'distract' | 'recall'
     const selectedIds = new Set();
     let tries = 0;
 
-    // Quick pleasant distractor sum ("bumping into a neighbor on the way to the market!")
-    const a = 12 + Math.floor(Math.random() * 14);
-    const b = 5 + Math.floor(Math.random() * 9);
-    const distractAns = a + b;
-    const distractChoices = shuffle([distractAns, distractAns + 2, distractAns - 3]);
+    // Non-repeating pleasant neighbor-chat arithmetic scenario from 115-scenario bank
+    const chat = drawFreshItems(state, 'market_chats', MARKET_CHATS, 1, c => c.id)[0];
+    const distractAns = chat.ans;
+    const distractChoices = shuffle(chat.choices);
 
     function renderMarket() {
       container.innerHTML = '';
@@ -505,7 +535,7 @@ export async function mountMemoryGame(ctx) {
           <div class="prompt-box">
             <span class="news-tag">${lang === 'zh' ? '👋 途中撞見街坊傾兩句' : '👋 Quick Neighbor Chat'}</span>
             <p class="prompt-title" style="margin-top:0.4rem;">
-              ${lang === 'zh' ? `街坊問：「買生果 $${a} 加買報紙 $${b}，一共幾多錢呀？」` : `Your neighbor asks: "$${a} for fruit plus $${b} for the paper — what's the total?"`}
+              ${chat[lang]}
             </p>
           </div>
           <div class="choices-list">
@@ -609,6 +639,41 @@ export function mountMathGame(ctx) {
   let roundIdx = 0;
   let mistakes = 0;
 
+  // Draw all 3 non-repeating math scenarios upfront for this session
+  const itemCount = level === 0 ? 2 : level === 1 ? 3 : 4;
+  let sessionBillPicks = drawFreshItems(state, 'yum_cha_dishes', YUM_CHA_MENU, itemCount, d => d.id);
+  let billSig = sessionBillPicks.map(p => p.id).sort().join('|');
+  if (hasSeenSignature(state, 'yum_cha_bills', billSig)) {
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const alt = shuffle(YUM_CHA_MENU).slice(0, itemCount);
+      const altSig = alt.map(p => p.id).sort().join('|');
+      if (!hasSeenSignature(state, 'yum_cha_bills', altSig)) {
+        sessionBillPicks = alt;
+        billSig = altSig;
+        break;
+      }
+    }
+  }
+  markSeenSignature(state, 'yum_cha_bills', billSig, 500);
+
+  const scPool = EXACT_CHANGE_SCENARIOS.filter(s => s.minLvl === level);
+  const sessionChangeSc = drawFreshItems(
+    state,
+    'math_change_' + level,
+    scPool.length ? scPool : EXACT_CHANGE_SCENARIOS,
+    1,
+    s => s.id
+  )[0];
+
+  const tpPool = TARGET_PAIR_PUZZLES.filter(p => p.minLvl === level);
+  const sessionTargetPz = drawFreshItems(
+    state,
+    'math_target_' + level,
+    tpPool.length ? tpPool : TARGET_PAIR_PUZZLES,
+    1,
+    p => p.id
+  )[0];
+
   function render() {
     container.innerHTML = '';
     renderStageHeader({
@@ -642,12 +707,13 @@ export function mountMathGame(ctx) {
   }
 
   function renderYumChaBill() {
-    const itemCount = level === 0 ? 2 : level === 1 ? 3 : 4;
-    const picks = shuffle(YUM_CHA_MENU).slice(0, itemCount);
+    const picks = sessionBillPicks;
     const total = picks.reduce((sum, x) => sum + x.price, 0);
-    const options = shuffle([total, total + 10, total - 6, total + 4]).slice(0, 3);
-    if (!options.includes(total)) options[0] = total;
-    const finalOpts = shuffle(options);
+    const distractorSet = new Set([total]);
+    [total + 10, Math.max(14, total - 6), total + 4, total + 8].forEach(v => {
+      if (distractorSet.size < 3 && v > 0) distractorSet.add(v);
+    });
+    const finalOpts = shuffle(Array.from(distractorSet));
 
     const card = document.createElement('div');
     card.className = 'card';
@@ -699,9 +765,11 @@ export function mountMathGame(ctx) {
   }
 
   function renderMakeChange() {
-    const cost = level === 0 ? 65 : level === 1 ? 63 : 57;
-    const paid = 100;
+    const sc = sessionChangeSc;
+    const cost = sc.cost;
+    const paid = sc.paid;
     const targetChange = paid - cost;
+    const denoms = targetChange >= 100 ? [100, 50, 20, 10, 5, 2, 1] : [50, 20, 10, 5, 2, 1];
     const tappedBills = [];
 
     function drawChangeCard() {
@@ -716,8 +784,8 @@ export function mountMathGame(ctx) {
           <p class="prompt-title" style="margin-top:0.4rem;">
             ${
               lang === 'zh'
-                ? `買生果一共 <strong>$${cost}</strong>，付現金 <strong>$${paid}</strong>。<br/>請撳下面銀紙／硬幣湊夠找續金額：`
-                : `Groceries cost <strong>$${cost}</strong>, paid with <strong>$${paid}</strong>.<br/>Tap bills & coins below to make exact change:`
+                ? `${sc.zhItem}一共 <strong>$${cost}</strong>，付現金 <strong>$${paid}</strong>。<br/>請撳下面銀紙／硬幣湊夠找續金額：`
+                : `Buying ${sc.enItem} costs <strong>$${cost}</strong>, paid with <strong>$${paid}</strong>.<br/>Tap bills & coins below to make exact change:`
             }
           </p>
           <div style="font-size:1.25rem;font-weight:900;color:var(--jade-dark);padding:0.55rem 0.8rem;background:#fff;border-radius:10px;border:2px solid var(--jade);">
@@ -726,7 +794,7 @@ export function mountMathGame(ctx) {
           </div>
         </div>
         <div class="bills-row">
-          ${[50, 20, 10, 5, 2, 1]
+          ${denoms
             .map(
               denom =>
                 `<button type="button" class="bill-btn ${denom <= 5 ? 'coin' : ''}" data-denom="${denom}">+$${denom}</button>`
@@ -775,10 +843,9 @@ export function mountMathGame(ctx) {
   }
 
   function renderTargetSteamer() {
-    const nums = level === 0 ? [10, 15, 20, 25, 30, 35] : [12, 18, 22, 28, 34, 16];
-    const shuffled = shuffle(nums);
-    const target = shuffled[0] + shuffled[1];
-    const displayNums = shuffle(shuffled);
+    const tp = sessionTargetPz;
+    const target = tp.target;
+    const displayNums = shuffle(tp.nums);
     let pickedIndices = [];
 
     function drawTarget() {
@@ -860,8 +927,8 @@ export function mountHistoryGame(ctx) {
   } else if (state.region === 'yvr') {
     pool = HISTORY_QUESTIONS.filter(q => q.region === 'yvr' || q.region === 'both');
   }
-  const chosenTrivia = shuffle(pool).slice(0, 2);
-  const chosenTimeline = shuffle(TIMELINE_SETS)[0];
+  const chosenTrivia = drawFreshItems(state, 'history_q', pool, 2, q => q.id);
+  const chosenTimeline = drawFreshItems(state, 'history_tl', TIMELINE_SETS, 1, tl => tl.id)[0];
 
   let step = 0; // 0, 1 = trivia, 2 = timeline ordering
   let mistakes = 0;
@@ -1026,8 +1093,8 @@ export function mountWordsGame(ctx) {
   const level = (typeof state.stats.perGameLevel.words === "number" ? state.stats.perGameLevel.words : 1);
   const gameMeta = GAME_CATALOG.find(g => g.id === 'words');
 
-  const idioms = shuffle(IDIOM_QUESTIONS).slice(0, 2);
-  const board = shuffle(CATEGORY_BOARDS)[0];
+  const idioms = drawFreshItems(state, 'idiom_q', IDIOM_QUESTIONS, 2, q => q.id);
+  const board = drawFreshItems(state, 'cat_boards', CATEGORY_BOARDS, 1, b => b.id)[0];
   let step = 0; // 0, 1 = idioms, 2 = category sort
   let mistakes = 0;
 
@@ -1190,8 +1257,14 @@ export function mountWordsGame(ctx) {
                 drawBoard();
                 const fb = container.querySelector('#catFb');
                 if (fb) {
+                  const remainingThemes = catBoard.groups
+                    .filter(g => !solvedGroups.includes(g))
+                    .map(g => `「${pickText(g.name, lang)}」`)
+                    .join('、');
                   fb.innerHTML = `<div class="feedback-banner gentle-retry">${
-                    lang === 'zh' ? '呢三個未算同一類喎，試下搵三個同屬「名茶」、「點心」或「地標」嘅詞語 😊' : 'Those 3 belong to different categories — try grouping 3 of the exact same theme 😊'
+                    lang === 'zh'
+                      ? `呢三個未算同一類喎，試下搵三個同屬 ${remainingThemes} 嘅詞語 😊`
+                      : `Those 3 belong to different categories — try grouping 3 from ${remainingThemes} 😊`
                   }</div>`;
                 }
               }
@@ -1221,7 +1294,7 @@ export function mountEagleGame(ctx) {
   const gameMeta = GAME_CATALOG.find(g => g.id === 'eagle');
 
   const totalRounds = 4;
-  const pairs = shuffle(EAGLE_PAIRS).slice(0, totalRounds);
+  const pairs = drawFreshItems(state, 'eagle_pairs', EAGLE_PAIRS, totalRounds, p => p.id);
   let roundIdx = 0;
   let mistakes = 0;
   let showHint = false;

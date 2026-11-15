@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Fetches fresh HK (RTHK), Vancouver/BC (CBC), and World/Health RSS headlines
-to prepend interactive 'Read & Recall' quiz cards into data/daily-news.json,
-keeping our curated bilingual HK × Vancouver stories as reliable evergreen companions.
+Fetches fresh HK (RTHK) and Vancouver/BC (Global BC) RSS headlines
+to prepend uniquely dated 'Read & Recall' quiz cards into data/daily-news.json,
+retaining rolling live archives alongside all 435+ curated bilingual HK × Vancouver × Wellness stories.
 """
 import datetime
+import hashlib
 import html
 import json
 import pathlib
@@ -32,9 +33,24 @@ FEEDS = [
 ]
 
 SKIP_WORDS = re.compile(
-    r"(murder|killed|shooting|fatal|homicide|suicide|assault|死亡|謀殺|墮樓|命案|斬傷)",
+    r"(murder|killed|shooting|fatal|homicide|suicide|assault|stabbing|死亡|謀殺|墮樓|命案|斬傷|身亡)",
     re.IGNORECASE,
 )
+
+DISTRACTOR_POOL = [
+    {"zh": "全港郵政局宣佈逢星期日免費派發紀念郵票冊", "en": "Post offices announce free Sunday commemorative stamp albums"},
+    {"zh": "天星小輪推出雙層帆船造型海上圖書館專線", "en": "Star Ferry unveils a two-deck tall-ship floating library route"},
+    {"zh": "溫哥華架空列車增設車廂手沖茗茶體驗專區", "en": "SkyTrain launches an onboard pour-over oolong tea tasting car"},
+    {"zh": "山頂纜車宣布改用太陽能熱氣球接載遊客上山", "en": "Peak Tramway announces solar hot-air balloon transfers to Victoria Peak"},
+    {"zh": "史丹利公園海堤舉辦千人古典豎琴日出音樂會", "en": "Stanley Park Seawall hosts a 1,000-harpist sunrise symphony"},
+    {"zh": "大嶼山昂坪增設全港首座室內冰雪溫室花園", "en": "Ngong Ping opens Hong Kong's first indoor alpine snow conservatory"},
+    {"zh": "列治文漁人碼頭展出百年巨型木製蒸汽潛水艇", "en": "Steveston Wharf unveils a century-old wooden steam submarine"},
+    {"zh": "維多利亞公園舉辦國際紫砂茶壺飛行模型大賽", "en": "Victoria Park hosts an international flying-teapot model derby"},
+    {"zh": "北溫海上巴士推出透明玻璃船底觀賞珊瑚航線", "en": "North Shore SeaBus debuts glass-bottom coral viewing hulls"},
+    {"zh": "沙田城門河畔新設三公里長室內恆溫溜冰步道", "en": "Shing Mun River opens a 3-km indoor climate-controlled skating promenade"},
+    {"zh": "本拿比山公園宣布全年開放夜間螢火蟲纜車", "en": "Burnaby Mountain launches year-round firefly night gondolas"},
+    {"zh": "西貢離島開辦週末水上太陽能粵曲歌劇院", "en": "Sai Kung islands launch a floating solar Cantonese opera amphitheatre"},
+]
 
 
 def strip_html(raw: str) -> str:
@@ -44,7 +60,7 @@ def strip_html(raw: str) -> str:
 
 
 def fetch_rss_items(url: str, max_items: int = 3):
-    req = urllib.request.Request(url, headers={"User-Agent": "DailyMindSumBot/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "DailyMindSumBot/2.0"})
     cafile = "/etc/ssl/cert.pem" if pathlib.Path("/etc/ssl/cert.pem").exists() else None
     ctx = ssl.create_default_context(cafile=cafile) if cafile else ssl.create_default_context()
     with urllib.request.urlopen(req, timeout=12, context=ctx) as resp:
@@ -58,35 +74,32 @@ def fetch_rss_items(url: str, max_items: int = 3):
             continue
         if SKIP_WORDS.search(title) or SKIP_WORDS.search(desc):
             continue
-        items.append((title, desc[:220]))
+        items.append((title, desc[:240]))
         if len(items) >= max_items:
             break
     return items
 
 
-def build_live_cards():
+def build_live_cards(today_compact: str):
     cards = []
-    distractors_zh = [
-        "南極企鵝保育中心宣佈免費派發雪糕",
-        "火星探測器喺月球開設第一間港式茶餐廳",
-    ]
-    distractors_en = [
-        "Antarctic penguin sanctuary opens a free ice-cream tram",
-        "Mars rover opens the first dim sum tea house on the Moon",
-    ]
-
-    for idx, feed in enumerate(FEEDS):
+    for feed in FEEDS:
         try:
-            fetched = fetch_rss_items(feed["url"], max_items=1)
+            fetched = fetch_rss_items(feed["url"], max_items=3)
         except Exception as exc:
             print(f"[warn] Could not fetch {feed['url']}: {exc}")
             continue
 
-        for j, (title, desc) in enumerate(fetched):
+        for title, desc in fetched:
+            digest = hashlib.sha1(title.encode("utf-8")).hexdigest()[:8]
+            card_id = f"live-{feed['region']}-{today_compact}-{digest}"
+            d_idx = int(digest[:4], 16) % len(DISTRACTOR_POOL)
+            d1 = DISTRACTOR_POOL[d_idx]
+            d2 = DISTRACTOR_POOL[(d_idx + 5) % len(DISTRACTOR_POOL)]
+
             if feed["lang"] == "zh":
                 cards.append(
                     {
-                        "id": f"live-{feed['region']}-{idx}-{j}",
+                        "id": card_id,
                         "region": feed["region"],
                         "tag": feed["tag"],
                         "headline": {"zh": title, "en": f"[HK News] {title}"},
@@ -96,9 +109,9 @@ def build_live_cards():
                             "en": "Which topic was featured in the Hong Kong news brief you just read?",
                         },
                         "choices": [
-                            {"zh": title[:38], "en": title[:60]},
-                            {"zh": distractors_zh[0], "en": distractors_en[0]},
-                            {"zh": distractors_zh[1], "en": distractors_en[1]},
+                            {"zh": title[:42], "en": title[:65]},
+                            d1,
+                            d2,
                         ],
                         "answerIndex": 0,
                     }
@@ -106,7 +119,7 @@ def build_live_cards():
             else:
                 cards.append(
                     {
-                        "id": f"live-{feed['region']}-{idx}-{j}",
+                        "id": card_id,
                         "region": feed["region"],
                         "tag": feed["tag"],
                         "headline": {"zh": f"【溫哥華快訊】{title}", "en": title},
@@ -116,9 +129,9 @@ def build_live_cards():
                             "en": "Which headline did you just read in the Vancouver & BC news brief?",
                         },
                         "choices": [
-                            {"zh": title[:60], "en": title[:65]},
-                            {"zh": distractors_en[0], "en": distractors_en[0]},
-                            {"zh": distractors_en[1], "en": distractors_en[1]},
+                            {"zh": title[:65], "en": title[:70]},
+                            d1,
+                            d2,
                         ],
                         "answerIndex": 0,
                     }
@@ -128,18 +141,30 @@ def build_live_cards():
 
 def main():
     existing = json.loads(NEWS_PATH.read_text(encoding="utf-8"))
-    curated = [
-        s for s in existing.get("stories", []) if not str(s.get("id", "")).startswith("live-")
-    ]
-    live_cards = build_live_cards()
-    today_str = datetime.date.today().isoformat()
+    all_existing = existing.get("stories", [])
+    curated = [s for s in all_existing if not str(s.get("id", "")).startswith("live-")]
+    prior_live = [s for s in all_existing if str(s.get("id", "")).startswith("live-")]
 
+    today = datetime.date.today()
+    today_str = today.isoformat()
+    today_compact = today.strftime("%Y%m%d")
+
+    fresh_live = build_live_cards(today_compact)
+    seen_ids = set()
+    merged_live = []
+    for card in fresh_live + prior_live:
+        cid = card.get("id")
+        if cid and cid not in seen_ids:
+            seen_ids.add(cid)
+            merged_live.append(card)
+
+    # Keep up to 120 dated live stories + all 435+ curated stories
     merged = {
         "updatedAt": today_str,
-        "stories": live_cards + curated,
+        "stories": merged_live[:120] + curated,
     }
     NEWS_PATH.write_text(json.dumps(merged, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Updated {NEWS_PATH} ({len(live_cards)} live + {len(curated)} curated stories).")
+    print(f"Updated {NEWS_PATH} ({len(merged_live[:120])} live + {len(curated)} curated stories).")
 
 
 if __name__ == "__main__":

@@ -89,7 +89,8 @@ export function createDefaultState() {
       stamps: {} // e.g. { news: { score: 90, stars: 3 } }
     },
     unlockedAlbumIds: ['har-gow', 'puer'], // Give 2 welcoming starter collectibles!
-    inviteBonusClaimedCodes: []
+    inviteBonusClaimedCodes: [],
+    seen: {} // Tracks seen question/shape/board IDs across 90+ days so nothing repeats!
   };
 }
 
@@ -111,7 +112,8 @@ export function loadState() {
           perGameLevel: { ...state.stats.perGameLevel, ...((parsed.stats && parsed.stats.perGameLevel) || {}) },
           perGameCleanStreak: { ...state.stats.perGameCleanStreak, ...((parsed.stats && parsed.stats.perGameCleanStreak) || {}) }
         },
-        daily: { ...state.daily, ...(parsed.daily || {}) }
+        daily: { ...state.daily, ...(parsed.daily || {}) },
+        seen: { ...(parsed.seen || {}) }
       };
     }
   } catch (e) {

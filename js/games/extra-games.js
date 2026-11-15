@@ -1,6 +1,30 @@
-import { GAME_CATALOG, MAHJONG_AND_DIMSUM_TILES } from '../data/content.js';
+import {
+  GAME_CATALOG,
+  MAHJONG_AND_DIMSUM_TILES,
+  ZH_WORD_BANK,
+  EN_WORD_BANK
+} from '../data/content.js';
+import {
+  TENPAI_HANDS,
+  MAKE12_DEALS,
+  MAKE24_DEALS,
+  BLOCK_SHAPES,
+  BLOCK_STAGE_PATTERNS,
+  SHISEN_LAYOUTS,
+  SUDOKU_ICON_THEMES,
+  MELODY_THEMES,
+  MELODY_PHRASES,
+  STROOP_COLOR_BANK
+} from '../data/bank-puzzles.js';
+import {
+  VOCAB_CONTEXT_ITEMS,
+  PRACTICAL_ENGLISH_ITEMS,
+  VOCAB_MATCH_PAIRS
+} from '../data/bank-vocab.js';
+import { drawFreshItems, hasSeenSignature, markSeenSignature } from '../data/seed-tracker.js';
 import { t, pickText, randomPraise, playSfx, playPentatonicNote, speakText, stopSpeaking } from '../i18n.js';
 import { renderStageHeader } from './engine.js';
+import { saveState } from '../storage.js';
 
 function shuffle(arr) {
   const copy = arr.slice();
@@ -19,12 +43,9 @@ function getLevel(state, key) {
 }
 
 /* =========================================================================
-   7. TEA-HOUSE SUDOKU (醒神茶樓數獨 — 4x4, 6x6, 9x9 + Icons + Notes + Hints)
+   7. TEA-HOUSE SUDOKU (醒神茶樓數獨 — 4x4, 6x6, 9x9 + 12 Icon Themes + Notes + Hints)
    ========================================================================= */
-const DIMSUM_ICONS = ['', '🥟', '🧆', '🥧', '🫖', '🥯', '🍤', '🥬', '🍊', '🍁'];
-
 function buildSudokuSolution(size, boxR, boxC) {
-  // Canonical valid pattern + randomized symbol, within-band row & within-stack col shuffles
   const symbols = shuffle(Array.from({ length: size }, (_, i) => i + 1));
   const rowBands = shuffle(Array.from({ length: size / boxR }, (_, i) => i));
   const colStacks = shuffle(Array.from({ length: size / boxC }, (_, i) => i));
@@ -68,21 +89,35 @@ export function mountSudokuGame(ctx) {
       ? { size: 6, boxR: 2, boxC: 3, blanks: 14 }
       : { size: 9, boxR: 3, boxC: 3, blanks: 30 };
 
-  const solution = buildSudokuSolution(cfg.size, cfg.boxR, cfg.boxC);
-  const puzzle = solution.map(r => r.slice());
-  const given = solution.map(r => r.map(() => true));
-  const notes = solution.map(r => r.map(() => new Set()));
+  const iconTheme = drawFreshItems(state, 'sudoku_themes', SUDOKU_ICON_THEMES, 1, th => th.id)[0];
 
   const coords = [];
   for (let r = 0; r < cfg.size; r++) {
     for (let c = 0; c < cfg.size; c++) coords.push([r, c]);
   }
-  shuffle(coords)
-    .slice(0, cfg.blanks)
-    .forEach(([r, c]) => {
-      puzzle[r][c] = 0;
-      given[r][c] = false;
-    });
+
+  let solution = null;
+  let puzzle = null;
+  let given = null;
+  let boardSig = '';
+  for (let attempt = 0; attempt < 40; attempt++) {
+    solution = buildSudokuSolution(cfg.size, cfg.boxR, cfg.boxC);
+    puzzle = solution.map(r => r.slice());
+    given = solution.map(r => r.map(() => true));
+    shuffle(coords)
+      .slice(0, cfg.blanks)
+      .forEach(([r, c]) => {
+        puzzle[r][c] = 0;
+        given[r][c] = false;
+      });
+    boardSig = puzzle.map(r => r.join(',')).join('/');
+    if (!hasSeenSignature(state, 'sudoku_boards_' + level, boardSig)) {
+      break;
+    }
+  }
+  markSeenSignature(state, 'sudoku_boards_' + level, boardSig, 500);
+
+  const notes = solution.map(r => r.map(() => new Set()));
 
   let sel = coords.find(([r, c]) => !given[r][c]) || [0, 0];
   let noteMode = false;
@@ -92,7 +127,7 @@ export function mountSudokuGame(ctx) {
 
   function fmtSymbol(v) {
     if (!v) return '';
-    return iconMode && cfg.size <= 6 ? DIMSUM_ICONS[v] : String(v);
+    return iconMode ? iconTheme.icons[v] : String(v);
   }
 
   function hasConflict(r, c, val) {
@@ -165,13 +200,9 @@ export function mountSudokuGame(ctx) {
 
     const topTools = `
       <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
-        ${
-          cfg.size <= 6
-            ? `<button type="button" class="chip-btn" id="sdkIconBtn">${
-                iconMode ? '🔢 數字' : '🥟 點心圖案'
-              }</button>`
-            : ''
-        }
+        <button type="button" class="chip-btn" id="sdkIconBtn">${
+          iconMode ? (lang === 'zh' ? '🔢 數字' : '🔢 Numbers') : `${iconTheme.icons[1]} ${pickText(iconTheme.name, lang)}`
+        }</button>
         <button type="button" class="chip-btn" id="sdkNoteBtn" style="${
           noteMode ? 'background:var(--jade);color:#fff;border-color:var(--jade);' : ''
         }">✏️ ${lang === 'zh' ? '草稿' : 'Notes'}</button>
@@ -210,8 +241,8 @@ export function mountSudokuGame(ctx) {
       <p style="margin:0 0 0.4rem;font-size:0.9rem;color:var(--ink-muted);font-weight:700;text-align:center;">
         ${
           lang === 'zh'
-            ? `${cfg.size}×${cfg.size} 棋盤：每行、每列及每個粗框入面都唔可以重複`
-            : `${cfg.size}×${cfg.size} Grid: Every row, column & bold box contains each symbol once`
+            ? `${cfg.size}×${cfg.size} 棋盤（今日圖案主題：${pickText(iconTheme.name, lang)}）：每行、每列及每個粗框入面都唔可以重複`
+            : `${cfg.size}×${cfg.size} Grid (${pickText(iconTheme.name, lang)} theme): Every row, column & bold box contains each symbol once`
         }
       </p>
       <div class="sudoku-board size-${cfg.size}" id="sdkBoard" style="grid-template-columns: repeat(${cfg.size}, 1fr);"></div>
@@ -322,81 +353,8 @@ export function mountSudokuGame(ctx) {
 }
 
 /* =========================================================================
-   8. MAHJONG WINNING TILE QUIZ (叫糊大師 — 聽邊張牌？)
+   8. MAHJONG WINNING TILE QUIZ (叫糊大師 — 900 Mathematically Verified Hands)
    ========================================================================= */
-const TENPAI_HANDS = [
-  {
-    minLvl: 0,
-    hand: ['一萬', '二萬', '三萬', '五筒', '五筒', '五筒', '紅中'],
-    options: ['紅中', '九萬', '北風'],
-    answer: '紅中',
-    explain: {
-      zh: '一二三萬（順子）＋ 五筒刻子 ＋ 單吊「紅中」做將眼即食糊！',
-      en: '1-2-3 Characterschow + 5-Dots pung + pairing the Red Dragon ("紅中") completes the eye!'
-    }
-  },
-  {
-    minLvl: 0,
-    hand: ['二索', '三索', '四索', '六萬', '七萬', '發財', '發財'],
-    options: ['八萬', '一筒', '南風'],
-    answer: '八萬',
-    explain: {
-      zh: '六萬、七萬兩面叫糊，摸「八萬」（或五萬）湊成順子，配發財做眼食糊！',
-      en: '6-7 Characters forms a two-sided wait — drawing 8 Characters completes the run alongside the Green Dragon pair!'
-    }
-  },
-  {
-    minLvl: 0,
-    hand: ['一筒', '二筒', '三筒', '四萬', '六萬', '白板', '白板'],
-    options: ['五萬', '九筒', '西風'],
-    answer: '五萬',
-    explain: {
-      zh: '四萬同六萬中間「卡窿」聽「五萬」，湊齊四五六萬順子即食糊！',
-      en: '4 and 6 Characters form a middle ("kanchan") wait for 5 Characters!'
-    }
-  },
-  {
-    minLvl: 1,
-    hand: ['一萬', '二萬', '三萬', '四筒', '五筒', '六筒', '二索', '二索', '東風', '東風'],
-    options: ['東風', '七萬', '九索'],
-    answer: '東風',
-    explain: {
-      zh: '二索與東風「對碰」叫糊！摸入「東風」變刻子、留二索做眼即食糊！',
-      en: 'Dual-pair ("shanpon") wait on 2-Bamboo and East Wind — drawing East Wind completes the triplet!'
-    }
-  },
-  {
-    minLvl: 1,
-    hand: ['二筒', '三筒', '四筒', '五筒', '六筒', '七筒', '八筒', '八筒', '紅中', '紅中'],
-    options: ['八筒', '一萬', '南風'],
-    answer: '八筒',
-    explain: {
-      zh: '八筒同紅中對碰！摸「八筒」湊成刻子，好靚嘅混一色牌型！',
-      en: 'Half-flush hand waiting on 8-Dots (or Red Dragon) to complete the final triplet!'
-    }
-  },
-  {
-    minLvl: 2,
-    hand: ['一萬', '一萬', '一萬', '二萬', '三萬', '四萬', '五萬', '六萬', '七萬', '八萬', '九萬', '九萬', '九萬'],
-    options: ['五萬', '紅中', '一筒'],
-    answer: '五萬',
-    explain: {
-      zh: '傳說中嘅「九子連環」（純正九蓮寶燈）！一至九萬任何一張萬子都食得糊！',
-      en: 'The legendary Nine Gates ("九子連環") pure flush — wins on ANY Characters tile 1 through 9!'
-    }
-  },
-  {
-    minLvl: 2,
-    hand: ['二索', '三索', '四索', '四索', '五索', '六索', '七索', '八索', '發財', '發財', '發財', '九筒', '九筒'],
-    options: ['九索', '二萬', '白板'],
-    answer: '九索',
-    explain: {
-      zh: '二三四索 ＋ 四五六索 ＋ 七八索聽「九索」（或六索），配發財刻子同九筒眼！',
-      en: '2-3-4 + 4-5-6 + 7-8 Bamboo waiting cleanly on 9-Bamboo!'
-    }
-  }
-];
-
 function styleMjTile(name) {
   let color = '#1C232B';
   if (name.indexOf('萬') !== -1 || name === '紅中') color = '#C8372D';
@@ -413,9 +371,9 @@ export function mountTenpaiGame(ctx) {
   const level = getLevel(state, 'tenpai');
   const gameMeta = GAME_CATALOG.find(g => g.id === 'tenpai');
 
-  let eligible = TENPAI_HANDS.filter(h => h.minLvl <= level);
+  let eligible = TENPAI_HANDS.filter(h => h.minLvl === level);
   if (eligible.length < 3) eligible = TENPAI_HANDS;
-  const rounds = shuffle(eligible).slice(0, 3);
+  const rounds = drawFreshItems(state, 'tenpai_lvl_' + level, eligible, 3, h => h.id);
   let idx = 0;
   let mistakes = 0;
 
@@ -510,14 +468,15 @@ export function mountTenpaiGame(ctx) {
 }
 
 /* =========================================================================
-   9. MAHJONG PAIR CLEAR / SHISEN-SHO (麻雀連連看消消樂)
+   9. MAHJONG PAIR CLEAR / SHISEN-SHO (315 Sculpted Layouts + 126 Tiles)
    ========================================================================= */
 function canConnectTwoTurns(grid, rows, cols, r1, c1, r2, c2) {
-  // Padded coordinate space: 0..rows+1, 0..cols+1
   const H = rows + 2;
   const W = cols + 2;
-  const sr = r1 + 1, sc = c1 + 1;
-  const tr = r2 + 1, tc = c2 + 1;
+  const sr = r1 + 1;
+  const sc = c1 + 1;
+  const tr = r2 + 1;
+  const tc = c2 + 1;
 
   function isFree(pr, pc) {
     if (pr === tr && pc === tc) return true;
@@ -526,7 +485,6 @@ function canConnectTwoTurns(grid, rows, cols, r1, c1, r2, c2) {
   }
 
   const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-  // visited[pr][pc][dir] = min turns
   const best = Array.from({ length: H }, () => Array.from({ length: W }, () => [9, 9, 9, 9]));
   const queue = [];
 
@@ -563,11 +521,26 @@ export function mountShisenGame(ctx) {
   const level = getLevel(state, 'shisen');
   const gameMeta = GAME_CATALOG.find(g => g.id === 'shisen');
 
-  const rows = level === 0 ? 4 : 4;
-  const cols = level === 0 ? 4 : level === 1 ? 5 : 6;
-  const totalPairs = (rows * cols) / 2;
+  const lvlLayouts = SHISEN_LAYOUTS.filter(l => l.minLvl === level);
+  const layout = drawFreshItems(
+    state,
+    'shisen_layouts_' + level,
+    lvlLayouts.length ? lvlLayouts : SHISEN_LAYOUTS,
+    1,
+    l => l.id
+  )[0];
 
-  const symbols = shuffle(MAHJONG_AND_DIMSUM_TILES);
+  const rows = layout.rows;
+  const cols = layout.cols;
+  let activeCells = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (layout.mask[r][c] === 1) activeCells += 1;
+    }
+  }
+  const totalPairs = Math.floor(activeCells / 2);
+
+  const symbols = drawFreshItems(state, 'shisen_tiles', MAHJONG_AND_DIMSUM_TILES, totalPairs, tl => tl.id);
   const pairItems = [];
   for (let i = 0; i < totalPairs; i++) {
     const item = symbols[i % symbols.length];
@@ -579,7 +552,13 @@ export function mountShisenGame(ctx) {
   let ptr = 0;
   for (let r = 0; r < rows; r++) {
     const row = [];
-    for (let c = 0; c < cols; c++) row.push(shuffled[ptr++]);
+    for (let c = 0; c < cols; c++) {
+      if (layout.mask[r][c] === 1 && ptr < shuffled.length) {
+        row.push(shuffled[ptr++]);
+      } else {
+        row.push(null);
+      }
+    }
     grid.push(row);
   }
 
@@ -624,12 +603,11 @@ export function mountShisenGame(ctx) {
         }
       }
       tries += 1;
-    } while (!findAvailablePair() && tries < 20);
+    } while (!findAvailablePair() && tries < 25);
     picked = null;
     hintPair = null;
   }
 
-  // Ensure initial board always has at least one legal move
   if (!findAvailablePair()) shuffleRemaining();
 
   function render() {
@@ -668,8 +646,8 @@ export function mountShisenGame(ctx) {
       <p style="margin:0;font-size:0.9rem;color:var(--ink-muted);font-weight:700;text-align:center;">
         ${
           lang === 'zh'
-            ? `尚餘 ${remaining} 對牌 · 兩隻相同牌只要連線轉彎唔超過 2 次（包括外圍邊界）即可消除！`
-            : `${remaining} pairs left · Match identical tiles connected with at most 2 turns!`
+            ? `「${pickText(layout.name, lang)}」 · 尚餘 ${remaining} 對牌（連線轉彎唔超過 2 次即可消除）`
+            : `${pickText(layout.name, lang)} · ${remaining} pairs left (match within 2 turns)`
         }
       </p>
       <div class="shisen-grid" id="shisenBoard" style="grid-template-columns: repeat(${cols}, 1fr);"></div>
@@ -745,32 +723,21 @@ export function mountShisenGame(ctx) {
 }
 
 /* =========================================================================
-   10. MAKE 24 / CARD ARITHMETIC (合廿四撲克心算)
+   10. MAKE 24 / CARD ARITHMETIC (210 Make-12 + 240 Make-24 Verified Deals)
    ========================================================================= */
-const MAKE12_DEALS = [
-  { nums: [2, 3, 6], target: 12, hint: { zh: '先計 2 × 3 = 6，再加 6 就等於 12！', en: 'First 2 × 3 = 6, then 6 + 6 = 12!' } },
-  { nums: [2, 4, 8], target: 12, hint: { zh: '先計 8 × 2 = 16，再減 4 就等於 12！', en: 'First 8 × 2 = 16, then 16 − 4 = 12!' } },
-  { nums: [3, 3, 6], target: 12, hint: { zh: '3 + 3 = 6，再加 6 = 12！', en: '3 + 3 = 6, then 6 + 6 = 12!' } },
-  { nums: [3, 4, 5], target: 12, hint: { zh: '3 + 4 + 5 = 12！', en: '3 + 4 + 5 = 12!' } }
-];
-
-const MAKE24_DEALS = [
-  { nums: [3, 4, 6, 8], target: 24, hint: { zh: '先計 8 − 6 = 2，再計 3 × 4 × 2 = 24！', en: 'Try 8 − 6 = 2, then 3 × 4 × 2 = 24!' } },
-  { nums: [2, 3, 4, 6], target: 24, hint: { zh: '先計 3 − 2 = 1，再計 4 × 6 × 1 = 24！', en: 'Try 3 − 2 = 1, then 4 × 6 × 1 = 24!' } },
-  { nums: [1, 2, 3, 4], target: 24, hint: { zh: '全部乘埋一齊：1 × 2 × 3 × 4 = 24！', en: 'Multiply all four: 1 × 2 × 3 × 4 = 24!' } },
-  { nums: [2, 6, 6, 6], target: 24, hint: { zh: '先計 6 × 6 = 36 及 6 × 2 = 12，再計 36 − 12 = 24！', en: '6 × 6 = 36 and 6 × 2 = 12, then 36 − 12 = 24!' } },
-  { nums: [3, 3, 6, 6], target: 24, hint: { zh: '先計 6 ÷ 3 = 2，加 6 變 8，再乘 3 = 24！', en: '6 ÷ 3 = 2, 2 + 6 = 8, then 8 × 3 = 24!' } },
-  { nums: [2, 3, 6, 9], target: 24, hint: { zh: '先計 9 − 3 = 6，減 2 變 4，再乘 6 = 24！', en: '9 − 3 = 6, 6 − 2 = 4, then 4 × 6 = 24!' } },
-  { nums: [3, 4, 4, 6], target: 24, hint: { zh: '先計 4 − 3 = 1，再計 4 × 6 × 1 = 24！', en: '4 − 3 = 1, then 4 × 6 × 1 = 24!' } }
-];
-
 export function mountMake24Game(ctx) {
   const { container, state, onBack, onComplete, onLevelChange } = ctx;
   const lang = state.lang;
   const level = getLevel(state, 'make24');
   const gameMeta = GAME_CATALOG.find(g => g.id === 'make24');
 
-  const deals = shuffle(level === 0 ? MAKE12_DEALS : MAKE24_DEALS).slice(0, 2);
+  const deals = drawFreshItems(
+    state,
+    level === 0 ? 'make12_deals' : 'make24_deals',
+    level === 0 ? MAKE12_DEALS : MAKE24_DEALS,
+    2,
+    d => d.id
+  );
   let dIdx = 0;
   let cards = [];
   let selCardIdx = null;
@@ -871,9 +838,6 @@ export function mountMake24Game(ctx) {
         else if (selOp === '-') res = a - b;
         else if (selOp === '×') res = a * b;
         else if (selOp === '÷') {
-          if (b === 0 || Math.abs((a / b) - Math.round(a / b)) > 0.0001 && cards.length === 2) {
-            // still allow clean fractions during intermediate steps!
-          }
           if (b === 0) return;
           res = a / b;
         }
@@ -934,11 +898,9 @@ export function mountMake24Game(ctx) {
 }
 
 /* =========================================================================
-   11. TAP-TO-HIGHLIGHT WORD SEARCH (港溫尋字陣)
+   11. TAP-TO-HIGHLIGHT WORD SEARCH (514 ZH + 550 EN Non-Repeating Word Banks)
    ========================================================================= */
-const ZH_WORD_BANK = ['天星小輪', '史丹利', '鐵觀音', '菠蘿油', '獅門橋', '龍馬精神', '蝦餃皇', '維多利亞'];
-const EN_WORD_BANK = ['FERRY', 'MAPLE', 'TEAPOT', 'DIMSUM', 'SALMON', 'BRIDGE', 'GARDEN'];
-const ZH_FILLERS = '春風得意茶香滿屋吉祥如意福壽康寧山水清音明月松間金玉滿堂喜氣洋洋';
+const ZH_FILLERS = '春風得意茶香滿屋吉祥如意福壽康寧山水清音明月松間金玉滿堂喜氣洋洋花開富貴竹報平安';
 const EN_FILLERS = 'ABCDEFGHJKLMNPQRSTVWXYZ';
 
 export function mountWordSearchGame(ctx) {
@@ -949,16 +911,31 @@ export function mountWordSearchGame(ctx) {
 
   const size = level === 0 ? 6 : 7;
   const targetCount = level === 0 ? 3 : level === 1 ? 4 : 5;
-  const bank = shuffle(lang === 'zh' ? ZH_WORD_BANK : EN_WORD_BANK).filter(w => w.length <= size);
+  const poolKey = lang === 'zh' ? 'ws_words_zh' : 'ws_words_en';
+  const rawBank = (lang === 'zh' ? ZH_WORD_BANK : EN_WORD_BANK).filter(w => Array.from(w).length <= size);
+
+  if (!state.seen || typeof state.seen !== 'object') state.seen = {};
+  let seenList = Array.isArray(state.seen[poolKey]) ? state.seen[poolKey].slice() : [];
+  const seenSet = new Set(seenList);
+  let unseenWords = shuffle(rawBank.filter(w => !seenSet.has(w)));
+  if (unseenWords.length < targetCount) {
+    // Only after exhausting 500+ words (>100 days), cycle cleanly
+    seenList = [];
+    unseenWords = shuffle(rawBank);
+  } else {
+    // Append already-seen tail only as extreme grid-fit fallback
+    unseenWords = unseenWords.concat(shuffle(rawBank.filter(w => seenSet.has(w))));
+  }
 
   const board = Array.from({ length: size }, () => Array.from({ length: size }, () => ''));
-  const placed = []; // { word, cells: [[r,c],...] , found: false }
+  const placed = [];
 
-  for (const word of bank) {
+  for (let wi = 0; wi < unseenWords.length; wi++) {
     if (placed.length >= targetCount) break;
+    const word = unseenWords[wi];
     const chars = Array.from(word);
     let ok = false;
-    for (let attempt = 0; attempt < 60 && !ok; attempt++) {
+    for (let attempt = 0; attempt < 90 && !ok; attempt++) {
       const horiz = Math.random() < 0.55;
       const r = horiz ? Math.floor(Math.random() * size) : Math.floor(Math.random() * (size - chars.length + 1));
       const c = horiz ? Math.floor(Math.random() * (size - chars.length + 1)) : Math.floor(Math.random() * size);
@@ -980,6 +957,13 @@ export function mountWordSearchGame(ctx) {
       }
     }
   }
+
+  // Record ONLY the placed words so unplaced candidates stay fresh for tomorrow!
+  placed.forEach(p => {
+    if (seenList.indexOf(p.word) === -1) seenList.push(p.word);
+  });
+  state.seen[poolKey] = seenList;
+  saveState(state);
 
   const fillers = lang === 'zh' ? ZH_FILLERS : EN_FILLERS;
   for (let r = 0; r < size; r++) {
@@ -1094,19 +1078,8 @@ export function mountWordSearchGame(ctx) {
 }
 
 /* =========================================================================
-   12. TEA-WOOD BLOCK FIT (茶木方塊消消樂 — 6x6 Woodoku Lite)
+   12. TEA-WOOD BLOCK FIT (42 Polyomino Shapes + 110 Sculpted 6x6 Stages)
    ========================================================================= */
-const BLOCK_SHAPES = [
-  [[0, 0]],
-  [[0, 0], [0, 1]],
-  [[0, 0], [1, 0]],
-  [[0, 0], [0, 1], [0, 2]],
-  [[0, 0], [1, 0], [2, 0]],
-  [[0, 0], [0, 1], [1, 0], [1, 1]],
-  [[0, 0], [1, 0], [1, 1]],
-  [[0, 0], [0, 1], [1, 0]]
-];
-
 export function mountBlocksGame(ctx) {
   const { container, state, onBack, onComplete, onLevelChange } = ctx;
   const lang = state.lang;
@@ -1116,19 +1089,16 @@ export function mountBlocksGame(ctx) {
   const size = 6;
   const goalLines = level === 0 ? 3 : level === 1 ? 4 : 6;
   const board = Array.from({ length: size }, () => Array.from({ length: size }, () => false));
+
+  const stagePattern = drawFreshItems(state, 'block_stages', BLOCK_STAGE_PATTERNS, 1, p => p.id)[0];
+  stagePattern.filled.forEach(([r, c]) => {
+    if (r >= 0 && r < size && c >= 0 && c < size) board[r][c] = true;
+  });
+
+  const eligibleShapes = BLOCK_SHAPES.filter(s => s.minLvl <= level);
   let clearedLines = 0;
   let tray = [];
   let selPieceIdx = 0;
-
-  function refillTray() {
-    tray = [0, 1, 2].map(() => ({
-      cells: BLOCK_SHAPES[Math.floor(Math.random() * BLOCK_SHAPES.length)],
-      used: false
-    }));
-    selPieceIdx = 0;
-  }
-
-  refillTray();
 
   function canPlace(shape, r0, c0) {
     for (let i = 0; i < shape.length; i++) {
@@ -1138,6 +1108,41 @@ export function mountBlocksGame(ctx) {
     }
     return true;
   }
+
+  function canPlaceAnywhere(shape) {
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (canPlace(shape, r, c)) return true;
+      }
+    }
+    return false;
+  }
+
+  function ensurePlayableTray() {
+    const unused = tray.filter(p => !p.used);
+    if (unused.length === 0) return;
+    if (unused.some(p => canPlaceAnywhere(p.cells))) return;
+    // Guarantee at least one fitting piece so a player is never stuck!
+    const fittingPool = eligibleShapes.filter(s => canPlaceAnywhere(s.cells));
+    const rescue = fittingPool.length > 0 ? shuffle(fittingPool)[0] : BLOCK_SHAPES[0];
+    const targetIdx = tray.findIndex(p => !p.used);
+    if (targetIdx !== -1) {
+      tray[targetIdx].cells = rescue.cells;
+      selPieceIdx = targetIdx;
+    }
+  }
+
+  function refillTray() {
+    const drawn = drawFreshItems(state, 'block_shapes_' + level, eligibleShapes, 3, s => s.id);
+    tray = drawn.map(s => ({
+      cells: s.cells,
+      used: false
+    }));
+    selPieceIdx = 0;
+    ensurePlayableTray();
+  }
+
+  refillTray();
 
   function render() {
     container.innerHTML = '';
@@ -1165,8 +1170,8 @@ export function mountBlocksGame(ctx) {
       <p style="margin:0;font-weight:800;text-align:center;">
         ${
           lang === 'zh'
-            ? `已消除 ${clearedLines} / ${goalLines} 行！先揀下面木塊，再撳棋盤格仔擺放（填滿整行或整列即消除）：`
-            : `Lines Cleared: ${clearedLines} / ${goalLines} · Tap a wooden piece below, then tap the board to place it:`
+            ? `「${pickText(stagePattern.name, lang)}」 · 已消除 ${clearedLines} / ${goalLines} 行！先揀木塊再撳棋盤擺放：`
+            : `${pickText(stagePattern.name, lang)} · Cleared ${clearedLines} / ${goalLines} lines · Tap a piece then tap the board:`
         }
       </p>
       <div class="block-board" id="blkBoard"></div>
@@ -1177,60 +1182,64 @@ export function mountBlocksGame(ctx) {
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
         const cell = document.createElement('button');
-        cell.type = 'button';
-        cell.className = `block-cell ${board[r][c] ? 'filled' : ''}`;
-        cell.addEventListener('click', () => {
-          const piece = tray[selPieceIdx];
-          if (!piece || piece.used) return;
-          if (!canPlace(piece.cells, r, c)) {
-            playSfx('gentle', state.sound);
-            return;
-          }
-          piece.cells.forEach(([dr, dc]) => {
-            board[r + dr][c + dc] = true;
-          });
-          piece.used = true;
-
-          // Check completed rows & cols
-          const fullRows = [];
-          const fullCols = [];
-          for (let rr = 0; rr < size; rr++) {
-            if (board[rr].every(Boolean)) fullRows.push(rr);
-          }
-          for (let cc = 0; cc < size; cc++) {
-            let all = true;
-            for (let rr = 0; rr < size; rr++) if (!board[rr][cc]) all = false;
-            if (all) fullCols.push(cc);
-          }
-          fullRows.forEach(rr => {
-            for (let cc = 0; cc < size; cc++) board[rr][cc] = false;
-          });
-          fullCols.forEach(cc => {
-            for (let rr = 0; rr < size; rr++) board[rr][cc] = false;
-          });
-
-          const gained = fullRows.length + fullCols.length;
-          if (gained > 0) {
-            clearedLines += gained;
-            playSfx('correct', state.sound);
-          } else {
-            playSfx('tap', state.sound);
-          }
-
-          if (tray.every(p => p.used)) {
-            refillTray();
-          } else {
-            const nextUnused = tray.findIndex(p => !p.used);
-            if (nextUnused !== -1) selPieceIdx = nextUnused;
-          }
-
-          render();
-          if (clearedLines >= goalLines) {
-            setTimeout(() => onComplete({ score: 105 + level * 15 + 25, stars: 3 }), 350);
-          }
-        });
+        btnSetup(cell, r, c);
         bEl.appendChild(cell);
       }
+    }
+
+    function btnSetup(cell, r, c) {
+      cell.type = 'button';
+      cell.className = `block-cell ${board[r][c] ? 'filled' : ''}`;
+      cell.addEventListener('click', () => {
+        const piece = tray[selPieceIdx];
+        if (!piece || piece.used) return;
+        if (!canPlace(piece.cells, r, c)) {
+          playSfx('gentle', state.sound);
+          return;
+        }
+        piece.cells.forEach(([dr, dc]) => {
+          board[r + dr][c + dc] = true;
+        });
+        piece.used = true;
+
+        const fullRows = [];
+        const fullCols = [];
+        for (let rr = 0; rr < size; rr++) {
+          if (board[rr].every(Boolean)) fullRows.push(rr);
+        }
+        for (let cc = 0; cc < size; cc++) {
+          let all = true;
+          for (let rr = 0; rr < size; rr++) if (!board[rr][cc]) all = false;
+          if (all) fullCols.push(cc);
+        }
+        fullRows.forEach(rr => {
+          for (let cc = 0; cc < size; cc++) board[rr][cc] = false;
+        });
+        fullCols.forEach(cc => {
+          for (let rr = 0; rr < size; rr++) board[rr][cc] = false;
+        });
+
+        const gained = fullRows.length + fullCols.length;
+        if (gained > 0) {
+          clearedLines += gained;
+          playSfx('correct', state.sound);
+        } else {
+          playSfx('tap', state.sound);
+        }
+
+        if (tray.every(p => p.used)) {
+          refillTray();
+        } else {
+          ensurePlayableTray();
+          const nextUnused = tray.findIndex(p => !p.used);
+          if (nextUnused !== -1) selPieceIdx = nextUnused;
+        }
+
+        render();
+        if (clearedLines >= goalLines) {
+          setTimeout(() => onComplete({ score: 105 + level * 15 + 25, stars: 3 }), 350);
+        }
+      });
     }
 
     const trayEl = card.querySelector('#blkTray');
@@ -1239,12 +1248,19 @@ export function mountBlocksGame(ctx) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `piece-btn ${selPieceIdx === idx ? 'selected' : ''}`;
-      // Render mini 3x3 preview
-      let mini = '<div style="display:grid;grid-template-columns:repeat(3,16px);gap:2px;">';
-      for (let rr = 0; rr < 3; rr++) {
-        for (let cc = 0; cc < 3; cc++) {
+      let maxR = 2;
+      let maxC = 2;
+      p.cells.forEach(([dr, dc]) => {
+        if (dr > maxR) maxR = dr;
+        if (dc > maxC) maxC = dc;
+      });
+      const pRows = maxR + 1;
+      const pCols = maxC + 1;
+      let mini = `<div style="display:grid;grid-template-columns:repeat(${pCols},14px);gap:2px;">`;
+      for (let rr = 0; rr < pRows; rr++) {
+        for (let cc = 0; cc < pCols; cc++) {
           const on = p.cells.some(([dr, dc]) => dr === rr && dc === cc);
-          mini += `<span style="width:16px;height:16px;border-radius:3px;background:${
+          mini += `<span style="width:14px;height:14px;border-radius:3px;background:${
             on ? '#B56B1B' : 'transparent'
           };"></span>`;
         }
@@ -1265,15 +1281,8 @@ export function mountBlocksGame(ctx) {
 }
 
 /* =========================================================================
-   13. STROOP COLOR-WORD SWITCH (心清眼亮辨色字)
+   13. STROOP COLOR-WORD SWITCH (8-Color Bank + Non-Repeating Switch Decks)
    ========================================================================= */
-const STROOP_COLORS = [
-  { id: 'red', hex: '#C8372D', zh: '紅色', en: 'RED' },
-  { id: 'green', hex: '#1B6E56', zh: '綠色', en: 'GREEN' },
-  { id: 'blue', hex: '#1F578A', zh: '藍色', en: 'BLUE' },
-  { id: 'gold', hex: '#C2780E', zh: '橙黃色', en: 'AMBER' }
-];
-
 export function mountStroopGame(ctx) {
   const { container, state, onBack, onComplete, onLevelChange } = ctx;
   const lang = state.lang;
@@ -1281,6 +1290,27 @@ export function mountStroopGame(ctx) {
   const gameMeta = GAME_CATALOG.find(g => g.id === 'stroop');
 
   const totalRounds = level === 0 ? 5 : 6;
+  const paletteSize = level === 0 ? 4 : level === 1 ? 5 : 6;
+
+  let activeColors = [];
+  let deck = [];
+  let deckSig = '';
+  for (let attempt = 0; attempt < 50; attempt++) {
+    activeColors = shuffle(STROOP_COLOR_BANK).slice(0, paletteSize);
+    const askFlags = [];
+    for (let i = 0; i < totalRounds; i++) {
+      askFlags.push(i < Math.ceil(totalRounds / 2));
+    }
+    const mixedFlags = shuffle(askFlags);
+    deck = mixedFlags.map(askInk => {
+      const pair = shuffle(activeColors);
+      return { askInk, wordObj: pair[0], inkObj: pair[1] };
+    });
+    deckSig = deck.map(d => `${d.askInk ? 'I' : 'W'}:${d.wordObj.id}/${d.inkObj.id}`).join('|');
+    if (!hasSeenSignature(state, 'stroop_decks', deckSig)) break;
+  }
+  markSeenSignature(state, 'stroop_decks', deckSig, 500);
+
   let roundIdx = 0;
   let mistakes = 0;
 
@@ -1297,10 +1327,10 @@ export function mountStroopGame(ctx) {
       totalSteps: totalRounds
     });
 
-    const askInk = roundIdx % 2 === 0;
-    const shuffled = shuffle(STROOP_COLORS);
-    const wordObj = shuffled[0];
-    const inkObj = shuffled[1];
+    const cur = deck[roundIdx];
+    const askInk = cur.askInk;
+    const wordObj = cur.wordObj;
+    const inkObj = cur.inkObj;
     const targetId = askInk ? inkObj.id : wordObj.id;
 
     const card = document.createElement('div');
@@ -1326,7 +1356,7 @@ export function mountStroopGame(ctx) {
     `;
 
     const grid = card.querySelector('#stroopBtns');
-    STROOP_COLORS.forEach(col => {
+    activeColors.forEach(col => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'choice-btn';
@@ -1363,17 +1393,8 @@ export function mountStroopGame(ctx) {
 }
 
 /* =========================================================================
-   14. PORCELAIN TEACUP CHIME SEQUENCE (茗茶聽音記次序)
+   14. PORCELAIN TEACUP CHIME SEQUENCE (4 Themes + 994 Pentatonic Phrases)
    ========================================================================= */
-const TEACUPS = [
-  { idx: 0, emoji: '🫖', zh: '普洱（宮）', en: 'Pu-erh (Do)' },
-  { idx: 1, emoji: '🍵', zh: '鐵觀音（商）', en: 'Oolong (Re)' },
-  { idx: 2, emoji: '🌼', zh: '香片（角）', en: 'Jasmine (Mi)' },
-  { idx: 3, emoji: '🍃', zh: '龍井（徵）', en: 'Dragon Well (Sol)' },
-  { idx: 4, emoji: '🌻', zh: '菊普（羽）', en: 'Chrysanthemum (La)' },
-  { idx: 5, emoji: '🪵', zh: '水仙（清宮）', en: "Rock Tea (Do')" }
-];
-
 export function mountMelodyGame(ctx) {
   const { container, state, onBack, onComplete, onLevelChange } = ctx;
   const lang = state.lang;
@@ -1381,8 +1402,19 @@ export function mountMelodyGame(ctx) {
   const gameMeta = GAME_CATALOG.find(g => g.id === 'melody');
 
   const cupCount = level === 0 ? 4 : level === 1 ? 5 : 6;
-  const cups = TEACUPS.slice(0, cupCount);
+  const theme = drawFreshItems(state, 'melody_themes', MELODY_THEMES, 1, th => th.id)[0];
+  const cups = theme.cups.slice(0, cupCount);
+
   const totalRounds = 3;
+  const phrasePool = MELODY_PHRASES.filter(p => p.maxCup === cupCount);
+  const sessionPhrases = drawFreshItems(
+    state,
+    'melody_phrases_' + cupCount,
+    phrasePool.length >= totalRounds ? phrasePool : MELODY_PHRASES,
+    totalRounds,
+    p => p.id
+  ).sort((a, b) => a.seq.length - b.seq.length);
+
   let roundIdx = 0;
   let mistakes = 0;
   let sequence = [];
@@ -1390,8 +1422,7 @@ export function mountMelodyGame(ctx) {
   let playingDemo = false;
 
   function buildSequence() {
-    const seqLen = (level === 0 ? 3 : 3) + roundIdx + (level === 2 ? 1 : 0);
-    sequence = Array.from({ length: seqLen }, () => Math.floor(Math.random() * cupCount));
+    sequence = sessionPhrases[roundIdx].seq.slice();
     playerStep = 0;
   }
 
@@ -1425,12 +1456,15 @@ export function mountMelodyGame(ctx) {
     const stEl = container.querySelector('#melodyStatus');
     if (!stEl) return;
     if (playingDemo) {
-      stEl.textContent = lang === 'zh' ? '👂 請留心聽同望實茶杯發光次序…' : '👂 Watch & listen to the teacup chimes…';
+      stEl.textContent =
+        lang === 'zh'
+          ? `👂 「${pickText(theme.name, lang)}」奏樂中，請留心發光次序…`
+          : `👂 Watch & listen to the ${pickText(theme.name, lang)}…`;
     } else {
       stEl.textContent =
         lang === 'zh'
-          ? `輪到你喇！請順序撳返 ${sequence.length} 隻茶杯（已撳 ${playerStep}/${sequence.length}）`
-          : `Your turn! Tap the ${sequence.length} teacups in order (${playerStep}/${sequence.length})`;
+          ? `輪到你喇！請順序撳返 ${sequence.length} 隻「${pickText(theme.name, lang)}」（已撳 ${playerStep}/${sequence.length}）`
+          : `Your turn! Tap the ${sequence.length} chimes in order (${playerStep}/${sequence.length})`;
     }
   }
 
@@ -1507,196 +1541,23 @@ export function mountMelodyGame(ctx) {
   playSequenceDemo();
 }
 
-
 /* =========================================================================
-   15. VOCABULARY BUILDER (雅言詞匯館 — 中文雅詞 · 生活英文 · 雙語近義對對碰)
+   15. VOCABULARY BUILDER (雅言詞匯館 — 105+ Context + 105+ Practical EN + 390+ Pairs)
    ========================================================================= */
-const VOCAB_CONTEXT_ITEMS = [
-  {
-    tag: { zh: '📖 中文雅詞 · 語境選詞', en: '📖 Context Vocabulary' },
-    sentence: {
-      zh: '週末嘅格蘭湖島市集熱鬧非常，前來買新鮮生果嘅遊人「＿＿＿＿」，由朝到晚都咁旺場。',
-      en: 'Granville Island Market was bustling all weekend, with a "________" stream of visitors browsing fresh fruit from morning till dusk.'
-    },
-    wordSpotlight: { zh: '絡繹不絕', en: 'Continuous / Steady stream' },
-    choices: [
-      { zh: '絡繹不絕（形容人流接連不斷）', en: 'Continuous / Unbroken (絡繹不絕)', ok: true },
-      { zh: '鴉雀無聲（形容非常安靜）', en: 'Pin-drop silent (鴉雀無聲)', ok: false },
-      { zh: '寥寥可數（形容人數極少）', en: 'Few and far between (寥寥可數)', ok: false }
-    ],
-    tip: {
-      zh: '例句：每逢節日，維園花市嘅市民都絡繹不絕。（英文常用：a steady stream of visitors）',
-      en: 'Usage: "A steady / continuous stream of visitors filled the flower market."'
-    }
-  },
-  {
-    tag: { zh: '📖 中文雅詞 · 人物神采', en: '📖 Expressive Adjectives' },
-    sentence: {
-      zh: '陳伯每日朝早去公園行山嘆早茶，雖然年過七十，依然面色紅潤、「＿＿＿＿」！',
-      en: 'Uncle Chan hikes and enjoys morning tea every day; even past seventy, he looks vibrant and "________"!'
-    },
-    wordSpotlight: { zh: '神采奕奕', en: 'Radiant & full of vitality' },
-    choices: [
-      { zh: '神采奕奕（精神飽滿、容光煥發）', en: 'Radiant & vigorous (神采奕奕)', ok: true },
-      { zh: '無精打采（疲倦乏力）', en: 'Listless & tired (無精打采)', ok: false },
-      { zh: '心不在焉（思想唔集中）', en: 'Absent-minded (心不在焉)', ok: false }
-    ],
-    tip: {
-      zh: '近義詞：容光煥發、精神抖擻。（英文常用：radiant / full of vitality）',
-      en: 'Synonyms: vibrant, glowing, full of vitality (容光煥發).'
-    }
-  },
-  {
-    tag: { zh: '📖 中文雅詞 · 生活態度', en: '📖 Everyday Wisdom Words' },
-    sentence: {
-      zh: '溫哥華冬天落雨又落雪，我哋最好趁秋天「＿＿＿＿」，提早檢查好暖氣同雨具。',
-      en: 'Before Vancouver’s rainy winter arrives, it is wise to be "________" and check our heating and rain gear early.'
-    },
-    wordSpotlight: { zh: '未雨綢繆', en: 'Proactive / Plan ahead' },
-    choices: [
-      { zh: '未雨綢繆（天未落雨先修補門窗，比喻事先準備）', en: 'Proactive — prepare ahead (未雨綢繆)', ok: true },
-      { zh: '臨急抱佛腳（事到臨頭先匆忙應付）', en: 'Last-minute scramble (臨急抱佛腳)', ok: false },
-      { zh: '得過且過（敷衍了事）', en: 'Just getting by (得過且過)', ok: false }
-    ],
-    tip: {
-      zh: '「未雨綢繆」出自《詩經》，讚賞人有遠見！（英文常用：proactive / plan ahead for a rainy day）',
-      en: 'Idiom note: Preparing before the rain falls — matching English "save/prepare for a rainy day"!'
-    }
-  },
-  {
-    tag: { zh: '📖 中文雅詞 · 整齊條理', en: '📖 Precision Words' },
-    sentence: {
-      zh: '媽媽將廚房嘅茶葉罐同調味樽擺放得「＿＿＿＿」，搵起嘢上嚟一目了然！',
-      en: 'Mom arranged all the tea tins and spice jars in such a "________" order that everything is easy to find at a glance!'
-    },
-    wordSpotlight: { zh: '井井有條', en: 'Meticulous & orderly' },
-    choices: [
-      { zh: '井井有條（整齊而有秩序）', en: 'Neat & orderly (井井有條)', ok: true },
-      { zh: '亂七八糟（毫無條理）', en: 'Cluttered & messy (亂七八糟)', ok: false },
-      { zh: '模稜兩可（含糊不清）', en: 'Vague & ambiguous (模稜兩可)', ok: false }
-    ],
-    tip: {
-      zh: '近義詞：有條不紊、整整齊齊。（英文常用：neat and orderly / well-organized）',
-      en: 'Synonyms: methodical, tidy, well-organized (有條不紊).'
-    }
-  }
-];
-
-const PRACTICAL_ENGLISH_ITEMS = [
-  {
-    enWord: 'Complimentary',
-    phonetic: 'kom-plih-MEN-tuh-ree',
-    prompt: {
-      zh: '喺酒店、渡輪或者西九茶座見到英文「Complimentary Tea」，請問「Complimentary」係咩意思？',
-      en: 'When a hotel or tea house menu lists "Complimentary Tea", what does "Complimentary" mean?'
-    },
-    choices: [
-      { zh: '免費招待／贈送（Free of charge）', en: 'Provided free of charge as a courtesy', ok: true },
-      { zh: '必須額外加收雙倍服務費', en: 'Subject to a double surcharge', ok: false },
-      { zh: '已經售罄暫停供應', en: 'Sold out for the day', ok: false }
-    ],
-    example: {
-      zh: '實用句：Breakfast is complimentary for all guests.（所有住客均可享免費早餐。）',
-      en: 'Example: "Complimentary warm jasmine tea is served upon arrival."'
-    }
-  },
-  {
-    enWord: 'Itinerary',
-    phonetic: 'eye-TIN-uh-reh-ree',
-    prompt: {
-      zh: '去旅行搭飛機或者參加導賞團時，職員派發嘅「Itinerary」係指乜嘢？',
-      en: 'When traveling between Hong Kong and Vancouver, what is a travel "Itinerary"?'
-    },
-    choices: [
-      { zh: '詳細行程表／航班時間路線單', en: 'A planned route or schedule of travel times & stops', ok: true },
-      { zh: '行李超重罰款單', en: 'An overweight baggage fine', ok: false },
-      { zh: '免稅店化妝品優惠券', en: 'A duty-free cosmetics coupon', ok: false }
-    ],
-    example: {
-      zh: '實用句：Let me check our flight itinerary.（等我睇睇我哋張航班行程表先。）',
-      en: 'Example: "Our itinerary includes a morning ferry ride and afternoon dim sum."'
-    }
-  },
-  {
-    enWord: 'Postpone',
-    phonetic: 'pohst-POHN',
-    prompt: {
-      zh: '社區中心通告寫住：「Due to heavy rain, the garden walk will be postponed.」請問「Postpone」係咩意思？',
-      en: 'A community notice says: "Due to rain, the walk will be postponed." What does "Postpone" mean?'
-    },
-    choices: [
-      { zh: '延期／改期遲啲再舉行（唔係永久取消）', en: 'Reschedule to a later date or time', ok: true },
-      { zh: '提早兩個鐘頭開始', en: 'Start two hours earlier than planned', ok: false },
-      { zh: '改為室內收費晚宴', en: 'Convert into a formal paid banquet', ok: false }
-    ],
-    example: {
-      zh: '實用句：Let’s postpone our walk until tomorrow morning.（我哋將散步順延到聽日朝早啦。）',
-      en: 'Example: "They decided to postpone the picnic until sunny Saturday."'
-    }
-  },
-  {
-    enWord: 'Scenic',
-    phonetic: 'SEE-nik',
-    prompt: {
-      zh: '溫哥華海堤或者香港山頂常見路牌寫住「Scenic Route」，請問「Scenic」代表乜嘢？',
-      en: 'Road signs near Stanley Park or Victoria Peak often point to a "Scenic Route". What does "Scenic" describe?'
-    },
-    choices: [
-      { zh: '風景優美嘅、景色怡人嘅', en: 'Offering beautiful, picturesque natural views', ok: true },
-      { zh: '禁止行人進入嘅施工路段', en: 'Closed off for heavy construction', ok: false },
-      { zh: '只准貨車行駛嘅高速公路', en: 'Restricted to commercial trucks only', ok: false }
-    ],
-    example: {
-      zh: '實用句：We took the scenic ferry ride across the harbour.（我哋搭渡輪欣賞沿途海港靚景。）',
-      en: 'Example: "The Sea-to-Sky Highway is famous for its breathtaking scenic views."'
-    }
-  },
-  {
-    enWord: 'Nostalgic',
-    phonetic: 'nah-STAL-jik',
-    prompt: {
-      zh: '聽到七、八十年代金曲或者見到舊啟德相片覺得好「Nostalgic」，呢個英文詞形容咩心情？',
-      en: 'Hearing golden 1970s Cantopop songs or seeing vintage Kai Tak photos feels "Nostalgic" — what does that mean?'
-    },
-    choices: [
-      { zh: '懷舊溫馨、勾起昔日美好回憶', en: 'Warmly sentimental & fond of happy past memories', ok: true },
-      { zh: '緊張焦慮、擔心遲到', en: 'Anxious about running late', ok: false },
-      { zh: '肚餓想食宵夜', en: 'Hungry for a midnight snack', ok: false }
-    ],
-    example: {
-      zh: '實用句：Old tram photos make me feel nostalgic.（舊電車相片令我好懷念昔日時光。）',
-      en: 'Example: "Classic bakery egg tarts always bring back nostalgic childhood memories."'
-    }
-  }
-];
-
-const VOCAB_MATCH_PAIRS = [
-  { id: 'v1', left: '津津有味', rightZh: '興致勃勃（近義）', rightEn: 'Relish with gusto' },
-  { id: 'v2', left: '和藹可親', rightZh: '親切溫和（近義）', rightEn: 'Warm & amiable' },
-  { id: 'v3', left: '一絲不苟', rightZh: '認真仔細（近義）', rightEn: 'Meticulous & thorough' },
-  { id: 'v4', left: '豁然開朗', rightZh: '頓時明白（近義）', rightEn: 'Sudden clarity' },
-  { id: 'v5', left: '精益求精', rightZh: '力求完美（近義）', rightEn: 'Strive for excellence' },
-  { id: 'v6', left: '琳瑯滿目', rightZh: '美物繁多（近義）', rightEn: 'Dazzling array' }
-];
-
 export function mountVocabGame(ctx) {
   const { container, state, onBack, onComplete, onLevelChange } = ctx;
   const lang = state.lang;
   const level = getLevel(state, 'vocab');
   const gameMeta = GAME_CATALOG.find(g => g.id === 'vocab');
 
-  // 3 engaging steps per dish:
-  // Step 0: Refined Chinese Context Word
-  // Step 1: Practical HK x Vancouver Everyday English Word (with English & Cantonese audio!)
-  // Step 2: Synonym & Bilingual Pair-Match Board!
-  const ctxItem = shuffle(VOCAB_CONTEXT_ITEMS)[0];
-  const engItem = shuffle(PRACTICAL_ENGLISH_ITEMS)[0];
+  const ctxItem = drawFreshItems(state, 'vocab_ctx', VOCAB_CONTEXT_ITEMS, 1, x => x.id)[0];
+  const engItem = drawFreshItems(state, 'vocab_en', PRACTICAL_ENGLISH_ITEMS, 1, x => x.id)[0];
   const pairCount = level === 0 ? 3 : 4;
-  const chosenPairs = shuffle(VOCAB_MATCH_PAIRS).slice(0, pairCount);
+  const chosenPairs = drawFreshItems(state, 'vocab_pairs', VOCAB_MATCH_PAIRS, pairCount, x => x.id);
 
   let step = 0;
   let mistakes = 0;
-  let bilingualBridge = true; // Toggle between Chinese-English bridge vs Chinese-Synonym on Step 2
+  let bilingualBridge = true;
 
   function render() {
     container.innerHTML = '';
