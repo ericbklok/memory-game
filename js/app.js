@@ -1420,12 +1420,17 @@ function openFirebaseSetupModal() {
 /* =========================================================================
    NINTENDO STARTING SCREEN, NEWCOMER WELCOME TOUR & USER PREFERENCES
    ========================================================================= */
-function showStartScreen() {
+function showStartScreen(forceEditProfile) {
   if (!startScreenEl) return;
   stopSpeaking();
   const lang = state.lang;
   const zh = lang === 'zh';
-  const hasSavedProfile = Boolean(state.profile.displayName && state.profile.age);
+  const hasSavedProfile = Boolean(
+    state.profile.displayName &&
+      state.profile.age &&
+      !(state.profile.displayName === '醒神茶客' && !state.profile.age)
+  );
+  const showForm = !hasSavedProfile || Boolean(forceEditProfile);
   const prefillName =
     state.profile.displayName && !(state.profile.displayName === '醒神茶客' && !state.profile.age)
       ? state.profile.displayName
@@ -1457,69 +1462,94 @@ function showStartScreen() {
       </div>
 
       ${
-        hasSavedProfile
-          ? `<div style="font-size:0.84rem;font-weight:800;color:var(--jade-dark);margin-bottom:0.55rem;">
-               ${state.profile.avatar} ${zh ? `歡迎返嚟！目前稱號：${rank}` : `Welcome back! Rank: ${rank}`} · 🔥 ${state.stats.streak} ${t(lang, 'streakUnit')} · ⭐ ${state.stats.totalPoints} ${t(lang, 'pointsUnit')}
+        !showForm
+          ? `<div class="start-entry-box" style="text-align:center;">
+               <div style="font-size:0.82rem;font-weight:900;color:var(--jade-dark);margin-bottom:0.35rem;">
+                 ✅ ${zh ? '已自動記住你嘅玩家檔案（無須重填！）' : 'Saved Player Profile Remembered'}
+               </div>
+               <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;padding:0.6rem 0.85rem;border-radius:14px;background:var(--surface);border:2px solid var(--border-strong);flex-wrap:wrap;">
+                 <div style="text-align:left;">
+                   <div style="font-size:1.08rem;font-weight:900;color:var(--ink);">
+                     ${state.profile.avatar || '🫖'} ${escapeHtml(state.profile.displayName)} <span style="font-size:0.88rem;color:var(--ink-muted);">(${state.profile.age} ${zh ? '歲' : 'yrs'})</span>
+                   </div>
+                   <div style="font-size:0.78rem;font-weight:800;color:var(--jade-dark);margin-top:0.1rem;">
+                     ${rank} · 🔥 ${state.stats.streak} ${t(lang, 'streakUnit')} · ⭐ ${state.stats.totalPoints} ${t(lang, 'pointsUnit')}
+                   </div>
+                 </div>
+                 <button type="button" class="chip-btn" id="startSwitchPlayerBtn" style="min-height:36px;font-size:0.8rem;">
+                   ✏️ ${zh ? '更改／轉人' : 'Edit / Switch'}
+                 </button>
+               </div>
              </div>`
-          : ''
+          : `<div class="start-entry-box">
+               <div style="font-size:0.84rem;font-weight:800;color:var(--jade-dark);margin-bottom:0.55rem;">
+                 ✨ ${
+                   zh
+                     ? '只需首次輸入稱呼同年齡，之後會自動記住無須重填！'
+                     : 'Enter your Name & Age once — saved automatically for every visit!'
+                 }
+               </div>
+
+               <div class="start-entry-grid">
+                 <div>
+                   <label class="start-field-label" for="startNameInput">
+                     👤 ${zh ? '玩家稱呼 User Name' : 'User Name'}
+                   </label>
+                   <input
+                     id="startNameInput"
+                     class="input-field start-input"
+                     type="text"
+                     maxlength="18"
+                     autocomplete="nickname"
+                     placeholder="${zh ? '例如：陳太 / Uncle Chan' : 'e.g. Grandma Lee / Sam'}"
+                     value="${escapeHtml(prefillName)}"
+                   />
+                 </div>
+
+                 <div>
+                   <label class="start-field-label" for="startAgeInput">
+                     🎂 ${zh ? '年齡 Age（8–108 歲）' : 'Age (8–108)'}
+                   </label>
+                   <div class="age-stepper-wrap">
+                     <button type="button" class="age-step-btn" id="ageMinusBtn" aria-label="Decrease age">−</button>
+                     <input
+                       id="startAgeInput"
+                       class="input-field start-input"
+                       type="number"
+                       inputmode="numeric"
+                       min="8"
+                       max="108"
+                       placeholder="${zh ? '例如 68' : 'e.g. 68'}"
+                       value="${escapeHtml(prefillAge)}"
+                       style="text-align:center;font-weight:900;padding-left:0.4rem;padding-right:0.4rem;"
+                     />
+                     <button type="button" class="age-step-btn" id="agePlusBtn" aria-label="Increase age">＋</button>
+                   </div>
+                 </div>
+               </div>
+
+               <div id="startErrorMsg" style="display:none;margin-top:0.55rem;font-size:0.84rem;font-weight:800;color:var(--red-chop-dark);"></div>
+               <div style="margin-top:0.45rem;font-size:0.75rem;color:var(--ink-muted);">
+                 🔒 ${zh ? '資料只會私密儲存喺你部機入面，下次打開自動載入，絕唔公開年齡。' : 'Saved privately on your device for automatic sign-in next time; age is never public.'}
+               </div>
+             </div>`
       }
-
-      <div class="start-entry-box">
-        <div style="font-size:0.84rem;font-weight:800;color:var(--jade-dark);margin-bottom:0.55rem;">
-          ✨ ${
-            zh
-              ? '只需輸入稱呼同年齡即可開局（用於計算同齡腦力表現評估）'
-              : 'Only your Name & Age are needed to start (used to estimate performance for your age)'
-          }
-        </div>
-
-        <div class="start-entry-grid">
-          <div>
-            <label class="start-field-label" for="startNameInput">
-              👤 ${zh ? '玩家稱呼 User Name' : 'User Name'}
-            </label>
-            <input
-              id="startNameInput"
-              class="input-field start-input"
-              type="text"
-              maxlength="18"
-              autocomplete="nickname"
-              placeholder="${zh ? '例如：陳太 / Uncle Chan' : 'e.g. Grandma Lee / Sam'}"
-              value="${escapeHtml(prefillName)}"
-            />
-          </div>
-
-          <div>
-            <label class="start-field-label" for="startAgeInput">
-              🎂 ${zh ? '年齡 Age（8–108 歲）' : 'Age (8–108)'}
-            </label>
-            <div class="age-stepper-wrap">
-              <button type="button" class="age-step-btn" id="ageMinusBtn" aria-label="Decrease age">−</button>
-              <input
-                id="startAgeInput"
-                class="input-field start-input"
-                type="number"
-                inputmode="numeric"
-                min="8"
-                max="108"
-                placeholder="${zh ? '例如 68' : 'e.g. 68'}"
-                value="${escapeHtml(prefillAge)}"
-                style="text-align:center;font-weight:900;padding-left:0.4rem;padding-right:0.4rem;"
-              />
-              <button type="button" class="age-step-btn" id="agePlusBtn" aria-label="Increase age">＋</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="startErrorMsg" style="display:none;margin-top:0.55rem;font-size:0.84rem;font-weight:800;color:var(--red-chop-dark);"></div>
-        <div style="margin-top:0.45rem;font-size:0.75rem;color:var(--ink-muted);">
-          🔒 ${zh ? '年齡只會私密儲存喺你部機入面，絕對唔會公開顯示。' : 'Your age stays 100% private on your device and is never shown publicly.'}
-        </div>
-      </div>
 
       <button type="button" class="btn-play-mega" id="startMegaPlayBtn">
         <span>▶</span>
-        <span>${zh ? (!state.onboardingDone ? '開枱飲茶！（新手導賞）' : '開枱飲茶！開始遊戲') : !state.onboardingDone ? 'PLAY! (Welcome Tour)' : 'PRESS PLAY!'}</span>
+        <span>${
+          !showForm
+            ? zh
+              ? `繼續開枱飲茶！（${escapeHtml(state.profile.displayName)}）`
+              : `CONTINUE AS ${escapeHtml(state.profile.displayName).toUpperCase()}!`
+            : zh
+            ? !state.onboardingDone
+              ? '開枱飲茶！（新手導賞）'
+              : '開枱飲茶！開始遊戲'
+            : !state.onboardingDone
+            ? 'PLAY! (Welcome Tour)'
+            : 'PRESS PLAY!'
+        }</span>
       </button>
 
       <div class="action-row" style="margin-top:0.8rem;">
@@ -1536,53 +1566,82 @@ function showStartScreen() {
   const startBo = mountBaoBo3D(startScreenEl.querySelector('#startBo3DSlot'), {
     size: 148,
     role: 'start',
-    mood: 'wave'
+    mood: !showForm ? 'happy' : 'wave'
   });
 
   const nameInput = startScreenEl.querySelector('#startNameInput');
   const ageInput = startScreenEl.querySelector('#startAgeInput');
   const errEl = startScreenEl.querySelector('#startErrorMsg');
+  const switchBtn = startScreenEl.querySelector('#startSwitchPlayerBtn');
+
+  if (switchBtn) {
+    switchBtn.addEventListener('click', () => {
+      playSfx('switch', state.sound);
+      showStartScreen(true);
+    });
+  }
 
   startScreenEl.querySelector('#startLangSwapBtn').addEventListener('click', () => {
-    // Preserve any partially typed values across language toggle
-    const draftName = nameInput.value.trim();
-    const draftAge = parseInt(ageInput.value, 10);
-    if (draftName) state.profile.displayName = draftName.slice(0, 18);
-    if (!isNaN(draftAge) && draftAge >= 8 && draftAge <= 108) state.profile.age = draftAge;
+    if (nameInput && ageInput) {
+      const draftName = nameInput.value.trim();
+      const draftAge = parseInt(ageInput.value, 10);
+      if (draftName) state.profile.displayName = draftName.slice(0, 18);
+      if (!isNaN(draftAge) && draftAge >= 8 && draftAge <= 108) state.profile.age = draftAge;
+    }
     playSfx('switch', state.sound);
     state.lang = zh ? 'en' : 'zh';
     saveState(state);
     syncChrome();
     renderMain();
-    showStartScreen();
+    showStartScreen(forceEditProfile);
   });
 
-  function stepAge(delta) {
-    playSfx('tap', state.sound);
-    startBo.poke();
-    const cur = parseInt(ageInput.value, 10);
-    const base = isNaN(cur) ? 65 : cur;
-    const next = Math.max(8, Math.min(108, base + delta));
-    ageInput.value = String(next);
-    ageInput.classList.remove('input-error');
-    errEl.style.display = 'none';
+  if (showForm && nameInput && ageInput) {
+    const stepAge = delta => {
+      playSfx('tap', state.sound);
+      startBo.poke();
+      const cur = parseInt(ageInput.value, 10);
+      const base = isNaN(cur) ? 65 : cur;
+      const next = Math.max(8, Math.min(108, base + delta));
+      ageInput.value = String(next);
+      ageInput.classList.remove('input-error');
+      errEl.style.display = 'none';
+    };
+
+    startScreenEl.querySelector('#ageMinusBtn').addEventListener('click', () => stepAge(-1));
+    startScreenEl.querySelector('#agePlusBtn').addEventListener('click', () => stepAge(1));
+
+    nameInput.addEventListener('input', () => {
+      nameInput.classList.remove('input-error');
+      errEl.style.display = 'none';
+      startBo.setMood('happy');
+    });
+    ageInput.addEventListener('input', () => {
+      ageInput.classList.remove('input-error');
+      errEl.style.display = 'none';
+      startBo.setMood('proud');
+    });
+
+    [nameInput, ageInput].forEach(inp => {
+      inp.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          validateAndProceed(false);
+        }
+      });
+    });
   }
 
-  startScreenEl.querySelector('#ageMinusBtn').addEventListener('click', () => stepAge(-1));
-  startScreenEl.querySelector('#agePlusBtn').addEventListener('click', () => stepAge(1));
-
-  nameInput.addEventListener('input', () => {
-    nameInput.classList.remove('input-error');
-    errEl.style.display = 'none';
-    startBo.setMood('happy');
-  });
-  ageInput.addEventListener('input', () => {
-    ageInput.classList.remove('input-error');
-    errEl.style.display = 'none';
-    startBo.setMood('proud');
-  });
-
   function validateAndProceed(forceTour) {
+    if (!showForm) {
+      playSfx('fanfare', state.sound);
+      startScreenEl.classList.add('hidden');
+      if (forceTour || !state.onboardingDone) {
+        openWelcomeTourModal(0);
+      }
+      return;
+    }
+
     const cleanName = nameInput.value.trim().slice(0, 18);
     const cleanAge = parseInt(ageInput.value, 10);
     const validName = cleanName.length > 0;
@@ -1630,15 +1689,6 @@ function showStartScreen() {
 
   startScreenEl.querySelector('#startTourBtn').addEventListener('click', () => {
     validateAndProceed(true);
-  });
-
-  [nameInput, ageInput].forEach(inp => {
-    inp.addEventListener('keydown', ev => {
-      if (ev.key === 'Enter') {
-        ev.preventDefault();
-        validateAndProceed(false);
-      }
-    });
   });
 
   startScreenEl.querySelector('#startSettingsBtn').addEventListener('click', () => {
