@@ -602,7 +602,8 @@ function renderGameCardsInto(gridEl, catFilter) {
   const list = filter === 'all' ? GAME_CATALOG : GAME_CATALOG.filter(g => g.cat === filter);
 
   list.forEach(g => {
-    const lvl = typeof state.stats.perGameLevel[g.id] === 'number' ? state.stats.perGameLevel[g.id] : 1;
+    const fallbackLvl = g.id === 'make24' ? 0 : 1;
+    const lvl = typeof state.stats.perGameLevel[g.id] === 'number' ? state.stats.perGameLevel[g.id] : fallbackLvl;
     const plays = (state.stats.perGamePlays && state.stats.perGamePlays[g.id]) || 0;
     const medalLabel =
       plays >= 5
@@ -734,7 +735,11 @@ async function handleDishCompleted(gameId, score, stars) {
   spawnConfettiBurst(42);
 
   const usedLevel =
-    typeof state.stats.perGameLevel[gameId] === 'number' ? state.stats.perGameLevel[gameId] : 1;
+    typeof state.stats.perGameLevel[gameId] === 'number'
+      ? state.stats.perGameLevel[gameId]
+      : gameId === 'make24'
+      ? 0
+      : 1;
 
   const allAlbumIds = COLLECTIBLE_ALBUM.map(x => x.id);
   const { newlyCompletedAllFour, newlyUnlockedId } = recordGameCompletion(

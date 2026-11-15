@@ -10,7 +10,9 @@ import {
   TIMELINE_SETS,
   IDIOM_QUESTIONS,
   CATEGORY_BOARDS,
-  EAGLE_PAIRS
+  EAGLE_PAIRS,
+  EAGLE_BUCKETS,
+  renderEagleTileHtml
 } from '../data/content.js';
 import { drawFreshItems, hasSeenSignature, markSeenSignature } from '../data/seed-tracker.js';
 import { t, pickText, randomPraise, playSfx, speakText, stopSpeaking } from '../i18n.js';
@@ -1338,22 +1340,38 @@ export function mountWordsGame(ctx) {
 }
 
 /* =========================================================================
-   6. EAGLE EYE VISUAL SCAN (眼明手快尋寶)
+   6. EAGLE EYE VISUAL SCAN (眼明手快尋寶 — 2D Illustrated Cars, Animals & Scenes)
    ========================================================================= */
 export function mountEagleGame(ctx) {
   const { container, state, onBack, onComplete, onLevelChange } = ctx;
   const lang = state.lang;
-  const level = (typeof state.stats.perGameLevel.eagle === "number" ? state.stats.perGameLevel.eagle : 1);
+  const level = typeof state.stats.perGameLevel.eagle === 'number' ? state.stats.perGameLevel.eagle : 1;
   const gameMeta = GAME_CATALOG.find(g => g.id === 'eagle');
 
   const totalRounds = 4;
-  const pairs = drawFreshItems(state, 'eagle_pairs', EAGLE_PAIRS, totalRounds, p => p.id);
+  // Draw 1 fresh 2D illustrated puzzle from each of the 4 themed visual buckets so every session has rich variety!
+  const bucketOrder = shuffle(['vehicles', 'pets', 'nature_critters', 'cozy_world']);
+  const pairs = [];
+  for (let b = 0; b < bucketOrder.length; b++) {
+    const bKey = bucketOrder[b];
+    const subPool = EAGLE_BUCKETS && EAGLE_BUCKETS[bKey] ? EAGLE_BUCKETS[bKey] : EAGLE_PAIRS;
+    const picked = drawFreshItems(state, 'eagle_pairs', subPool, 1, p => p.id);
+    if (picked.length > 0) pairs.push(picked[0]);
+  }
+  while (pairs.length < totalRounds) {
+    const extra = drawFreshItems(state, 'eagle_pairs', EAGLE_PAIRS, 1, p => p.id);
+    if (extra.length > 0) pairs.push(extra[0]);
+    else break;
+  }
+
   let roundIdx = 0;
   let mistakes = 0;
   let showHint = false;
+  let roundLocked = false;
 
   function render() {
     container.innerHTML = '';
+    roundLocked = false;
     renderStageHeader({
       container,
       gameMeta,
@@ -1365,33 +1383,43 @@ export function mountEagleGame(ctx) {
       totalSteps: totalRounds
     });
 
-    const cols = level === 0 ? 3 : 4;
-    const rows = roundIdx < 2 ? 3 : level === 2 ? 5 : 4;
+    // Crisp, generous picture-tile grids so 2D cars & animals look large and sharp
+    const cols = level === 0 ? 3 : level === 1 ? (roundIdx < 2 ? 3 : 4) : 4;
+    const rows = level === 0 ? 3 : level === 1 ? 3 : roundIdx < 2 ? 3 : 4;
     const cellCount = cols * rows;
     const oddIdx = Math.floor(Math.random() * cellCount);
     const pair = pairs[roundIdx];
+    const theme = pair && pair.theme ? pair.theme : { icon: '🎨', zh: '彩色插畫尋寶', en: '2D Picture Hunt' };
 
     function drawGrid() {
       container.querySelectorAll('.eagle-card').forEach(e => e.remove());
       const card = document.createElement('div');
       card.className = 'card eagle-card';
       card.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-          <p style="margin:0;font-weight:800;font-size:1.08rem;">
-            ${lang === 'zh' ? `第 ${roundIdx + 1}/${totalRounds} 關：請搵出唯一唔同嗰一格！` : `Round ${roundIdx + 1}/${totalRounds}: Tap the 1 odd tile out!`}
-          </p>
+        <div class="eagle-top-bar">
+          <div>
+            <span class="eagle-theme-pill">${theme.icon} ${lang === 'zh' ? theme.zh : theme.en}</span>
+            <p style="margin:0.35rem 0 0;font-weight:900;font-size:1.06rem;">
+              ${
+                lang === 'zh'
+                  ? `第 ${roundIdx + 1}/${totalRounds} 關：搵出唯一唔同細節嗰幅圖！`
+                  : `Round ${roundIdx + 1}/${totalRounds}: Tap the 1 picture with a different detail!`
+              }
+            </p>
+          </div>
           <button type="button" class="chip-btn" id="eagleHintBtn">${t(lang, 'hintBtn')}</button>
         </div>
         ${
           showHint
-            ? `<p style="margin:0.5rem 0 0;color:var(--gold-dark);font-weight:700;">💡 ${pickText(pair.tip, lang)}</p>`
+            ? `<div class="eagle-hint-callout">💡 ${pickText(pair.tip, lang)}</div>`
             : ''
         }
-        <div class="eagle-grid" style="grid-template-columns: repeat(${cols}, 1fr);" id="eGrid"></div>
+        <div class="eagle-grid eagle-pic-grid cols-${cols}" style="grid-template-columns: repeat(${cols}, 1fr);" id="eGrid"></div>
         <div id="eagleFb"></div>
       `;
 
       card.querySelector('#eagleHintBtn').addEventListener('click', () => {
+        playSfx('tap', state.sound);
         showHint = true;
         drawGrid();
       });
@@ -1402,23 +1430,35 @@ export function mountEagleGame(ctx) {
         const inHintRow = showHint && Math.floor(i / cols) === Math.floor(oddIdx / cols);
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `eagle-cell ${inHintRow ? 'hint-glow' : ''}`;
-        btn.textContent = isOdd ? pair.odd : pair.majority;
+        btn.className = `eagle-cell eagle-pic-cell ${inHintRow ? 'hint-glow' : ''}`;
+        btn.innerHTML = renderEagleTileHtml(pair, isOdd);
         btn.addEventListener('click', () => {
+          if (roundLocked) return;
           if (isOdd) {
+            roundLocked = true;
             playSfx('correct', state.sound);
-            if (roundIdx + 1 >= totalRounds) {
-              const stars = mistakes === 0 ? 3 : mistakes <= 1 ? 2 : 1;
-              onComplete({ score: 85 + level * 15 + stars * 10, stars });
-            } else {
-              roundIdx += 1;
-              showHint = false;
-              render();
+            btn.classList.add('eagle-found');
+            const fb = card.querySelector('#eagleFb');
+            if (fb) {
+              fb.innerHTML = `<div class="feedback-banner" style="margin-top:0.55rem;">✨ ${
+                lang === 'zh' ? '好眼力！一眼就搵到：' : 'Sharp eyes! '
+              }${pickText(pair.tip, lang)}</div>`;
             }
+            setTimeout(() => {
+              if (roundIdx + 1 >= totalRounds) {
+                const stars = mistakes === 0 ? 3 : mistakes <= 1 ? 2 : 1;
+                onComplete({ score: 90 + level * 15 + stars * 10, stars });
+              } else {
+                roundIdx += 1;
+                showHint = false;
+                render();
+              }
+            }, 480);
           } else {
             mistakes += 1;
             playSfx('gentle', state.sound);
-            btn.style.opacity = '0.38';
+            btn.classList.add('eagle-wrong');
+            btn.style.opacity = '0.36';
           }
         });
         grid.appendChild(btn);

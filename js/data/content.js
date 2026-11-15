@@ -81,8 +81,8 @@ export const GAME_CATALOG = [
     title: { zh: '眼明手快尋寶', en: 'Eagle Eye Tile Hunt' },
     shortName: { zh: '眼力', en: 'Focus' },
     desc: {
-      zh: '喺整齊牌陣入面一眼搵出唯一唔同嘅字或者麻雀牌，唔趕時間！',
-      en: 'Spot the single subtly different character or tile in a calm, crisp grid!'
+      zh: '2D 彩色插畫尋寶！喺得意汽車、萌寵動物、港溫交通與茶座圖畫入面搵出唯一唔同嗰格！',
+      en: 'Colorful 2D picture hunt! Spot the odd car, cute animal, HK/YVR transit vehicle, or tea-house scene!'
     },
     pillar: { zh: '視覺專注 · 觀察力', en: 'Visual Attention · Focus' }
   },
@@ -133,8 +133,8 @@ export const GAME_CATALOG = [
     title: { zh: '合廿四撲克心算', en: 'Make 24 Card Math' },
     shortName: { zh: '合廿四', en: 'Make 24' },
     desc: {
-      zh: '經典港式紙牌智力遊戲！用加減乘除將紙牌合成目標數字（輕鬆 12／標準 24）！',
-      en: 'Combine playing cards step-by-step using + − × ÷ to hit 24 (or 12 in Relaxed mode)!'
+      zh: '經典港式紙牌心算！預設輕鬆加法合 24，附一步提示與復原，按步就班挑戰加減乘除！',
+      en: 'Friendly card math to 24! Starts with gentle addition deals (plus Undo & Step Hints), scaling up at your pace!'
     },
     pillar: { zh: '靈活運算 · 策略思考', en: 'Flexible Arithmetic' }
   },
@@ -220,7 +220,13 @@ export { HISTORY_QUESTIONS, TIMELINE_SETS } from './bank-history.js';
 export {
   IDIOM_QUESTIONS,
   CATEGORY_BOARDS,
-  EAGLE_PAIRS,
   ZH_WORD_BANK,
   EN_WORD_BANK
 } from './bank-words-eagle.js';
+
+export {
+  EAGLE_PAIRS,
+  EAGLE_BUCKETS,
+  EAGLE_THEME_META,
+  renderEagleTileHtml
+} from './eagle-art.js';

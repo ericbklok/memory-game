@@ -7,7 +7,9 @@ import {
 import {
   TENPAI_HANDS,
   MAKE12_DEALS,
+  MAKE24_EASY_DEALS,
   MAKE24_DEALS,
+  MAKE24_HARD_DEALS,
   BLOCK_SHAPES,
   BLOCK_STAGE_PATTERNS,
   SHISEN_LAYOUTS,
@@ -39,7 +41,8 @@ function shuffle(arr) {
 
 function getLevel(state, key) {
   const v = state.stats.perGameLevel[key];
-  return typeof v === 'number' ? v : 1;
+  const fallback = key === 'make24' ? 0 : 1;
+  return typeof v === 'number' ? v : fallback;
 }
 
 /* =========================================================================
@@ -723,7 +726,7 @@ export function mountShisenGame(ctx) {
 }
 
 /* =========================================================================
-   10. MAKE 24 / CARD ARITHMETIC (210 Make-12 + 240 Make-24 Verified Deals)
+   10. MAKE 24 / CARD ARITHMETIC (Gentle Addition-First Default + Smooth 3-Tier Scaling)
    ========================================================================= */
 export function mountMake24Game(ctx) {
   const { container, state, onBack, onComplete, onLevelChange } = ctx;
@@ -731,15 +734,19 @@ export function mountMake24Game(ctx) {
   const level = getLevel(state, 'make24');
   const gameMeta = GAME_CATALOG.find(g => g.id === 'make24');
 
+  const bankForLevel =
+    level === 0 ? MAKE24_EASY_DEALS : level === 1 ? MAKE24_DEALS : MAKE24_HARD_DEALS;
   const deals = drawFreshItems(
     state,
-    level === 0 ? 'make12_deals' : 'make24_deals',
-    level === 0 ? MAKE12_DEALS : MAKE24_DEALS,
+    'make24_lvl_' + level,
+    bankForLevel,
     2,
     d => d.id
   );
+
   let dIdx = 0;
   let cards = [];
+  let historyStack = [];
   let selCardIdx = null;
   let selOp = null;
   let showHint = false;
@@ -747,18 +754,39 @@ export function mountMake24Game(ctx) {
   function loadDeal() {
     const suits = ['♠️', '♥️', '♣️', '♦️'];
     cards = deals[dIdx].nums.map((v, i) => ({ val: v, label: String(v), suit: suits[i % 4] }));
+    historyStack = [];
     selCardIdx = null;
-    selOp = null;
+    selOp = level === 0 ? '+' : null;
     showHint = false;
   }
 
   loadDeal();
 
+  function getHintHighlightIndices(deal) {
+    if (!showHint || historyStack.length > 0 || !deal.firstStep) {
+      return { idxA: -1, idxB: -1, op: null };
+    }
+    const a = deal.firstStep.a;
+    const b = deal.firstStep.b;
+    let idxA = -1;
+    let idxB = -1;
+    for (let i = 0; i < cards.length; i++) {
+      if (idxA === -1 && cards[i].val === a) {
+        idxA = i;
+      } else if (idxB === -1 && cards[i].val === b) {
+        idxB = i;
+      }
+    }
+    return { idxA: idxA, idxB: idxB, op: deal.firstStep.op };
+  }
+
   function render() {
     container.innerHTML = '';
     const deal = deals[dIdx];
+    const canUndo = historyStack.length > 0;
     const extraBtns = `
-      <div style="display:flex;gap:0.4rem;">
+      <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+        <button type="button" class="chip-btn" id="m24UndoBtn" ${canUndo ? '' : 'disabled style="opacity:0.45;"'}>↩️ ${lang === 'zh' ? '復原' : 'Undo'}</button>
         <button type="button" class="chip-btn" id="m24ResetBtn">↺ ${lang === 'zh' ? '重設' : 'Reset'}</button>
         <button type="button" class="chip-btn" id="m24HintBtn">${t(lang, 'hintBtn')}</button>
       </div>
@@ -775,35 +803,72 @@ export function mountMake24Game(ctx) {
       extraRightHtml: extraBtns
     });
 
+    container.querySelector('#m24UndoBtn').addEventListener('click', () => {
+      if (historyStack.length === 0) return;
+      playSfx('tap', state.sound);
+      cards = historyStack.pop();
+      selCardIdx = null;
+      selOp = level === 0 ? '+' : null;
+      render();
+    });
     container.querySelector('#m24ResetBtn').addEventListener('click', () => {
+      playSfx('tap', state.sound);
       loadDeal();
       render();
     });
     container.querySelector('#m24HintBtn').addEventListener('click', () => {
+      playSfx('tap', state.sound);
       showHint = !showHint;
       render();
     });
+
+    const tierLabel =
+      level === 0
+        ? lang === 'zh'
+          ? '🌱 輕鬆加法模式（無分數／無除法）'
+          : '🌱 Relaxed Addition Mode (No Division)'
+        : level === 1
+        ? lang === 'zh'
+          ? '⭐ 標準整數模式（無分數陷阱）'
+          : '⭐ Standard Whole-Number Mode'
+        : lang === 'zh'
+        ? '🔥 經典挑戰模式'
+        : '🔥 Classic Challenge Mode';
+
+    const opsList = level === 0 ? ['+', '-', '×'] : ['+', '-', '×', '÷'];
+    const hl = getHintHighlightIndices(deal);
+    const activeCardText =
+      selCardIdx !== null && cards[selCardIdx]
+        ? `${cards[selCardIdx].label} ${selOp || '?'} …`
+        : lang === 'zh'
+        ? '先撳第一張紙牌 👇'
+        : 'Tap any card to start 👇';
 
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
       <div class="prompt-box" style="text-align:center;">
-        <span class="news-tag">🃏 ${lang === 'zh' ? `第 ${dIdx + 1}/${deals.length} 局 · 目標數字：${deal.target}` : `Hand ${dIdx + 1}/${deals.length} · Target: ${deal.target}`}</span>
-        <p style="margin:0.45rem 0 0;font-weight:800;">
+        <div style="display:flex;justify-content:center;gap:0.45rem;flex-wrap:wrap;margin-bottom:0.35rem;">
+          <span class="news-tag" style="margin:0;">🃏 ${lang === 'zh' ? `第 ${dIdx + 1}/${deals.length} 局 · 目標：${deal.target}` : `Hand ${dIdx + 1}/${deals.length} · Target: ${deal.target}`}</span>
+          <span class="news-tag" style="margin:0;background:var(--jade-soft);color:var(--jade-dark);">${tierLabel}</span>
+        </div>
+        <p style="margin:0.35rem 0 0;font-weight:800;">
           ${
             lang === 'zh'
-              ? `請將「全部紙牌」用 ＋ − × ÷ 合併成最後一張 <strong style="color:var(--red-chop);font-size:1.3rem;">${deal.target}</strong>！（先撳一張牌 → 揀符號 → 再撳第二張牌）`
-              : `Combine ALL cards step-by-step using + − × ÷ until one card of <strong style="color:var(--red-chop);font-size:1.3rem;">${deal.target}</strong> remains!`
+              ? `將紙牌一步步合併成最後一張 <strong style="color:var(--red-chop);font-size:1.32rem;">${deal.target}</strong>！（撳牌 → 揀符號 → 撳第二張牌）`
+              : `Combine all cards step-by-step into <strong style="color:var(--red-chop);font-size:1.32rem;">${deal.target}</strong>! (Tap card → operator → second card)`
           }
         </p>
-        ${showHint ? `<p style="margin:0.5rem 0 0;color:var(--gold-dark);font-weight:700;">💡 ${pickText(deal.hint, lang)}</p>` : ''}
+        <div class="m24-step-pill">${activeCardText}</div>
+        ${showHint ? `<p style="margin:0.5rem 0 0;color:var(--gold-dark);font-weight:800;">💡 ${pickText(deal.hint, lang)}</p>` : ''}
       </div>
 
       <div class="poker-row" id="pokerRow"></div>
       <div class="op-row" id="opRow">
-        ${['+', '-', '×', '÷']
+        ${opsList
           .map(
-            op => `<button type="button" class="op-btn ${selOp === op ? 'selected' : ''}" data-op="${op}">${op}</button>`
+            op =>
+              `<button type="button" class="op-btn ${selOp === op ? 'selected' : ''} ${hl.op === op ? 'hint-glow' : ''}" data-op="${op}">${op}</button>`
           )
           .join('')}
       </div>
@@ -814,20 +879,26 @@ export function mountMake24Game(ctx) {
     cards.forEach((cObj, i) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `poker-card ${selCardIdx === i ? 'selected' : ''}`;
+      const isHintedCard = i === hl.idxA || i === hl.idxB;
+      btn.className = `poker-card ${selCardIdx === i ? 'selected' : ''} ${isHintedCard ? 'hint-glow' : ''}`;
       const isRed = cObj.suit === '♥️' || cObj.suit === '♦️';
       btn.style.color = isRed ? '#C8372D' : '#1C232B';
       btn.innerHTML = `<span style="font-size:0.9rem;position:absolute;top:6px;left:8px;">${cObj.suit}</span><span>${cObj.label}</span>`;
       btn.addEventListener('click', () => {
         playSfx('tap', state.sound);
-        if (selCardIdx === null || !selOp) {
+        if (selCardIdx === null) {
           selCardIdx = i;
+          if (!selOp && level === 0) selOp = '+';
           render();
           return;
         }
         if (selCardIdx === i) {
           selCardIdx = null;
-          selOp = null;
+          render();
+          return;
+        }
+        if (!selOp) {
+          selCardIdx = i;
           render();
           return;
         }
@@ -842,12 +913,13 @@ export function mountMake24Game(ctx) {
           res = a / b;
         }
 
+        historyStack.push(cards.map(c => ({ val: c.val, label: c.label, suit: c.suit })));
         const nextCards = cards.filter((_, idx) => idx !== selCardIdx && idx !== i);
         const pretty = Math.abs(res - Math.round(res)) < 0.001 ? String(Math.round(res)) : res.toFixed(2);
         nextCards.push({ val: res, label: pretty, suit: '⭐' });
         cards = nextCards;
         selCardIdx = cards.length === 1 ? null : cards.length - 1;
-        selOp = null;
+        selOp = level === 0 ? '+' : null;
 
         if (cards.length === 1) {
           if (Math.abs(cards[0].val - deal.target) < 0.001) {
@@ -870,8 +942,8 @@ export function mountMake24Game(ctx) {
             if (fb) {
               fb.innerHTML = `<div class="feedback-banner gentle-retry">${
                 lang === 'zh'
-                  ? `最後得出 ${pretty}（目標係 ${deal.target}），撳右上角「重設」再試另一個組合啦 😊`
-                  : `That made ${pretty} (target is ${deal.target}) — tap Reset to try another combination 😊`
+                  ? `最後得出 ${pretty}（目標係 ${deal.target}），撳「↩️ 復原」退一步或「↺ 重設」再試啦 😊`
+                  : `That made ${pretty} (target is ${deal.target}) — tap Undo or Reset to try another step 😊`
               }</div>`;
             }
             return;

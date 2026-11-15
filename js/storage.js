@@ -48,7 +48,8 @@ export function createDefaultState() {
       autoLevelUp: true,
       sudokuDimSumIcons: false,
       reducedMotion: false,
-      skipTitleScreen: false
+      skipTitleScreen: false,
+      make24GentleV2: true
     },
     profile: {
       displayName: '',
@@ -75,8 +76,8 @@ export function createDefaultState() {
       },
       perGameLevel: {
         news: 1, memory: 1, math: 1, history: 1, words: 1, eagle: 1,
-        sudoku: 1, tenpai: 1, shisen: 1, make24: 1, wordsearch: 1, blocks: 1, stroop: 1, melody: 1, vocab: 1
-      }, // 0=Easy, 1=Standard, 2=Challenge
+        sudoku: 1, tenpai: 1, shisen: 1, make24: 0, wordsearch: 1, blocks: 1, stroop: 1, melody: 1, vocab: 1
+      }, // 0=Easy, 1=Standard, 2=Challenge (Make 24 defaults to 0 Relaxed!)
       perGameCleanStreak: {
         news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
         sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0
@@ -115,6 +116,11 @@ export function loadState() {
         daily: { ...state.daily, ...(parsed.daily || {}) },
         seen: { ...(parsed.seen || {}) }
       };
+      // Migrate existing profiles so Make 24 starts at gentle Relaxed (0) by default
+      if (!parsed.prefs || !parsed.prefs.make24GentleV2) {
+        state.stats.perGameLevel.make24 = 0;
+        state.prefs.make24GentleV2 = true;
+      }
     }
   } catch (e) {
     console.warn('Could not read localStorage, using fresh state:', e);
@@ -167,7 +173,8 @@ export function recordGameCompletion(state, gameId, earnedPoints, stars, allAlbu
   state.stats.gamesCompleted += 1;
   state.stats.perGamePlays[gameId] = (state.stats.perGamePlays[gameId] || 0) + 1;
 
-  const curLvl = typeof state.stats.perGameLevel[gameId] === 'number' ? state.stats.perGameLevel[gameId] : 1;
+  const defLvl = gameId === 'make24' ? 0 : 1;
+  const curLvl = typeof state.stats.perGameLevel[gameId] === 'number' ? state.stats.perGameLevel[gameId] : defLvl;
   const prevRecent = Array.isArray(state.stats.recentRounds) ? state.stats.recentRounds : [];
   state.stats.recentRounds = prevRecent
     .concat([{ gameId, score: earnedPoints, stars, level: curLvl }])
@@ -178,7 +185,8 @@ export function recordGameCompletion(state, gameId, earnedPoints, stars, allAlbu
   if (allowAutoLevel) {
     if (stars === 3) {
       state.stats.perGameCleanStreak[gameId] = (state.stats.perGameCleanStreak[gameId] || 0) + 1;
-      if (state.stats.perGameCleanStreak[gameId] >= 2 && state.stats.perGameLevel[gameId] < 2) {
+      const neededStreak = gameId === 'make24' ? 3 : 2;
+      if (state.stats.perGameCleanStreak[gameId] >= neededStreak && state.stats.perGameLevel[gameId] < 2) {
         state.stats.perGameLevel[gameId] += 1;
         state.stats.perGameCleanStreak[gameId] = 0;
       }
