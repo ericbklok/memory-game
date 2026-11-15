@@ -38,6 +38,7 @@ import {
   mountMelodyGame,
   mountVocabGame
 } from './games/extra-games.js';
+import { mountSpotDiffGame } from './games/spot-diff-game.js';
 import {
   isFirebaseConfigured,
   initFirebaseIfConfigured,
@@ -445,7 +446,7 @@ function renderHomeView() {
             🎲 ${zh ? '扭蛋抽關' : 'Gacha Spin'}
           </button>
           <button type="button" class="btn btn-gold btn-sm" id="browseAllGamesBtn">
-            🕹️ ${zh ? '全部 15 款卡帶' : 'All 15 Games'}
+            🕹️ ${zh ? '全部 16 款卡帶' : 'All 16 Games'}
           </button>
           <button type="button" class="btn btn-jade btn-sm" id="shareCardBtn">
             📲 ${zh ? '晒點心紙' : 'Share Card'}
@@ -658,7 +659,7 @@ function renderGamesTabView() {
         <div style="flex:1;min-width:0;">
           <h1 style="margin:0;font-size:1.24rem;font-weight:900;">🕹️ ${t(lang, 'quickPickTitle')}</h1>
           <p style="margin:0.15rem 0 0;color:var(--ink-muted);font-size:0.88rem;font-weight:700;">
-            ${zh ? '15 款無計時健腦卡帶 · 連續 3 個月零重複題庫！' : '15 untimed brain cartridges · 95+ days of non-repeating puzzles!'}
+            ${zh ? '16 款無計時健腦卡帶 · 連續 3 個月以上零重複題庫！' : '16 untimed brain cartridges · 100+ days of non-repeating puzzles!'}
           </p>
         </div>
         <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
@@ -731,6 +732,7 @@ function launchGame(gameId) {
   else if (gameId === 'stroop') mountStroopGame(ctx);
   else if (gameId === 'melody') mountMelodyGame(ctx);
   else if (gameId === 'vocab') mountVocabGame(ctx);
+  else if (gameId === 'spotdiff') mountSpotDiffGame(ctx);
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1463,7 +1465,7 @@ function showStartScreen(forceEditProfile) {
       </div>
 
       <h1 class="start-title-zh">每日腦點心</h1>
-      <div class="start-title-en">DAILY MINDSUM · 15 BRAIN GAMES</div>
+      <div class="start-title-en">DAILY MINDSUM · 16 BRAIN GAMES</div>
 
       <div class="start-mascot-stage" style="margin:0.35rem auto 0.55rem;">
         <span class="start-float-icon">🥟</span>
@@ -1786,8 +1788,8 @@ function openWelcomeTourModal(initialStep) {
         mood: 'cheer',
         title: zh ? '🕹️ 零計時壓力 · 語音貼士與設定' : '🕹️ Stress-Free Play, Voice & Settings',
         voice: zh
-          ? '全部十五款遊戲都唔限時間，輕輕一撳就玩得。隨時撳喇叭聽廣東話或英文朗讀，或者撳右上角齒輪調整字體大細、語速同地區！即刻開波嘆早茶啦！'
-          : 'All 15 games are untimed and single-tap. Tap Read Aloud anytime to listen, use Hints freely, or tap the top-right Gear icon to customize text size, voice speed, and city focus!',
+          ? '全部十六款遊戲都唔限時間，輕輕一撳就玩得。隨時撳喇叭聽廣東話或英文朗讀，或者撳右上角齒輪調整字體大細、語速同地區！即刻開波嘆早茶啦！'
+          : 'All 16 games are untimed and single-tap. Tap Read Aloud anytime to listen, use Hints freely, or tap the top-right Gear icon to customize text size, voice speed, and city focus!',
         bodyHtml: `
           <div class="tour-showcase-box">
             <p style="margin:0;font-size:0.9rem;line-height:1.6;">
@@ -2129,8 +2131,8 @@ function openSettingsModal() {
             playSfx('switch', state.sound);
             showToast(
               state.lang === 'zh'
-                ? '✅ 已將全部 15 款點心設為所選難度！'
-                : '✅ Updated difficulty across all 15 games!'
+                ? '✅ 已將全部 16 款點心設為所選難度！'
+                : '✅ Updated difficulty across all 16 games!'
             );
             refreshAll();
           });

@@ -3245,3 +3245,238 @@ body.mode-playing .victory-stage {
   border-color: #9A5E08;
   box-shadow: inset 0 2px 0 #FFFFFF, 0 4px 0 #9A5E08;
 }
+
+
+/* =========================================================================
+   16. SPOT THE DIFFERENCE DIORAMA STAGE (茶餐廳港溫搵錯處 · 300 Scenes)
+   ========================================================================= */
+.spot-stage-card {
+  padding: 1rem 1rem 1.15rem;
+}
+
+.spot-scene-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.45rem;
+}
+
+.spot-scene-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.spot-scene-heading {
+  margin: 0;
+  font-size: 1.14rem;
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.spot-scene-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.spot-progress-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.78rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #E8FBF3 0%, #CFF5E5 100%);
+  border: 2px solid #16805D;
+  color: #0E583F;
+  font-weight: 900;
+  font-size: 0.88rem;
+  box-shadow: 0 2px 0 rgba(22, 128, 93, 0.2);
+}
+
+.spot-instruction-line {
+  margin: 0 0 0.7rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+}
+
+.spot-diff-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+@media (min-width: 680px) {
+  .spot-diff-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.spot-panel {
+  background: linear-gradient(180deg, #FFFDF8 0%, #FBF3E2 100%);
+  border: 2.5px solid #2B2118;
+  border-radius: 16px;
+  padding: 0.55rem;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 4px 0 #2B2118;
+}
+
+.spot-panel-changed {
+  background: linear-gradient(180deg, #FFFDF6 0%, #FFF3D8 100%);
+}
+
+.spot-panel-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 900;
+  font-size: 0.88rem;
+  color: #2B2118;
+  margin-bottom: 0.4rem;
+  padding: 0 0.2rem;
+}
+
+.spot-code-tag {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+  background: #F3E9D7;
+  padding: 0.1rem 0.48rem;
+  border-radius: 999px;
+  border: 1.5px solid #D5C2A3;
+}
+
+.spot-tap-tag {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #8F4900;
+  background: #FFE7A8;
+  padding: 0.1rem 0.52rem;
+  border-radius: 999px;
+  border: 1.5px solid #D6931A;
+}
+
+.spot-canvas-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 360 / 230;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  background: #FFF9EB;
+}
+
+.spot-scene-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.spot-overlay-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.spot-found-ring-halo {
+  fill: rgba(25, 168, 120, 0.16);
+  stroke: #FFFFFF;
+  stroke-width: 6.5;
+}
+
+.spot-found-ring {
+  fill: none;
+  stroke: #138A63;
+  stroke-width: 3.8;
+  animation: spotRingPop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes spotRingPop {
+  0% { transform: scale(0.45); opacity: 0.3; }
+  70% { transform: scale(1.14); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.spot-hint-ring-outer {
+  fill: rgba(255, 208, 52, 0.22);
+  stroke: #FFFFFF;
+  stroke-width: 5.5;
+  animation: spotHintPulse 1.15s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.spot-hint-ring-inner {
+  fill: none;
+  stroke: #E07A00;
+  stroke-width: 3.4;
+  stroke-dasharray: 7 5;
+  animation: spotHintPulse 1.15s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes spotHintPulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.9; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+.spot-miss-ripple {
+  fill: rgba(230, 140, 30, 0.18);
+  stroke: #D97706;
+  stroke-width: 2.6;
+  stroke-dasharray: 4 4;
+  animation: spotMissFade 0.65s ease-out forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes spotMissFade {
+  0% { transform: scale(0.6); opacity: 0.95; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.spot-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+}
+
+.spot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.32rem 0.72rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.spot-chip.pending {
+  background: #F6EFE2;
+  border: 1.8px dashed #C7B293;
+  color: #7A6752;
+}
+
+.spot-chip.found {
+  background: linear-gradient(180deg, #E8FBF3 0%, #C8F3DF 100%);
+  border: 2px solid #16805D;
+  color: #0F543C;
+  box-shadow: 0 2px 0 rgba(22, 128, 93, 0.2);
+}
+
+.spot-complete-banner {
+  margin-top: 0.85rem;
+}

@@ -218,7 +218,7 @@ export function renderBrainRadarSvg(perGamePlays, lang) {
     {
       zh: '專注',
       en: 'Focus',
-      val: Math.min(1, 0.28 + ((p.eagle || 0) + (p.stroop || 0) + (p.wordsearch || 0)) * 0.12)
+      val: Math.min(1, 0.28 + ((p.eagle || 0) + (p.stroop || 0) + (p.wordsearch || 0) + (p.spotdiff || 0)) * 0.11)
     }
   ];
 

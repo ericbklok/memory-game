@@ -63,6 +63,10 @@ export const GAME_COACH_LINES = {
   vocab: {
     zh: '三關雅言之旅：先玩語境選成語、再學實用英文詞、最後配對中英近義詞喵！',
     en: '3-stage word journey: context idioms, practical everyday English, and bilingual synonym match!'
+  },
+  spotdiff: {
+    zh: '望真啲上下／左右兩幅港溫插畫，直接輕撳任何一幅圖入面唔同嘅地方！卡關隨時撳「💡 貼士」喵～',
+    en: 'Compare both HK & Vancouver illustrations and tap the differences on either picture! Tap 💡 Hint anytime~'
   }
 };
 

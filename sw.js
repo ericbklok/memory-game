@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-mindsum-v16';
+const CACHE_NAME = 'daily-mindsum-v17';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const CORE_ASSETS = [
   './js/firebase-service.js',
   './js/data/content.js',
   './js/data/eagle-art.js',
+  './js/data/spot-diff-art.js',
   './js/data/seed-tracker.js',
   './js/data/bank-market-math.js',
   './js/data/bank-history.js',
@@ -26,6 +27,7 @@ const CORE_ASSETS = [
   './js/data/bank-vocab.js',
   './js/games/engine.js',
   './js/games/extra-games.js',
+  './js/games/spot-diff-game.js',
   './data/daily-news.json'
 ];
 

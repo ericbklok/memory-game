@@ -1,5 +1,5 @@
 export const GAME_CATEGORIES = [
-  { id: 'all', icon: '🌟', zh: '全部 (15)', en: 'All (15)' },
+  { id: 'all', icon: '🌟', zh: '全部 (16)', en: 'All (16)' },
   { id: 'memory', icon: '🧠', zh: '記憶力', en: 'Memory' },
   { id: 'logic', icon: '🧩', zh: '邏輯推理', en: 'Logic' },
   { id: 'math', icon: '🧮', zh: '靈活心算', en: 'Math' },
@@ -202,6 +202,19 @@ export const GAME_CATALOG = [
       en: 'Context clues, synonym match & practical Cantonese-English vocabulary with audio!'
     },
     pillar: { zh: '詞匯擴充 · 語言表達', en: 'Vocabulary · Expression' }
+  },
+  {
+    id: 'spotdiff',
+    cat: 'focus',
+    theme: 'red',
+    icon: '🔍',
+    title: { zh: '茶餐廳港溫搵錯處', en: 'HK × YVR Spot the Difference' },
+    shortName: { zh: '搵錯處', en: 'Spot Diff' },
+    desc: {
+      zh: '300 幅精繪港溫茶座、叮叮、天星與公園插畫，輕撳兩幅圖搵出 3 至 5 處唔同！',
+      en: '300 cozy HK & Vancouver illustrated scenes — tap either picture to spot 3 to 5 differences!'
+    },
+    pillar: { zh: '細節觀察 · 視覺比對', en: 'Visual Comparison · Focus' }
   }
 ];
 
