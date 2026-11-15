@@ -3,12 +3,12 @@
 // server-side by `firestore.rules` + Firebase Auth Authorized Domains (ericbklok.github.io).
 
 export const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: ''
+  apiKey: 'AIzaSyBk8E9x9rF_HwM8dPBhfYL8m6yLc81ZFYA',
+  authDomain: 'memory-game-f80b6.firebaseapp.com',
+  projectId: 'memory-game-f80b6',
+  storageBucket: 'memory-game-f80b6.firebasestorage.app',
+  messagingSenderId: '544582646298',
+  appId: '1:544582646298:web:7aa8d28e4d8aa7e392efa3'
 };
 
 const LOCAL_OVERRIDE_KEY = 'daily_mindsum_firebase_config_override';

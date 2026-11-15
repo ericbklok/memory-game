@@ -1,0 +1,20 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json",
+    "database": "(default)",
+    "location": "asia-northeast1"
+  },
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Daily MindSum",
+        "supportEmail": "ericbklok@gmail.com",
+        "authorizedRedirectUris": [
+          "https://memory-game-f80b6.firebaseapp.com/__/auth/handler",
+          "http://localhost:8123"
+        ]
+      }
+    }
+  }
+}
