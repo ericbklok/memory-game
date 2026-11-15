@@ -6,7 +6,7 @@ rules_version = '2';
 //
 // Collection: leaderboard
 // Document ID: {uid} (must match authenticated user's request.auth.uid)
-// Fields (all 10 required, no extraneous fields permitted):
+// Fields (10 required core fields + 1 optional presence field; no extraneous fields permitted):
 //   - uid: string (required, immutable, 1..128 chars, == request.auth.uid) - Owner UID
 //   - displayName: string (required, 1..24 chars, no HTML chars <>&"' or newlines) - Public player nickname
 //   - avatar: string (required, 1..8 chars, enum of 8 app emojis) - Chosen tea-house avatar
@@ -16,7 +16,8 @@ rules_version = '2';
 //   - todayDate: string (required, 10 chars, YYYY-MM-DD) - Local calendar date string
 //   - streak: int (required, 0..3650; create <= 90; update <= resource.data.streak + 2) - Daily play streak
 //   - circles: list<string> (required, max 10 items, each 3..16 chars matching ^[A-Z0-9-]+$) - Circle codes
-//   - updatedAt: timestamp (required, must equal request.time via serverTimestamp()) - Server sync timestamp
+//   - updatedAt: timestamp (required, must equal request.time via serverTimestamp()) - Server sync / last-played timestamp
+//   - activeGame: string (optional, 0..16 chars, strict enum of '' or one of the 16 game IDs) - Live currently-playing game ID
 //
 // ===============================================================
 
@@ -47,7 +48,7 @@ service cloud.firestore {
       return 'uid' in request.resource.data && request.resource.data.uid == resource.data.uid;
     }
 
-    function leaderboardAllowedKeys() {
+    function leaderboardRequiredKeys() {
       return [
         'uid',
         'displayName',
@@ -59,6 +60,22 @@ service cloud.firestore {
         'streak',
         'circles',
         'updatedAt'
+      ];
+    }
+
+    function leaderboardAllowedKeys() {
+      return [
+        'uid',
+        'displayName',
+        'avatar',
+        'homeBadge',
+        'totalPoints',
+        'todayPoints',
+        'todayDate',
+        'streak',
+        'circles',
+        'updatedAt',
+        'activeGame'
       ];
     }
 
@@ -93,17 +110,43 @@ service cloud.firestore {
         && (circles.size() < 10 || isValidCircleCode(circles[9]));
     }
 
+    // Optional live-presence game ID validator (strict enum whitelist + size bound)
+    function isValidOptionalActiveGame(d) {
+      return !('activeGame' in d) || (
+        d.activeGame is string
+        && d.activeGame.size() <= 16
+        && d.activeGame in [
+          '',
+          'news',
+          'memory',
+          'math',
+          'history',
+          'words',
+          'eagle',
+          'sudoku',
+          'tenpai',
+          'shisen',
+          'make24',
+          'wordsearch',
+          'blocks',
+          'stroop',
+          'melody',
+          'vocab',
+          'spotdiff'
+        ]
+      );
+    }
+
     // ===============================================================
     // Domain Validators (Used in BOTH create and update)
     // ===============================================================
 
     function isValidLeaderboardBase(uid) {
       let d = request.resource.data;
-      let keys = leaderboardAllowedKeys();
       return isOwner(uid)
         && uidUnchanged()
-        && hasRequiredFields(keys)
-        && hasOnlyAllowedFields(keys)
+        && hasRequiredFields(leaderboardRequiredKeys())
+        && hasOnlyAllowedFields(leaderboardAllowedKeys())
         && d.uid is string
         && d.uid.size() >= 1
         && d.uid.size() <= 128
@@ -134,7 +177,8 @@ service cloud.firestore {
         && d.streak <= 3650
         && isValidCirclesList(d.circles)
         && d.updatedAt is timestamp
-        && d.updatedAt == request.time;
+        && d.updatedAt == request.time
+        && isValidOptionalActiveGame(d);
     }
 
     function isValidLeaderboardCreate(uid) {

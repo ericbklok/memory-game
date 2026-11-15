@@ -3512,3 +3512,157 @@ body.mode-playing .victory-stage {
 .spot-complete-banner {
   margin-top: 0.85rem;
 }
+
+
+/* =========================================================================
+   LIVE CO-PLAYER PRESENCE & LAST-PLAYED LEADERBOARD INDICATORS
+   ========================================================================= */
+.live-presence-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  padding: 0.22rem 0.68rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #E6FAF1 0%, #C6F2DE 100%);
+  border: 1.8px solid #16805D;
+  color: #0D523A;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(22, 128, 93, 0.22);
+  transition: transform 0.14s ease;
+}
+
+.live-presence-pill:hover {
+  transform: translateY(-1px);
+}
+
+.live-presence-pill:active {
+  transform: translateY(1px);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #14B87A;
+  box-shadow: 0 0 0 2px rgba(20, 184, 122, 0.28);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: liveDotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes liveDotPulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.88; }
+  50% { transform: scale(1.25); opacity: 1; }
+}
+
+.board-row.online-now {
+  border-color: #2BA67D;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F1FCF7 100%);
+}
+
+.board-row.me.online-now {
+  border-color: var(--red-chop);
+  background: linear-gradient(180deg, #FFF9F8 0%, #FFF2F0 100%);
+}
+
+.board-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-online-dot {
+  position: absolute;
+  right: -2px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #14B87A;
+  border: 2px solid #FFFFFF;
+}
+
+.board-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 0.16rem;
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.activity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.08rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.activity-pill.live {
+  background: #E4FAF0;
+  border: 1.5px solid #2BA67D;
+  color: #0E583F;
+}
+
+.activity-pill.last-seen {
+  background: #F5EFE4;
+  border: 1px solid #DFD1BC;
+  color: #6B5A46;
+}
+
+.live-teahouse-box {
+  padding: 0.78rem 0.9rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #EEFCF5 0%, #E1F7EC 100%);
+  border: 2px solid #2BA67D;
+  box-shadow: 0 3px 0 rgba(22, 128, 93, 0.16);
+}
+
+.live-teahouse-head {
+  font-size: 0.84rem;
+  font-weight: 900;
+  color: #0E583F;
+  margin-bottom: 0.48rem;
+}
+
+.live-teahouse-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.live-player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  padding: 0.26rem 0.62rem;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 1.8px solid #75C9AC;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #1F2A24;
+}
+
+.live-player-chip.circle-mate {
+  border-color: #E08B19;
+  background: #FFFDF6;
+}
+
+.live-chip-game {
+  font-size: 0.74rem;
+  font-weight: 900;
+  color: #136B4D;
+  background: #E8FAF2;
+  padding: 0.06rem 0.44rem;
+  border-radius: 999px;
+}

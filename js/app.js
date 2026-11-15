@@ -13,6 +13,7 @@ import { mountBaoBo3D } from './mascot-3d.js';
 import {
   loadState,
   saveState,
+  getTodayDateStr,
   reshuffleDailyDishes,
   recordGameCompletion,
   getFamilyPhotos,
@@ -41,6 +42,7 @@ import {
 } from './games/extra-games.js';
 import { mountSpotDiffGame } from './games/spot-diff-game.js';
 import {
+  ONLINE_WINDOW_MS,
   isFirebaseConfigured,
   initFirebaseIfConfigured,
   getCurrentAuthUser,
@@ -48,6 +50,8 @@ import {
   signInWithGoogle,
   signOutCloud,
   syncScoreToCloud,
+  touchCloudPresence,
+  subscribeActivePlayers,
   fetchGlobalLeaderboard,
   fetchCircleLeaderboard
 } from './firebase-service.js';
@@ -61,12 +65,189 @@ let boardSubTab = 'total'; // total | today | circle
 let selectedGameCategory = 'all';
 let boQuipIdx = 0;
 let rouletteBusy = false;
+let liveRecentPlayers = [];
+let initialPresenceLoaded = false;
+const greetedCoPlayerUids = new Set();
 
 const mainEl = document.getElementById('mainContent');
 const modalBackdrop = document.getElementById('modalBackdrop');
 const modalCard = document.getElementById('modalCard');
 const inviteBannerEl = document.getElementById('inviteBanner');
 const startScreenEl = document.getElementById('startScreenOverlay');
+const livePresencePillEl = document.getElementById('livePresencePill');
+
+function getMyCirclesSet() {
+  return new Set(
+    [state.profile.myCircleCode]
+      .concat(state.profile.joinedCircles || [])
+      .map(function (c) {
+        return String(c || '').trim().toUpperCase();
+      })
+      .filter(Boolean)
+  );
+}
+
+function isCircleMate(row, myCirclesSet) {
+  if (!row || !Array.isArray(row.circles)) return false;
+  for (let i = 0; i < row.circles.length; i++) {
+    if (myCirclesSet.has(String(row.circles[i] || '').toUpperCase())) return true;
+  }
+  return false;
+}
+
+function formatPlayerActivity(row, lang, nowMs) {
+  const zh = lang === 'zh';
+  const lastMs = Number((row && row.lastActiveMs) || 0) || 0;
+  const ageMs = lastMs > 0 ? Math.max(0, nowMs - lastMs) : Infinity;
+  const isOnline = ageMs <= ONLINE_WINDOW_MS;
+  const gMeta =
+    row && row.activeGame
+      ? GAME_CATALOG.find(function (g) {
+          return g.id === row.activeGame;
+        })
+      : null;
+
+  if (isOnline) {
+    if (gMeta) {
+      return {
+        isOnline: true,
+        gameMeta: gMeta,
+        text: zh
+          ? '正在玩：' + gMeta.icon + ' ' + pickText(gMeta.shortName, 'zh')
+          : 'Playing: ' + gMeta.icon + ' ' + pickText(gMeta.shortName, 'en')
+      };
+    }
+    return {
+      isOnline: true,
+      gameMeta: null,
+      text: zh ? '正在茶樓嘆茶' : 'Playing now'
+    };
+  }
+
+  if (lastMs > 0) {
+    if (ageMs < 60 * 1000) {
+      return { isOnline: false, text: zh ? '🕒 剛剛玩過' : '🕒 Played just now' };
+    }
+    if (ageMs < 60 * 60 * 1000) {
+      const mins = Math.max(1, Math.floor(ageMs / 60000));
+      return {
+        isOnline: false,
+        text: zh ? '🕒 ' + mins + ' 分鐘前玩過' : '🕒 Played ' + mins + 'm ago'
+      };
+    }
+    if (ageMs < 24 * 60 * 60 * 1000) {
+      const hrs = Math.max(1, Math.floor(ageMs / 3600000));
+      return {
+        isOnline: false,
+        text: zh ? '🕒 ' + hrs + ' 小時前玩過' : '🕒 Played ' + hrs + 'h ago'
+      };
+    }
+    if (ageMs < 48 * 60 * 60 * 1000) {
+      return { isOnline: false, text: zh ? '🕒 尋日玩過' : '🕒 Played yesterday' };
+    }
+    if (ageMs < 7 * 86400000) {
+      const days = Math.max(2, Math.floor(ageMs / 86400000));
+      return {
+        isOnline: false,
+        text: zh ? '🕒 ' + days + ' 日前玩過' : '🕒 Played ' + days + 'd ago'
+      };
+    }
+    const dt = new Date(lastMs);
+    const dateStr = zh
+      ? dt.getMonth() + 1 + '月' + dt.getDate() + '日'
+      : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return {
+      isOnline: false,
+      text: zh ? '🕒 ' + dateStr + '玩過' : '🕒 Played ' + dateStr
+    };
+  }
+
+  if (row && row.todayDate === getTodayDateStr() && Number(row.todayPoints || 0) > 0) {
+    return { isOnline: false, text: zh ? '🕒 今日玩過' : '🕒 Played today' };
+  }
+  if (row && row.todayDate && Number(row.totalPoints || 0) > 0) {
+    return {
+      isOnline: false,
+      text: zh ? '🕒 上次：' + row.todayDate : '🕒 Last: ' + row.todayDate
+    };
+  }
+  return { isOnline: false, text: zh ? '🕒 尚未開局' : '🕒 New guest' };
+}
+
+function getActiveCoPlayers(nowMs) {
+  const authUser = getCurrentAuthUser();
+  const myUid = authUser ? authUser.uid : 'local_me';
+  const myCircles = getMyCirclesSet();
+  const active = liveRecentPlayers.filter(function (r) {
+    return r && r.uid && r.uid !== myUid && r.lastActiveMs > 0 && nowMs - r.lastActiveMs <= ONLINE_WINDOW_MS;
+  });
+  active.sort(function (a, b) {
+    const aCircle = isCircleMate(a, myCircles) ? 1 : 0;
+    const bCircle = isCircleMate(b, myCircles) ? 1 : 0;
+    if (bCircle !== aCircle) return bCircle - aCircle;
+    return (b.lastActiveMs || 0) - (a.lastActiveMs || 0);
+  });
+  return active;
+}
+
+function syncLivePresenceBanner(allowToast) {
+  if (!livePresencePillEl) return;
+  const nowMs = Date.now();
+  const coPlayers = getActiveCoPlayers(nowMs);
+  if (coPlayers.length === 0) {
+    livePresencePillEl.classList.add('hidden');
+    livePresencePillEl.innerHTML = '';
+    return;
+  }
+
+  const zh = state.lang === 'zh';
+  const myCircles = getMyCirclesSet();
+  const lead = coPlayers[0];
+  const leadName = escapeHtml((lead.displayName || '茶友').slice(0, 12));
+  const leadGame = lead.activeGame
+    ? GAME_CATALOG.find(function (g) {
+        return g.id === lead.activeGame;
+      })
+    : null;
+  const isFam = isCircleMate(lead, myCircles);
+
+  let labelText = '';
+  if (coPlayers.length === 1) {
+    if (leadGame) {
+      labelText = zh
+        ? (isFam ? '親友 ' : '') + leadName + ' 玩緊' + pickText(leadGame.shortName, 'zh')
+        : leadName + ' playing ' + pickText(leadGame.shortName, 'en');
+    } else {
+      labelText = zh
+        ? (isFam ? '親友 ' : '') + leadName + ' 同場嘆茶中'
+        : leadName + ' online now';
+    }
+  } else {
+    labelText = zh
+      ? leadName + ' 等 ' + coPlayers.length + ' 人同場玩緊'
+      : leadName + ' +' + (coPlayers.length - 1) + ' playing now';
+  }
+
+  livePresencePillEl.innerHTML = '<span class="live-dot"></span><span>' + labelText + '</span>';
+  livePresencePillEl.classList.remove('hidden');
+
+  if (allowToast) {
+    for (let i = 0; i < coPlayers.length; i++) {
+      const p = coPlayers[i];
+      if (!greetedCoPlayerUids.has(p.uid)) {
+        greetedCoPlayerUids.add(p.uid);
+        const famTag = isCircleMate(p, myCircles);
+        const pName = (p.displayName || '茶友').slice(0, 14);
+        showToast(
+          zh
+            ? '🍵 ' + (famTag ? '親友 ' : '茶友 ') + pName + ' 正在同場一齊嘆腦點心！'
+            : '🍵 ' + (famTag ? 'Circle friend ' : '') + pName + ' is playing at the same time!'
+        );
+        break;
+      }
+    }
+  }
+}
 
 function showToast(msg) {
   const wrap = document.getElementById('toastContainer');
@@ -205,12 +386,14 @@ function syncChrome() {
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === currentTab);
   });
+  syncLivePresenceBanner(false);
 }
 
 function switchTab(tab) {
   stopSpeaking();
   currentTab = tab;
   activeGameId = null;
+  touchCloudPresence(state, '').catch(() => {});
   syncChrome();
   renderMain();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -723,6 +906,7 @@ function launchGame(gameId) {
   resetComboStreak();
   activeGameId = gameId;
   currentTab = 'playing';
+  touchCloudPresence(state, gameId).catch(() => {});
   syncChrome();
   mainEl.innerHTML = '';
 
@@ -782,7 +966,7 @@ async function handleDishCompleted(gameId, score, stars) {
 
   // Sync to Firebase Leaderboard automatically if signed in!
   if (getCurrentAuthUser()) {
-    syncScoreToCloud(state).catch(e => console.warn('Cloud sync warning:', e));
+    syncScoreToCloud(state, true, gameId).catch(e => console.warn('Cloud sync warning:', e));
   }
 
   const lang = state.lang;
@@ -944,6 +1128,7 @@ async function renderLeaderboardView() {
       </div>
 
       <div id="circleControlsArea" style="margin-top:0.85rem;"></div>
+      <div id="liveTeaHouseArea" style="margin-top:0.85rem;"></div>
       <div id="boardRowsArea" style="margin-top:0.9rem;">
         <p style="color:var(--ink-muted);">${lang === 'zh' ? '正在讀取龍虎榜…' : 'Loading scoreboard…'}</p>
       </div>
@@ -1068,6 +1253,7 @@ async function renderLeaderboardView() {
 
   // Always ensure current local player is visible in preview if not yet synced
   const myUid = authUser ? authUser.uid : 'local_me';
+  const nowMs = Date.now();
   if (!rows.some(r => r.uid === myUid)) {
     rows.push({
       uid: myUid,
@@ -1076,7 +1262,10 @@ async function renderLeaderboardView() {
       homeBadge: state.profile.homeBadge,
       totalPoints: state.stats.totalPoints,
       todayPoints: state.stats.todayPoints,
+      todayDate: state.stats.todayDate,
       streak: state.stats.streak,
+      lastActiveMs: state.stats.lastPlayedAt || nowMs,
+      activeGame: '',
       isLocalPreview: !authUser
     });
     rows.sort((a, b) =>
@@ -1084,24 +1273,113 @@ async function renderLeaderboardView() {
     );
   }
 
+  // Render Live Tea-House Co-Players strip above scoreboard whenever anyone else is playing right now
+  const liveArea = mainEl.querySelector('#liveTeaHouseArea');
+  if (liveArea) {
+    const mergedMap = new Map();
+    liveRecentPlayers.concat(rows).forEach(function (item) {
+      if (!item || !item.uid || item.isLocalPreview) return;
+      const prev = mergedMap.get(item.uid);
+      if (!prev || (item.lastActiveMs || 0) >= (prev.lastActiveMs || 0)) {
+        mergedMap.set(item.uid, item);
+      }
+    });
+    const myCircles = getMyCirclesSet();
+    const onlineCoPlayers = Array.from(mergedMap.values()).filter(function (item) {
+      return item.uid !== myUid && item.lastActiveMs > 0 && nowMs - item.lastActiveMs <= ONLINE_WINDOW_MS;
+    });
+    onlineCoPlayers.sort(function (a, b) {
+      const aC = isCircleMate(a, myCircles) ? 1 : 0;
+      const bC = isCircleMate(b, myCircles) ? 1 : 0;
+      if (bC !== aC) return bC - aC;
+      return (b.lastActiveMs || 0) - (a.lastActiveMs || 0);
+    });
+
+    if (onlineCoPlayers.length > 0) {
+      const chipsHtml = onlineCoPlayers
+        .slice(0, 8)
+        .map(function (p) {
+          const gMeta = p.activeGame
+            ? GAME_CATALOG.find(function (g) {
+                return g.id === p.activeGame;
+              })
+            : null;
+          const fam = isCircleMate(p, myCircles);
+          const subTxt = gMeta
+            ? gMeta.icon + ' ' + pickText(gMeta.shortName, lang)
+            : lang === 'zh'
+            ? '嘆茶中'
+            : 'Online';
+          return (
+            '<span class="live-player-chip ' +
+            (fam ? 'circle-mate' : '') +
+            '">' +
+            '<span class="live-dot"></span>' +
+            '<span>' +
+            escapeHtml(p.avatar || '🫖') +
+            ' ' +
+            escapeHtml(p.homeBadge || '') +
+            ' ' +
+            escapeHtml(p.displayName || '茶客') +
+            '</span>' +
+            '<span class="live-chip-game">' +
+            escapeHtml(subTxt) +
+            '</span>' +
+            '</span>'
+          );
+        })
+        .join('');
+
+      liveArea.innerHTML =
+        '<div class="live-teahouse-box">' +
+        '<div class="live-teahouse-head">' +
+        '<span>🍵 ' +
+        (lang === 'zh'
+          ? '茶樓同場實況（' + onlineCoPlayers.length + ' 位茶友正在一齊玩！）'
+          : 'Live Tea-House (' + onlineCoPlayers.length + ' playing right now!)') +
+        '</span>' +
+        '</div>' +
+        '<div class="live-teahouse-chips">' +
+        chipsHtml +
+        '</div>' +
+        '</div>';
+    } else {
+      liveArea.innerHTML = '';
+    }
+  }
+
+  if (!mainEl.contains(rowsArea)) return;
+
   rowsArea.innerHTML = rows
     .map((r, idx) => {
       const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
       const pts = Math.max(0, Number(boardSubTab === 'today' ? r.todayPoints || 0 : r.totalPoints || 0) || 0);
       const safeStreak = Math.max(0, Number(r.streak || 0) || 0);
       const isMe = r.uid === myUid;
+      const act = formatPlayerActivity(r, lang, nowMs);
       return `
-        <div class="board-row ${isMe ? 'me' : ''}">
-          <div style="display:flex;align-items:center;gap:0.65rem;">
+        <div class="board-row ${isMe ? 'me' : ''} ${act.isOnline ? 'online-now' : ''}">
+          <div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">
             <span class="rank-num">${medal}</span>
-            <span style="font-size:1.5rem;">${escapeHtml(r.avatar || '🫖')}</span>
-            <div>
-              <strong>${escapeHtml(r.homeBadge || '')} ${escapeHtml(r.displayName || '茶客')}</strong>
-              ${r.isLocalPreview ? `<span style="font-size:0.75rem;color:var(--ink-muted);"> (${lang === 'zh' ? '本地' : 'Local'})</span>` : ''}
-              <div style="font-size:0.78rem;color:var(--ink-muted);">🔥 ${safeStreak} ${t(lang, 'streakUnit')}</div>
+            <span class="board-avatar-wrap">
+              <span style="font-size:1.5rem;">${escapeHtml(r.avatar || '🫖')}</span>
+              ${act.isOnline ? '<span class="avatar-online-dot" title="Playing now"></span>' : ''}
+            </span>
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:0.35rem;flex-wrap:wrap;">
+                <strong>${escapeHtml(r.homeBadge || '')} ${escapeHtml(r.displayName || '茶客')}</strong>
+                ${r.isLocalPreview ? `<span style="font-size:0.75rem;color:var(--ink-muted);">(${lang === 'zh' ? '本地' : 'Local'})</span>` : ''}
+              </div>
+              <div class="board-meta-row">
+                <span>🔥 ${safeStreak} ${t(lang, 'streakUnit')}</span>
+                <span class="activity-pill ${act.isOnline ? 'live' : 'last-seen'}">
+                  ${act.isOnline ? '<span class="live-dot"></span>' : ''}
+                  <span>${escapeHtml(act.text)}</span>
+                </span>
+              </div>
             </div>
           </div>
-          <strong style="font-size:1.1rem;color:var(--red-chop-dark);">${pts} ${t(lang, 'pointsUnit')}</strong>
+          <strong style="font-size:1.1rem;color:var(--red-chop-dark);white-space:nowrap;">${pts} ${t(lang, 'pointsUnit')}</strong>
         </div>
       `;
     })
@@ -2286,9 +2564,20 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+if (livePresencePillEl) {
+  livePresencePillEl.addEventListener('click', () => {
+    playSfx('switch', state.sound);
+    switchTab('leaderboard');
+  });
+}
+
 // Initialize
 updateClocks();
-setInterval(updateClocks, 20000);
+setInterval(() => {
+  updateClocks();
+  syncLivePresenceBanner(false);
+  touchCloudPresence(state, activeGameId || '', true).catch(() => {});
+}, 25000);
 checkUrlInvite();
 syncChrome();
 renderMain();
@@ -2297,11 +2586,24 @@ if (needsStartEntry || !state.prefs || !state.prefs.skipTitleScreen) {
   showStartScreen();
 }
 
-initFirebaseIfConfigured().then(() => {
+initFirebaseIfConfigured().then(res => {
+  if (res && res.ready) {
+    subscribeActivePlayers(rows => {
+      const shouldToast = initialPresenceLoaded;
+      liveRecentPlayers = rows;
+      // Pre-populate already-online players on initial load so we only toast for newly arriving friends!
+      if (!initialPresenceLoaded) {
+        const nowMs = Date.now();
+        getActiveCoPlayers(nowMs).forEach(p => greetedCoPlayerUids.add(p.uid));
+        initialPresenceLoaded = true;
+      }
+      syncLivePresenceBanner(shouldToast);
+    });
+  }
   onUserChanged(user => {
     syncChrome();
     if (user) {
-      syncScoreToCloud(state).catch(() => {});
+      syncScoreToCloud(state, false, activeGameId || '').catch(() => {});
     }
     if (currentTab === 'leaderboard') renderLeaderboardView();
   });

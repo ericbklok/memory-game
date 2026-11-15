@@ -139,6 +139,7 @@ export function createDefaultState() {
       todayDate: getTodayDateStr(),
       streak: 0,
       lastStreakDate: null,
+      lastPlayedAt: null,
       teapotShields: 1, // Start every parent with 1 Warm Teapot Streak Freeze!
       gamesCompleted: 0,
       dailySetsCompleted: 0,
@@ -255,6 +256,7 @@ export function recordGameCompletion(state, gameId, earnedPoints, stars, allAlbu
   state.stats.totalPoints += earnedPoints;
   state.stats.todayPoints += earnedPoints;
   state.stats.gamesCompleted += 1;
+  state.stats.lastPlayedAt = Date.now();
   state.stats.perGamePlays[gameId] = (state.stats.perGamePlays[gameId] || 0) + 1;
 
   const defLvl = gameId === 'make24' ? 0 : 1;
