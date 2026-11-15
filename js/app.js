@@ -9,6 +9,7 @@ import {
   evaluateAgePerformance,
   renderAgeComparisonCard
 } from './ui-fx.js';
+import { mountBaoBo3D } from './mascot-3d.js';
 import {
   loadState,
   saveState,
@@ -169,6 +170,7 @@ function syncChrome() {
   document.documentElement.dataset.font = state.fontSize;
   document.documentElement.dataset.speechRate = prefs.speechRate || 'normal';
   document.documentElement.dataset.motion = prefs.reducedMotion ? 'calm' : 'full';
+  document.body.classList.toggle('mode-playing', currentTab === 'playing');
 
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -275,10 +277,72 @@ async function shareDailyStampCard() {
 }
 
 /* =========================================================================
-   HOME VIEW (今日早茶 · NINTENDO BRAIN CLUBHOUSE)
+   HOME VIEW (今日早茶 · FOCUSED NINTENDO TEA PLAZA WITH 3D BAOBO)
    ========================================================================= */
+function openGachaRouletteModal() {
+  if (rouletteBusy) return;
+  const lang = state.lang;
+  const zh = lang === 'zh';
+  rouletteBusy = true;
+
+  openModal(
+    `
+    <div style="text-align:center;padding:0.4rem 0.2rem;">
+      <div class="start-ribbon" style="margin-bottom:0.55rem;">
+        🎲 ${zh ? '茶博士扭蛋選關機' : 'Master Bo Gacha Roulette'}
+      </div>
+      <div id="gachaBoSlot" style="width:120px;height:120px;margin:0 auto;"></div>
+      <div id="gachaCapsuleStage" class="gacha-capsule-box">
+        <div id="gachaIcon" style="font-size:3.2rem;line-height:1.1;">🥟</div>
+        <div id="gachaTitle" style="font-weight:900;font-size:1.22rem;margin-top:0.3rem;">${zh ? '轉動緊點心籠…' : 'Spinning Steamer…'}</div>
+        <div id="gachaSub" style="font-size:0.84rem;color:var(--ink-muted);font-weight:700;margin-top:0.15rem;">${zh ? '預備上菜！' : 'Get ready!'}</div>
+      </div>
+    </div>
+  `,
+    card => {
+      const boCtrl = mountBaoBo3D(card.querySelector('#gachaBoSlot'), {
+        size: 120,
+        role: 'modal',
+        mood: 'cheer'
+      });
+      const iconEl = card.querySelector('#gachaIcon');
+      const titleEl = card.querySelector('#gachaTitle');
+      const subEl = card.querySelector('#gachaSub');
+      const boxEl = card.querySelector('#gachaCapsuleStage');
+
+      const totalTicks = 12;
+      const winner = GAME_CATALOG[Math.floor(Math.random() * GAME_CATALOG.length)];
+      let step = 0;
+
+      const spinStep = () => {
+        const cur = step < totalTicks ? GAME_CATALOG[step % GAME_CATALOG.length] : winner;
+        if (iconEl) iconEl.textContent = cur.icon;
+        if (titleEl) titleEl.textContent = pickText(cur.title, lang);
+        if (subEl) subEl.textContent = pickText(cur.pillar, lang);
+        playSfx(step === totalTicks ? 'correct' : 'roulette', state.sound);
+
+        if (step === totalTicks) {
+          boCtrl.poke();
+          if (boxEl) boxEl.classList.add('winner-glow');
+          setTimeout(() => {
+            rouletteBusy = false;
+            closeModal();
+            inDailySequence = false;
+            launchGame(winner.id);
+          }, 620);
+          return;
+        }
+        step += 1;
+        setTimeout(spinStep, 60 + step * 18);
+      };
+      spinStep();
+    }
+  );
+}
+
 function renderHomeView() {
   const lang = state.lang;
+  const zh = lang === 'zh';
   const hour = new Date().getHours();
   const greetKey = hour < 12 ? 'morningGreet' : hour < 18 ? 'afternoonGreet' : 'eveningGreet';
   const rank = getRankTitle(state.stats.totalPoints, lang);
@@ -295,7 +359,7 @@ function renderHomeView() {
 
   const quipPool = MASTER_BO_QUIPS[lang] || MASTER_BO_QUIPS.zh;
   const curQuip = quipPool[boQuipIdx % quipPool.length];
-  const shownName = state.profile.displayName || (lang === 'zh' ? '醒神茶客' : 'Tea Guest');
+  const shownName = state.profile.displayName || (zh ? '醒神茶客' : 'Tea Guest');
   const overallEval =
     state.stats.gamesCompleted > 0
       ? evaluateAgePerformance({
@@ -306,110 +370,144 @@ function renderHomeView() {
       : null;
 
   const wrap = document.createElement('div');
+  wrap.className = 'plaza-stage-shell';
   wrap.innerHTML = `
-    <section class="card hero-card">
-      <div class="greeting-row">
-        <div>
-          <h1 class="greeting-title">${state.profile.avatar} ${t(lang, greetKey)}</h1>
-          <p class="greeting-sub">
-            ${state.profile.homeBadge} <strong>${escapeHtml(shownName)}</strong>${
-              state.profile.age ? ` (${state.profile.age}${lang === 'zh' ? '歲' : 'y'})` : ''
-            } · ${rank}
-          </p>
+    <section class="nintendo-plaza-board">
+      <!-- Left Spotlight: 3D Character Guide Stage -->
+      <div class="plaza-character-wing">
+        <div class="plaza-player-banner">
+          <div class="plaza-player-id">
+            <span class="plaza-avatar-badge">${state.profile.avatar}</span>
+            <div>
+              <div class="plaza-player-name">${state.profile.homeBadge} ${escapeHtml(shownName)}${
+                state.profile.age ? ` <small>(${state.profile.age}${zh ? '歲' : 'y'})</small>` : ''
+              }</div>
+              <div class="plaza-player-rank">${rank} · ${t(lang, greetKey)}</div>
+            </div>
+          </div>
         </div>
-        <div class="streak-badges">
+
+        <div class="plaza-3d-pedestal-wrap" id="plazaBoStageWrap">
+          <div class="plaza-spotlight-ring"></div>
+          <div id="plazaBo3DMount" class="plaza-bo-3d-mount"></div>
+          <span class="plaza-poke-pill">👆 ${zh ? '輕撳阿波互動' : 'Tap Bo!'}</span>
+        </div>
+
+        <div class="plaza-comic-bubble" id="boBubbleBtn">
+          <div class="plaza-bubble-head">
+            <span class="bo-name-tag">🫖 ${zh ? '茶博士阿波 3D' : '3D Master Bo'}</span>
+            <div style="display:flex;gap:0.3rem;">
+              <button type="button" class="baobo-voice-chip" id="plazaBoSpeakBtn">🔊 ${zh ? '朗讀' : 'Listen'}</button>
+              <button type="button" class="baobo-voice-chip" id="plazaBoNextTipBtn">💬 ${zh ? '換貼士' : 'Next Tip'}</button>
+            </div>
+          </div>
+          <div id="boSpeechText" class="plaza-bubble-body">${curQuip.text}</div>
+        </div>
+
+        <div class="plaza-stat-strip">
           <span class="stat-pill fire">🔥 ${state.stats.streak} ${t(lang, 'streakUnit')}</span>
-          <span class="stat-pill teapot" title="Missed a day? Warm Teapot protects your streak!">🫖 ${state.stats.teapotShields} ${t(lang, 'teapotShield')}</span>
+          <span class="stat-pill teapot" title="Warm Teapot protects your streak!">🫖 ${state.stats.teapotShields} ${t(lang, 'teapotShield')}</span>
           <span class="stat-pill points">⭐ ${state.stats.totalPoints} ${t(lang, 'pointsUnit')}</span>
-        </div>
-      </div>
-
-      <!-- Interactive Host: Tea Master Bo (茶博士阿波) -->
-      <div class="bo-mascot-row" id="boInteractiveRow">
-        <button type="button" class="bo-avatar-btn" id="boAvatarBtn" aria-label="Tea Master Bo">
-          ${renderMasterBoSvg(doneCount === 4 ? 'cheer' : curQuip.mood)}
-        </button>
-        <div class="bo-speech-bubble" id="boBubbleBtn">
-          <div>
-            <span class="bo-name-tag">🫖 ${lang === 'zh' ? '茶博士阿波' : 'Master Bo'}</span>
-            <span class="bo-tap-hint">${lang === 'zh' ? '💬 撳我傾偈換貼士' : '💬 Tap for brain tips!'}</span>
-          </div>
-          <div id="boSpeechText" style="font-weight:800;font-size:0.94rem;color:var(--ink);">
-            ${curQuip.text}
-          </div>
-        </div>
-      </div>
-
-      <!-- 4-Dish Stamp Slip + Big Brain Academy 5-Axis Vitality Radar -->
-      <div class="home-dash-grid">
-        <div class="stamp-slip">
-          <div class="stamp-slip-header">
-            <span>${t(lang, 'slipTitle')}</span>
-            <span>${t(lang, 'slipDoneCount')} ${doneCount} / ${dishes.length}</span>
-          </div>
-          <div class="stamp-grid" id="dailyStampGrid"></div>
-        </div>
-        <div class="radar-panel">
-          <div class="radar-title">🧠 ${lang === 'zh' ? '腦力五維與同齡評估' : 'Brain Radar & Age Standing'}</div>
-          ${renderBrainRadarSvg(state.stats.perGamePlays, lang)}
           ${
             overallEval
-              ? `<div style="margin-top:0.25rem;padding:0.35rem 0.55rem;border-radius:10px;background:#E6F4EF;border:1.5px solid #8CCAB6;font-size:0.78rem;font-weight:900;color:var(--jade-dark);">
-                   ${
-                     lang === 'zh'
-                       ? `同齡超越 ${overallEval.percentile}%${overallEval.showVitalityAge ? ` · 活力 ${overallEval.vitalityAge} 歲` : ''}`
-                       : `Ahead of ${overallEval.percentile}% peers${overallEval.showVitalityAge ? ` · Vitality ${overallEval.vitalityAge}` : ''}`
-                   }
-                 </div>`
-              : `<div style="font-size:0.75rem;color:var(--ink-muted);font-weight:700;">
-                   ${lang === 'zh' ? '玩完第一局即顯示同齡表現評估！' : 'Play 1 round to see your age standing!'}
-                 </div>`
+              ? `<button type="button" class="stat-pill vitality-jump" id="jumpVitalityBtn">
+                   🧠 ${zh ? `同齡前 ${overallEval.topPct}%` : `Top ${overallEval.topPct}%`}${
+                     overallEval.showVitalityAge ? ` · ${zh ? `活力 ${overallEval.vitalityAge}歲` : `Vitality ${overallEval.vitalityAge}`}` : ''
+                   } →
+                 </button>`
+              : ''
           }
         </div>
       </div>
 
-      <button type="button" class="btn ${!nextUnstamped ? 'btn-gold' : 'btn-primary'} btn-full" id="heroStartBtn" style="font-size:1.14rem;min-height:62px;">
-        ${ctaLabel}
-      </button>
+      <!-- Right Spotlight: Today's Focused 4-Dish Quest Stage -->
+      <div class="plaza-quest-wing">
+        <div class="stamp-slip focused-quest-slip">
+          <div class="stamp-slip-header">
+            <span>${t(lang, 'slipTitle')}</span>
+            <span class="quest-progress-badge">${doneCount} / ${dishes.length} ${zh ? '完成' : 'Clear'}</span>
+          </div>
+          <div class="stamp-grid quest-2x2-grid" id="dailyStampGrid"></div>
+        </div>
 
-      <div class="action-row" style="margin-top:0.75rem;">
-        <button type="button" class="btn btn-plum btn-sm" id="surpriseHomeBtn">
-          🎲 ${lang === 'zh' ? '隨機抽一籠點心！' : 'Surprise Me!'}
+        <button type="button" class="btn-play-mega plaza-mega-cta" id="heroStartBtn">
+          <span>▶</span>
+          <span>${ctaLabel}</span>
         </button>
-        <button type="button" class="btn btn-jade btn-sm" id="shareCardBtn">${t(lang, 'shareFamilyBtn')}</button>
-        <button type="button" class="btn btn-outline btn-sm" id="inviteHomeBtn">${t(lang, 'inviteBtn')}</button>
+
+        <div class="plaza-quick-dock">
+          <button type="button" class="btn btn-plum btn-sm" id="surpriseHomeBtn">
+            🎲 ${zh ? '扭蛋抽關' : 'Gacha Spin'}
+          </button>
+          <button type="button" class="btn btn-gold btn-sm" id="browseAllGamesBtn">
+            🕹️ ${zh ? '全部 15 款卡帶' : 'All 15 Games'}
+          </button>
+          <button type="button" class="btn btn-jade btn-sm" id="shareCardBtn">
+            📲 ${zh ? '晒點心紙' : 'Share Card'}
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" id="inviteHomeBtn">
+            📨 ${zh ? '邀親友' : 'Invite'}
+          </button>
+        </div>
       </div>
     </section>
-
-    <div class="cat-toolbar">
-      <div class="cat-filter-bar" id="homeCatBar"></div>
-    </div>
-    <div class="games-grid" id="homeGamesGrid"></div>
   `;
 
-  // Wire Master Bo interactive chatter
+  // Mount 3D BaoBo on the Plaza Pedestal!
+  const boMountEl = wrap.querySelector('#plazaBo3DMount');
+  const plazaBo = mountBaoBo3D(boMountEl, {
+    size: 184,
+    role: 'plaza',
+    mood: doneCount === 4 ? 'cheer' : curQuip.mood,
+    onTap: function () {
+      cycleBoQuip();
+    }
+  });
+
   const cycleBoQuip = () => {
     playSfx('switch', state.sound);
     boQuipIdx = (boQuipIdx + 1) % quipPool.length;
     const nextQ = quipPool[boQuipIdx];
-    wrap.querySelector('#boAvatarBtn').innerHTML = renderMasterBoSvg(nextQ.mood);
+    plazaBo.setMood(nextQ.mood);
     wrap.querySelector('#boSpeechText').textContent = nextQ.text;
   };
-  wrap.querySelector('#boAvatarBtn').addEventListener('click', cycleBoQuip);
-  wrap.querySelector('#boBubbleBtn').addEventListener('click', cycleBoQuip);
+
+  wrap.querySelector('#plazaBoNextTipBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    cycleBoQuip();
+  });
+
+  wrap.querySelector('#plazaBoSpeakBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const txt = wrap.querySelector('#boSpeechText').textContent;
+    plazaBo.poke();
+    plazaBo.setTalking(true);
+    speakText(txt, lang);
+    setTimeout(() => plazaBo.setTalking(false), 3200);
+  });
+
+  const jumpVitBtn = wrap.querySelector('#jumpVitalityBtn');
+  if (jumpVitBtn) {
+    jumpVitBtn.addEventListener('click', () => {
+      playSfx('switch', state.sound);
+      switchTab('leaderboard');
+    });
+  }
 
   const stampGrid = wrap.querySelector('#dailyStampGrid');
   dishes.forEach((dId, idx) => {
     const meta = GAME_CATALOG.find(g => g.id === dId);
     const stamped = state.daily.stamps[dId];
+    const isNext = dId === nextUnstamped;
     const slot = document.createElement('button');
     slot.type = 'button';
-    slot.className = `stamp-slot ${stamped ? 'done' : ''}`;
+    slot.className = `stamp-slot ${stamped ? 'done' : ''} ${isNext ? 'next-up-slot' : ''}`;
     slot.innerHTML = `
+      <span class="quest-num-badge">#${idx + 1}</span>
       <span class="stamp-slot-icon">${meta.icon}</span>
-      <span class="stamp-slot-name">${idx + 1}. ${pickText(meta.shortName, lang)}</span>
-      <span style="font-size:0.78rem;color:var(--ink-muted);">
-        ${stamped ? '⭐'.repeat(stamped.stars) : lang === 'zh' ? '撳此開局' : 'Tap to play'}
+      <span class="stamp-slot-name">${pickText(meta.shortName, lang)}</span>
+      <span class="stamp-slot-sub">
+        ${stamped ? '⭐'.repeat(stamped.stars) : isNext ? (zh ? '▶ 下一籠' : '▶ Up Next') : zh ? '撳此開局' : 'Play'}
       </span>
       ${stamped ? `<span class="red-chop">${t(lang, 'stampChop')}</span>` : ''}
     `;
@@ -427,18 +525,14 @@ function renderHomeView() {
     if (nextUnstamped) {
       launchGame(nextUnstamped);
     } else {
-      const randomMeta = GAME_CATALOG[Math.floor(Math.random() * GAME_CATALOG.length)];
-      launchGame(randomMeta.id);
+      openGachaRouletteModal();
     }
   });
 
-  const gGrid = wrap.querySelector('#homeGamesGrid');
-  const catBar = wrap.querySelector('#homeCatBar');
-  renderCategoryBarInto(catBar, gGrid);
-  renderGameCardsInto(gGrid, selectedGameCategory);
-
-  wrap.querySelector('#surpriseHomeBtn').addEventListener('click', () => {
-    spinSurpriseRoulette(gGrid);
+  wrap.querySelector('#surpriseHomeBtn').addEventListener('click', openGachaRouletteModal);
+  wrap.querySelector('#browseAllGamesBtn').addEventListener('click', () => {
+    playSfx('switch', state.sound);
+    switchTab('games');
   });
   wrap.querySelector('#shareCardBtn').addEventListener('click', shareDailyStampCard);
   wrap.querySelector('#inviteHomeBtn').addEventListener('click', shareInviteWithFriends);
@@ -469,8 +563,7 @@ function spinSurpriseRoulette(gridEl) {
   if (rouletteBusy) return;
   const cards = Array.from(gridEl.querySelectorAll('.game-card'));
   if (!cards.length) {
-    const pick = GAME_CATALOG[Math.floor(Math.random() * GAME_CATALOG.length)];
-    launchGame(pick.id);
+    openGachaRouletteModal();
     return;
   }
   rouletteBusy = true;
@@ -517,22 +610,22 @@ function renderGameCardsInto(gridEl, catFilter) {
         : plays > 0
         ? `⭐ ×${plays}`
         : lang === 'zh'
-        ? '✨ 試玩'
-        : '✨ Try!';
+        ? '✨ 新卡帶'
+        : '✨ New!';
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.dataset.gameId = g.id;
-    btn.className = `game-card theme-${g.theme || 'jade'}`;
+    btn.className = `game-card cartridge-tile theme-${g.theme || 'jade'}`;
     btn.innerHTML = `
-      <div class="game-icon-box">${g.icon}</div>
-      <div class="game-card-body">
-        <h3 class="game-card-title">${pickText(g.title, lang)}</h3>
-        <p class="game-card-desc">${pickText(g.desc, lang)}</p>
-        <div class="cartridge-meta-row">
-          <span class="level-tag" style="margin-top:0;">${pickText(g.pillar, lang)} · ${lvlNames[lvl]}</span>
-          <span class="play-medal">${medalLabel}</span>
-        </div>
+      <div class="cartridge-top-notch"></div>
+      <div class="cartridge-header-row">
+        <div class="game-icon-box">${g.icon}</div>
+        <span class="play-medal">${medalLabel}</span>
+      </div>
+      <h3 class="game-card-title">${pickText(g.title, lang)}</h3>
+      <div class="cartridge-meta-row">
+        <span class="level-tag" style="margin-top:0;">${pickText(g.pillar, lang)} · ${lvlNames[lvl]}</span>
       </div>
     `;
     btn.addEventListener('click', () => {
@@ -545,31 +638,42 @@ function renderGameCardsInto(gridEl, catFilter) {
 }
 
 /* =========================================================================
-   ALL GAMES VIEW (自選點心 · CARTRIDGE SHELF)
+   ALL GAMES VIEW (自選點心 · NINTENDO SWITCH CARTRIDGE SHELF)
    ========================================================================= */
 function renderGamesTabView() {
   const lang = state.lang;
+  const zh = lang === 'zh';
   const wrap = document.createElement('div');
+  wrap.className = 'shelf-stage-shell';
   wrap.innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-        <div>
-          <h1 style="margin:0;font-size:1.3rem;">🀄 ${t(lang, 'quickPickTitle')}</h1>
-          <p style="margin:0.25rem 0 0;color:var(--ink-muted);">${t(lang, 'freePlaySub')}</p>
+    <div class="card cartridge-shelf-banner">
+      <div class="shelf-host-row">
+        <div id="shelfBo3DSlot" style="width:78px;height:78px;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <h1 style="margin:0;font-size:1.24rem;font-weight:900;">🕹️ ${t(lang, 'quickPickTitle')}</h1>
+          <p style="margin:0.15rem 0 0;color:var(--ink-muted);font-size:0.88rem;font-weight:700;">
+            ${zh ? '15 款無計時健腦卡帶 · 連續 3 個月零重複題庫！' : '15 untimed brain cartridges · 95+ days of non-repeating puzzles!'}
+          </p>
         </div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
           <button type="button" class="btn btn-plum btn-sm" id="surpriseAllBtn">
-            🎲 ${lang === 'zh' ? '隨機抽一籠！' : 'Surprise Me!'}
+            🎲 ${zh ? '扭蛋隨機抽' : 'Surprise Spin'}
           </button>
           <button type="button" class="btn btn-outline btn-sm" id="managePhotosBtn">
-            📸 ${lang === 'zh' ? '管理屋企相片卡' : 'Family Photo Cards'}
+            📸 ${zh ? '相片卡' : 'Photo Cards'}
           </button>
         </div>
       </div>
-      <div class="cat-filter-bar" id="allGamesCatBar" style="margin-top:0.9rem;"></div>
+      <div class="cat-filter-bar" id="allGamesCatBar" style="margin-top:0.75rem;"></div>
     </div>
-    <div class="games-grid" id="allGamesGrid"></div>
+    <div class="games-grid cartridge-shelf-grid" id="allGamesGrid"></div>
   `;
+  mountBaoBo3D(wrap.querySelector('#shelfBo3DSlot'), {
+    size: 78,
+    role: 'shelf',
+    mood: 'happy'
+  });
+
   const gridEl = wrap.querySelector('#allGamesGrid');
   const catBar = wrap.querySelector('#allGamesCatBar');
   renderCategoryBarInto(catBar, gridEl);
@@ -668,12 +772,14 @@ async function handleDishCompleted(gameId, score, stars) {
   mainEl.innerHTML = `
     <div class="card hero-card victory-stage">
       <div class="victory-sunburst"></div>
-      <div style="display:flex;justify-content:center;align-items:center;gap:0.75rem;position:relative;margin-bottom:0.55rem;">
-        <div style="width:74px;height:74px;">${renderMasterBoSvg('cheer')}</div>
-        <span style="font-size:3.5rem;">${gameMeta.icon}</span>
-        <span class="red-chop" style="position:static;width:3.1rem;height:3.1rem;font-size:0.86rem;">
-          ${t(lang, 'stampChop')}
-        </span>
+      <div style="display:flex;justify-content:center;align-items:center;gap:0.85rem;position:relative;margin-bottom:0.35rem;">
+        <div id="victoryBo3DSlot" style="width:148px;height:148px;"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;">
+          <span style="font-size:3.2rem;line-height:1;">${gameMeta.icon}</span>
+          <span class="red-chop" style="position:static;width:3.1rem;height:3.1rem;font-size:0.86rem;">
+            ${t(lang, 'stampChop')}
+          </span>
+        </div>
       </div>
       <div style="margin:0.2rem 0;">${starsHtml}</div>
       <h2 style="margin:0.25rem 0;font-size:1.5rem;">${randomPraise(lang)}</h2>
@@ -710,6 +816,12 @@ async function handleDishCompleted(gameId, score, stars) {
     </div>
   `;
 
+  mountBaoBo3D(mainEl.querySelector('#victoryBo3DSlot'), {
+    size: 148,
+    role: 'victory',
+    mood: 'cheer'
+  });
+
   // Smooth Nintendo score ticker count-up!
   const tickerEl = mainEl.querySelector('#winScoreTicker');
   if (tickerEl) {
@@ -733,23 +845,50 @@ async function handleDishCompleted(gameId, score, stars) {
 }
 
 /* =========================================================================
-   LEADERBOARD & INVITES VIEW (龍虎榜 · 全球與親友圈)
+   BRAIN CHECKUP & LEADERBOARD VIEW (腦力五維評估 · 全球與親友龍虎榜)
    ========================================================================= */
 async function renderLeaderboardView() {
   const lang = state.lang;
+  const zh = lang === 'zh';
   const configured = isFirebaseConfigured();
   const authUser = getCurrentAuthUser();
+  const checkupEval = evaluateAgePerformance({
+    age: state.profile.age,
+    recentRounds: state.stats.recentRounds,
+    lang
+  });
 
   mainEl.innerHTML = `
+    <div class="card checkup-spotlight-card">
+      <div class="checkup-grid">
+        <div class="radar-panel" style="margin:0;">
+          <div class="radar-title">🧠 ${zh ? '腦力五維活力圖' : '5-Axis Brain Vitality'}</div>
+          ${renderBrainRadarSvg(state.stats.perGamePlays, lang)}
+        </div>
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:0.55rem;">
+          <div style="display:flex;align-items:center;gap:0.65rem;">
+            <div id="boardBo3DSlot" style="width:84px;height:84px;flex-shrink:0;"></div>
+            <div>
+              <div style="font-weight:900;font-size:1.1rem;">${zh ? '茶博士腦力體檢報告' : "Master Bo's Brain Checkup"}</div>
+              <div style="font-size:0.84rem;color:var(--ink-muted);font-weight:700;">
+                ${zh ? `已完成 ${state.stats.gamesCompleted} 局健腦點心` : `${state.stats.gamesCompleted} brain dishes completed`}
+              </div>
+            </div>
+          </div>
+          ${renderAgeComparisonCard(checkupEval, lang)}
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;flex-wrap:wrap;">
         <div>
-          <h1 style="margin:0;font-size:1.32rem;">🏆 ${lang === 'zh' ? '茶樓龍虎榜（全球與親友圈）' : 'Global & Family Leaderboard'}</h1>
-          <p style="margin:0.25rem 0 0;color:var(--ink-muted);font-size:0.92rem;">
+          <h1 style="margin:0;font-size:1.28rem;">🏆 ${zh ? '茶樓龍虎榜（全球與親友圈）' : 'Global & Family Leaderboard'}</h1>
+          <p style="margin:0.2rem 0 0;color:var(--ink-muted);font-size:0.88rem;font-weight:700;">
             ${
-              lang === 'zh'
-                ? '無須登入即可本地遊玩；用 Google 登入即可將分數同步上全球榜，並邀請香港及溫哥華親友同場較量！'
-                : 'Play locally anytime — or sign in with Google to join the global scoreboard and invite friends & family!'
+              zh
+                ? '本地即玩免登入；連接 Google 即可同步全球排名並與親友比拼！'
+                : 'Play locally anytime — or sign in with Google to compare scores with family!'
             }
           </p>
         </div>
@@ -776,6 +915,12 @@ async function renderLeaderboardView() {
       </div>
     </div>
   `;
+
+  mountBaoBo3D(mainEl.querySelector('#boardBo3DSlot'), {
+    size: 84,
+    role: 'board',
+    mood: 'proud'
+  });
 
   mainEl.querySelector('#boardInviteBtn').addEventListener('click', shareInviteWithFriends);
   mainEl.querySelectorAll('[data-btab]').forEach(btn => {
@@ -959,17 +1104,27 @@ function renderAlbumView() {
 
   const wrap = document.createElement('div');
   wrap.innerHTML = `
-    <div class="card">
-      <h1 style="margin:0;font-size:1.32rem;">🎁 ${lang === 'zh' ? '港溫早茶珍藏圖鑑' : 'HK × Vancouver Keepsake Album'}</h1>
-      <p style="margin:0.3rem 0 0;color:var(--ink-muted);">
-        ${
-          lang === 'zh'
-            ? `已收集 ${unlockedSet.size} / ${COLLECTIBLE_ALBUM.length} 款珍藏！（每累積 160 分或集齊每日四道印仔即自動解鎖新卡）`
-            : `Collected ${unlockedSet.size} / ${COLLECTIBLE_ALBUM.length} keepsakes! (Earn 160 pts or complete a Daily 4-Dish Card to unlock more)`
-        }
-      </p>
+    <div class="card cartridge-shelf-banner">
+      <div class="shelf-host-row">
+        <div id="albumBo3DSlot" style="width:76px;height:76px;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <h1 style="margin:0;font-size:1.26rem;font-weight:900;">🎁 ${lang === 'zh' ? '港溫早茶珍藏圖鑑' : 'HK × Vancouver Keepsake Album'}</h1>
+          <p style="margin:0.2rem 0 0;color:var(--ink-muted);font-size:0.88rem;font-weight:700;">
+            ${
+              lang === 'zh'
+                ? `已收集 ${unlockedSet.size} / ${COLLECTIBLE_ALBUM.length} 款珍藏！（每累積 160 分或集齊每日四道印仔即自動解鎖新卡）`
+                : `Collected ${unlockedSet.size} / ${COLLECTIBLE_ALBUM.length} keepsakes! (Earn 160 pts or complete a Daily 4-Dish Card to unlock more)`
+            }
+          </p>
+        </div>
+      </div>
     </div>
   `;
+  mountBaoBo3D(wrap.querySelector('#albumBo3DSlot'), {
+    size: 76,
+    role: 'album',
+    mood: 'happy'
+  });
 
   categories.forEach(cat => {
     const sec = document.createElement('div');
@@ -1288,10 +1443,10 @@ function showStartScreen() {
       <h1 class="start-title-zh">每日腦點心</h1>
       <div class="start-title-en">DAILY MINDSUM · 15 BRAIN GAMES</div>
 
-      <div class="start-mascot-stage" style="margin:0.45rem auto 0.65rem;">
+      <div class="start-mascot-stage" style="margin:0.35rem auto 0.55rem;">
         <span class="start-float-icon">🥟</span>
         <span class="start-float-icon delay-1">🀄</span>
-        <div style="width:88px;height:88px;">${renderMasterBoSvg('cheer')}</div>
+        <div id="startBo3DSlot" class="start-3d-bo-slot"></div>
         <span class="start-float-icon delay-2">🫖</span>
         <span class="start-float-icon delay-1">🍁</span>
       </div>
@@ -1373,6 +1528,12 @@ function showStartScreen() {
     </div>
   `;
 
+  const startBo = mountBaoBo3D(startScreenEl.querySelector('#startBo3DSlot'), {
+    size: 148,
+    role: 'start',
+    mood: 'wave'
+  });
+
   const nameInput = startScreenEl.querySelector('#startNameInput');
   const ageInput = startScreenEl.querySelector('#startAgeInput');
   const errEl = startScreenEl.querySelector('#startErrorMsg');
@@ -1393,6 +1554,7 @@ function showStartScreen() {
 
   function stepAge(delta) {
     playSfx('tap', state.sound);
+    startBo.poke();
     const cur = parseInt(ageInput.value, 10);
     const base = isNaN(cur) ? 65 : cur;
     const next = Math.max(8, Math.min(108, base + delta));
@@ -1407,10 +1569,12 @@ function showStartScreen() {
   nameInput.addEventListener('input', () => {
     nameInput.classList.remove('input-error');
     errEl.style.display = 'none';
+    startBo.setMood('happy');
   });
   ageInput.addEventListener('input', () => {
     ageInput.classList.remove('input-error');
     errEl.style.display = 'none';
+    startBo.setMood('proud');
   });
 
   function validateAndProceed(forceTour) {
@@ -1587,8 +1751,8 @@ function openWelcomeTourModal(initialStep) {
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.65rem;">
-        <div style="width:68px;height:68px;flex-shrink:0;">${renderMasterBoSvg(s.mood)}</div>
+      <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.65rem;">
+        <div id="tourBo3DSlot" style="width:96px;height:96px;flex-shrink:0;"></div>
         <h2 style="margin:0;font-size:1.2rem;line-height:1.28;">${s.title}</h2>
       </div>
 
@@ -1610,8 +1774,17 @@ function openWelcomeTourModal(initialStep) {
       </div>
     `,
       card => {
+        const tourBo = mountBaoBo3D(card.querySelector('#tourBo3DSlot'), {
+          size: 96,
+          role: 'tour',
+          mood: s.mood
+        });
+
         card.querySelector('#tourSpeakBtn').addEventListener('click', () => {
+          tourBo.poke();
+          tourBo.setTalking(true);
           speakText(s.voice, state.lang);
+          setTimeout(() => tourBo.setTalking(false), 3600);
         });
 
         card.querySelector('#tourSkipBtn').addEventListener('click', () => {

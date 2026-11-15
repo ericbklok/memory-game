@@ -1,4 +1,5 @@
 /* Nintendo-inspired Visual Juice: Master Bo Character, Particle Bursts, Floating Score Pops, Combo HUD & Brain Radar */
+import { notifyStageBaoBo } from './mascot-3d.js';
 
 let lastPointerX = 180;
 let lastPointerY = 240;
@@ -55,11 +56,13 @@ export function triggerComboJuice(type, lang) {
     const colors = ['#1B8566', '#E07A16', '#D63629', '#7B2CBF'];
     spawnFloatingPop(lastPointerX - 36, lastPointerY - 18, msg, colors[idx]);
     updateStageComboHud(liveComboCount, liveComboCount >= 3 ? 'cheer' : 'happy');
+    notifyStageBaoBo('correct', lang, liveComboCount);
     return liveComboCount;
   }
   if (type === 'gentle') {
     liveComboCount = 0;
     updateStageComboHud(0, 'think');
+    notifyStageBaoBo('gentle', lang, 0);
   }
   return liveComboCount;
 }

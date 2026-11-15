@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-mindsum-v7';
+const CACHE_NAME = 'daily-mindsum-v8';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const CORE_ASSETS = [
   './manifest.webmanifest',
   './js/app.js',
   './js/i18n.js',
+  './js/mascot-3d.js',
   './js/ui-fx.js',
   './js/storage.js',
   './js/firebase-config.js',

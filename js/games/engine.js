@@ -15,7 +15,8 @@ import {
 import { drawFreshItems, hasSeenSignature, markSeenSignature } from '../data/seed-tracker.js';
 import { t, pickText, randomPraise, playSfx, speakText, stopSpeaking } from '../i18n.js';
 import { getFamilyPhotos } from '../storage.js';
-import { renderMasterBoSvg, getLiveComboCount } from '../ui-fx.js';
+import { getLiveComboCount } from '../ui-fx.js';
+import { mountBaoBo3D, setCurrentStageGameId, getCoachIntroForGame } from '../mascot-3d.js';
 
 function shuffle(arr) {
   const copy = [...arr];
@@ -43,6 +44,7 @@ export async function fetchDailyNews() {
 }
 
 export function renderStageHeader({ container, gameMeta, lang, level, onChangeLevel, onBack, stepIndex, totalSteps, extraRightHtml = '' }) {
+  const zh = lang !== 'en';
   const lvlLabels = [t(lang, 'lvlEasy'), t(lang, 'lvlMed'), t(lang, 'lvlHard')];
   let dotsHtml = '';
   for (let i = 0; i < totalSteps; i++) {
@@ -53,30 +55,48 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
   const curCombo = getLiveComboCount();
   const comboHidden = curCombo >= 2 ? '' : 'hidden';
   const comboTxt = lang === 'en' ? `🔥 Combo ×${curCombo}` : `🔥 連中 ×${curCombo}`;
+  setCurrentStageGameId(gameMeta.id);
+  const introLine = getCoachIntroForGame(gameMeta.id, lang);
 
   const header = document.createElement('div');
+  header.className = 'console-stage-hud-wrap';
   header.innerHTML = `
-    <div class="stage-top">
-      <button type="button" class="btn btn-outline btn-sm" id="stageBackBtn">${t(lang, 'backHome')}</button>
-      <div class="progress-dots" aria-label="Progress">${dotsHtml}</div>
-      <div class="level-selector" role="group" aria-label="Difficulty">
-        ${lvlLabels
-          .map(
-            (lbl, idx) =>
-              `<button type="button" class="lvl-btn ${level === idx ? 'active' : ''}" data-lvl="${idx}">${lbl}</button>`
-          )
-          .join('')}
+    <div class="nintendo-hud-bar">
+      <div class="hud-left-cluster">
+        <button type="button" class="hud-exit-btn" id="stageBackBtn" aria-label="${t(lang, 'backHome')}">
+          <span>◀</span>
+          <span>${zh ? '退出' : 'Exit'}</span>
+        </button>
+        <div class="hud-game-title-pill">
+          <span class="hud-game-icon">${gameMeta.icon}</span>
+          <span class="hud-game-title-text">${pickText(gameMeta.title, lang)}</span>
+        </div>
+        <span class="combo-pill ${comboHidden}" id="liveComboBadge">${comboTxt}</span>
       </div>
-    </div>
-    <div class="nintendo-stage-banner">
-      <div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">
-        <div class="stage-mini-bo" id="stageMiniBo">${renderMasterBoSvg(curCombo >= 2 ? 'happy' : 'greet')}</div>
-        <div>
-          <h2 style="margin:0;font-size:1.2rem;font-weight:900;line-height:1.25;">${gameMeta.icon} ${pickText(gameMeta.title, lang)}</h2>
-          <span class="combo-pill ${comboHidden}" id="liveComboBadge">${comboTxt}</span>
+
+      <div class="hud-right-cluster">
+        <div class="progress-dots" aria-label="Progress">${dotsHtml}</div>
+        <div class="level-selector" role="group" aria-label="Difficulty">
+          ${lvlLabels
+            .map(
+              (lbl, idx) =>
+                `<button type="button" class="lvl-btn ${level === idx ? 'active' : ''}" data-lvl="${idx}">${lbl}</button>`
+            )
+            .join('')}
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">${extraRightHtml}</div>
+    </div>
+
+    <div class="baobo-stage-companion" id="stageBaoBoCompanion">
+      <div class="baobo-stage-3d-slot" id="stageBaoBo3DSlot"></div>
+      <div class="baobo-stage-dialogue">
+        <div class="baobo-stage-toprow">
+          <span class="bo-name-tag">🫖 ${zh ? '阿波領航' : 'Master Bo'}</span>
+          <button type="button" class="baobo-voice-chip" id="stageBoSpeakBtn">🔊 ${zh ? '聽講解' : 'Voice'}</button>
+        </div>
+        <div class="baobo-stage-line" id="stageBaoBoSpeechText">${introLine}</div>
+      </div>
+      ${extraRightHtml ? `<div class="baobo-stage-tools">${extraRightHtml}</div>` : ''}
     </div>
   `;
 
@@ -90,6 +110,39 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
       onChangeLevel(Number(btn.dataset.lvl));
     });
   });
+
+  const slot3d = header.querySelector('#stageBaoBo3DSlot');
+  const boCtrl = mountBaoBo3D(slot3d, {
+    size: 84,
+    role: 'stage',
+    mood: curCombo >= 2 ? 'cheer' : 'wave',
+    onTap: function () {
+      playSfx('tap', true);
+      const txtEl = header.querySelector('#stageBaoBoSpeechText');
+      if (txtEl) {
+        boCtrl.setTalking(true);
+        speakText(txtEl.textContent, lang);
+        setTimeout(function () {
+          boCtrl.setTalking(false);
+        }, 2600);
+      }
+    }
+  });
+
+  const spkBtn = header.querySelector('#stageBoSpeakBtn');
+  if (spkBtn) {
+    spkBtn.addEventListener('click', () => {
+      const txtEl = header.querySelector('#stageBaoBoSpeechText');
+      if (txtEl) {
+        boCtrl.poke();
+        boCtrl.setTalking(true);
+        speakText(txtEl.textContent, lang);
+        setTimeout(function () {
+          boCtrl.setTalking(false);
+        }, 2600);
+      }
+    });
+  }
 
   container.appendChild(header);
 }

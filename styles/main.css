@@ -2300,3 +2300,865 @@ html[data-motion="calm"] *::after {
   font-size: 0.88rem;
   font-weight: 800;
 }
+
+
+/* =========================================================================
+   NINTENDO CONSOLE FRAME, 3D BAOBO GUIDE STAGE & FOCUSED GAMEPLAY ARENA
+   Inspired by Big Brain Academy: Brain vs. Brain & Clubhouse Games (Switch)
+   ========================================================================= */
+
+body {
+  background-color: #EFE0C4;
+  background-image:
+    radial-gradient(rgba(180, 146, 94, 0.28) 1.75px, transparent 1.75px),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255, 252, 244, 0.36) 0px,
+      rgba(255, 252, 244, 0.36) 16px,
+      rgba(241, 222, 188, 0.36) 16px,
+      rgba(241, 222, 188, 0.36) 32px
+    ),
+    radial-gradient(circle at 50% 0%, #FFFDF7 0%, #F4E4C8 62%, #E6CEAA 100%);
+  background-size: 24px 24px, 46px 46px, 100% 100%;
+  background-attachment: fixed;
+}
+
+.app-shell {
+  max-width: 960px;
+  padding: 0 0.65rem calc(98px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Floating Nintendo Switch Top Status Capsule */
+.top-bar {
+  position: sticky;
+  top: 0.55rem;
+  z-index: 35;
+  margin: 0.55rem 0.25rem 0;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 3px solid #2B2118;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF7E7 100%);
+  box-shadow:
+    inset 0 3px 0 #FFFFFF,
+    0 5px 0 rgba(43, 33, 24, 0.2),
+    0 10px 24px rgba(43, 33, 24, 0.1);
+}
+
+.brand-logo {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 50%;
+  border: 2px solid #2B2118;
+  box-shadow: 0 2px 0 rgba(43, 33, 24, 0.22);
+}
+
+.chip-btn {
+  min-height: 40px;
+  border: 2px solid #3A2D20;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAF0DD 100%);
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 3px 0 #3A2D20;
+}
+
+.profile-pill {
+  min-height: 40px;
+  border: 2.5px solid #134E3B;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.65), 0 3px 0 #134E3B;
+}
+
+/* Compact Floating World Clock & Region Capsule */
+.city-strip {
+  margin: 0.48rem auto 0;
+  width: calc(100% - 1rem);
+  max-width: 880px;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 2px solid #CBB692;
+  background: rgba(255, 252, 244, 0.92);
+  box-shadow: 0 3px 0 rgba(168, 142, 98, 0.22);
+}
+
+.region-pill {
+  min-height: 32px;
+  padding: 0.18rem 0.65rem;
+  border-width: 2px;
+}
+
+.region-pill.active {
+  background: linear-gradient(180deg, #E64236 0%, #C22B20 100%);
+  border-color: #7D1710;
+  box-shadow: 0 2px 0 #7D1710;
+}
+
+/* Floating Nintendo Switch Dock Navigation */
+.bottom-nav {
+  left: 50%;
+  right: auto;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(95vw, 640px);
+  padding: 0.38rem 0.55rem;
+  border-radius: 999px;
+  border: 3px solid #2B2118;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAF0DC 100%);
+  box-shadow:
+    inset 0 3px 0 #FFFFFF,
+    0 7px 0 #2B2118,
+    0 16px 34px rgba(43, 33, 24, 0.26);
+  gap: 0.4rem;
+}
+
+.nav-tab {
+  min-height: 54px;
+  border-radius: 999px;
+  padding: 0.25rem 0.5rem;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, color 0.15s ease;
+}
+
+.nav-tab:hover {
+  background: rgba(200, 55, 45, 0.08);
+}
+
+.nav-tab.active {
+  background: linear-gradient(180deg, #F04B3E 0%, #C62B20 100%);
+  color: #FFFFFF;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.42), 0 4px 0 #7C1710;
+  transform: translateY(-3px);
+}
+
+/* =========================================================================
+   IMMERSIVE CONSOLE GAMEPLAY MODE (body.mode-playing)
+   Hides all global webpage bars so 100% of viewport is the Puzzle Arena!
+   ========================================================================= */
+body.mode-playing .top-bar,
+body.mode-playing .city-strip,
+body.mode-playing .invite-banner,
+body.mode-playing .bottom-nav {
+  display: none !important;
+}
+
+body.mode-playing .app-shell {
+  max-width: 840px;
+  padding-top: 0.55rem;
+  padding-bottom: 1.5rem;
+  justify-content: flex-start;
+}
+
+body.mode-playing .main-content {
+  padding: 0.25rem 0.25rem 1.2rem;
+}
+
+body.mode-playing .main-content > .card,
+body.mode-playing .victory-stage {
+  border: 3.5px solid #2B2118;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF9EC 100%);
+  box-shadow:
+    inset 0 4px 0 #FFFFFF,
+    0 10px 0 #BFA57A,
+    0 22px 46px rgba(43, 33, 24, 0.2);
+}
+
+/* =========================================================================
+   3D BAOBO CHARACTER CONTAINERS & INTERACTIVE CONTROLS
+   ========================================================================= */
+.baobo-3d-canvas {
+  display: block;
+  margin: 0 auto;
+  touch-action: manipulation;
+  user-select: none;
+  filter: drop-shadow(0 8px 10px rgba(43, 33, 24, 0.18));
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.baobo-3d-canvas:active {
+  transform: scale(0.95);
+}
+
+.start-3d-bo-slot {
+  width: 148px;
+  height: 148px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(255, 232, 168, 0.72) 0%, rgba(255, 248, 230, 0) 70%);
+  border-radius: 50%;
+}
+
+.baobo-voice-chip {
+  min-height: 30px;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 2px solid #2B2118;
+  background: #FFFFFF;
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #2B2118;
+  transition: transform 0.1s ease, background 0.12s ease;
+}
+
+.baobo-voice-chip:hover {
+  background: #FFF3D1;
+}
+
+.baobo-voice-chip:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* =========================================================================
+   FOCUSED NINTENDO HUB PLAZA (renderHomeView)
+   ========================================================================= */
+.plaza-stage-shell {
+  margin-top: 0.15rem;
+}
+
+.nintendo-plaza-board {
+  display: grid;
+  grid-template-columns: 1fr 1.14fr;
+  gap: 1.15rem;
+  align-items: stretch;
+  background: linear-gradient(180deg, #FFFDF9 0%, #FFF5E0 100%);
+  border: 3.5px solid #2B2118;
+  border-radius: 30px;
+  padding: 1.15rem;
+  box-shadow:
+    inset 0 4px 0 #FFFFFF,
+    0 10px 0 #BFA57A,
+    0 20px 42px rgba(43, 33, 24, 0.18);
+}
+
+@media (max-width: 780px) {
+  .nintendo-plaza-board {
+    grid-template-columns: 1fr;
+    padding: 0.95rem;
+    gap: 0.95rem;
+  }
+}
+
+/* Left Wing: 3D Character Pedestal + Comic Bubble */
+.plaza-character-wing {
+  background: linear-gradient(180deg, #FFF8E7 0%, #FBEACA 100%);
+  border: 2.5px solid #D4BC90;
+  border-radius: 24px;
+  padding: 0.9rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.8);
+}
+
+.plaza-player-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.plaza-player-id {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.plaza-avatar-badge {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2.5px solid #2B2118;
+  box-shadow: 0 3px 0 rgba(43, 33, 24, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.plaza-player-name {
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.plaza-player-name small {
+  color: var(--jade-dark);
+  font-weight: 800;
+}
+
+.plaza-player-rank {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ink-muted);
+}
+
+.plaza-3d-pedestal-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0.35rem auto 0.5rem;
+  padding: 0.2rem 0 0.35rem;
+  width: 100%;
+}
+
+.plaza-spotlight-ring {
+  position: absolute;
+  bottom: 10px;
+  width: 152px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(235, 168, 42, 0.46) 0%, rgba(235, 168, 42, 0.14) 62%, transparent 75%);
+  border: 2px dashed rgba(186, 124, 20, 0.45);
+  pointer-events: none;
+}
+
+.plaza-bo-3d-mount {
+  position: relative;
+  z-index: 2;
+  width: 184px;
+  height: 184px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plaza-poke-pill {
+  position: relative;
+  z-index: 3;
+  margin-top: -8px;
+  padding: 0.14rem 0.7rem;
+  border-radius: 999px;
+  background: #FFFDF6;
+  border: 2px solid #C89B42;
+  color: #7D5100;
+  font-size: 0.74rem;
+  font-weight: 900;
+  box-shadow: 0 2px 0 rgba(168, 120, 28, 0.3);
+}
+
+.plaza-comic-bubble {
+  position: relative;
+  background: #FFFFFF;
+  border: 2.5px solid #2B2118;
+  border-radius: 20px;
+  padding: 0.7rem 0.85rem;
+  box-shadow: 0 5px 0 rgba(43, 33, 24, 0.16);
+}
+
+.plaza-comic-bubble::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 18px;
+  height: 18px;
+  background: #FFFFFF;
+  border-left: 2.5px solid #2B2118;
+  border-top: 2.5px solid #2B2118;
+}
+
+.plaza-bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.32rem;
+}
+
+.plaza-bubble-body {
+  font-weight: 800;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.plaza-stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.plaza-stat-strip .stat-pill {
+  font-size: 0.8rem;
+  padding: 0.26rem 0.65rem;
+  border-width: 2px;
+}
+
+.stat-pill.vitality-jump {
+  background: linear-gradient(180deg, #E7FAF3 0%, #CDEFE3 100%);
+  border-color: #1B6E56;
+  color: #0F4B39;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(27, 110, 86, 0.3);
+}
+
+/* Right Wing: Focused 4-Dish Steamer Quest + Giant PLAY + Quick Toy Dock */
+.plaza-quest-wing {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.focused-quest-slip {
+  margin: 0;
+  background: #FFFFFF;
+  border: 3px solid #D94136;
+  border-radius: 24px;
+  padding: 0.9rem;
+  box-shadow: inset 0 3px 0 #FFF8F7, 0 6px 0 rgba(200, 55, 45, 0.18);
+}
+
+.quest-progress-badge {
+  padding: 0.16rem 0.68rem;
+  border-radius: 999px;
+  background: var(--red-chop-soft);
+  border: 2px solid var(--red-chop);
+  color: var(--red-chop-dark);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.quest-2x2-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 0.65rem;
+}
+
+.quest-2x2-grid .stamp-slot {
+  min-height: 102px;
+  border: 2.5px solid #D6C4A2;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #FFFDF9 0%, #F9EFE0 100%);
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 4px 0 #D6C4A2;
+  padding: 0.65rem 0.5rem;
+}
+
+.quest-2x2-grid .stamp-slot:hover {
+  transform: translateY(-2px);
+  border-color: var(--red-chop);
+}
+
+.quest-2x2-grid .stamp-slot.next-up-slot {
+  border-color: #E89611;
+  background: linear-gradient(180deg, #FFFDF4 0%, #FFF0C7 100%);
+  box-shadow: 0 0 0 3px rgba(232, 150, 17, 0.25), 0 5px 0 #C47A08;
+}
+
+.quest-num-badge {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--ink-muted);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.05rem 0.42rem;
+  border-radius: 999px;
+  border: 1.5px solid #D6C4A2;
+}
+
+.stamp-slot-sub {
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: var(--jade-dark);
+}
+
+.next-up-slot .stamp-slot-sub {
+  color: #9A5800;
+}
+
+.plaza-mega-cta {
+  min-height: 66px;
+  font-size: 1.24rem;
+}
+
+.plaza-quick-dock {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.55rem;
+}
+
+.plaza-quick-dock .btn {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 16px;
+  font-size: 0.88rem;
+}
+
+/* Gacha Capsule Spin Modal Box */
+.gacha-capsule-box {
+  margin: 0.55rem auto 0.2rem;
+  padding: 1.05rem 1rem;
+  border-radius: 22px;
+  border: 3px solid #2B2118;
+  background: linear-gradient(180deg, #FFFDF7 0%, #FFF1CE 100%);
+  box-shadow: inset 0 3px 0 #FFFFFF, 0 6px 0 #C9A86A;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.gacha-capsule-box.winner-glow {
+  transform: scale(1.04);
+  background: linear-gradient(180deg, #FFFBEB 0%, #FFE49E 100%);
+  border-color: var(--red-chop);
+  box-shadow: 0 0 0 5px rgba(235, 159, 40, 0.35), 0 8px 0 var(--red-chop-dark);
+}
+
+/* =========================================================================
+   NINTENDO SWITCH CARTRIDGE SHELF (renderGamesTabView)
+   ========================================================================= */
+.cartridge-shelf-banner {
+  border: 3px solid #2B2118;
+  border-radius: 26px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF7E6 100%);
+  box-shadow: inset 0 3px 0 #FFFFFF, 0 7px 0 #C4AE86;
+  padding: 0.95rem 1.1rem;
+}
+
+.shelf-host-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.cartridge-shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  .cartridge-shelf-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 430px) {
+  .cartridge-shelf-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.game-card.cartridge-tile {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem 0.9rem;
+  border: 3px solid #2B2118;
+  border-left-width: 3px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF9EE 100%);
+  box-shadow: inset 0 3px 0 #FFFFFF, 0 7px 0 #2B2118;
+}
+
+.game-card.cartridge-tile:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: inset 0 3px 0 #FFFFFF, 0 10px 0 #2B2118;
+}
+
+.game-card.cartridge-tile:active {
+  transform: translateY(4px);
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 2px 0 #2B2118;
+}
+
+.cartridge-top-notch {
+  height: 9px;
+  width: 56%;
+  margin: -0.25rem auto 0.15rem;
+  border-radius: 999px;
+  background: #E5D7BE;
+  border: 1.5px solid rgba(43, 33, 24, 0.25);
+}
+
+.game-card.theme-red .cartridge-top-notch { background: #F46358; }
+.game-card.theme-jade .cartridge-top-notch { background: #2BA47E; }
+.game-card.theme-gold .cartridge-top-notch { background: #F2AC32; }
+.game-card.theme-blue .cartridge-top-notch { background: #3D8CD1; }
+.game-card.theme-plum .cartridge-top-notch { background: #9B5AD6; }
+
+.cartridge-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cartridge-tile .game-icon-box {
+  width: 3.3rem;
+  height: 3.3rem;
+  border-radius: 16px;
+  font-size: 1.85rem;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.8), 0 3px 0 rgba(43, 33, 24, 0.14);
+}
+
+.cartridge-tile .game-card-title {
+  font-size: 1.06rem;
+  font-weight: 900;
+  margin: 0.1rem 0 0;
+  line-height: 1.25;
+}
+
+/* Brain Checkup Spotlight on Leaderboard Tab */
+.checkup-spotlight-card {
+  border: 3px solid #2B2118;
+  border-radius: 26px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F4FBF8 100%);
+  box-shadow: inset 0 3px 0 #FFFFFF, 0 7px 0 #95C5B5;
+}
+
+.checkup-grid {
+  display: grid;
+  grid-template-columns: 0.95fr 1.25fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  .checkup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.checkup-grid .age-bench-card {
+  margin: 0;
+  max-width: none;
+}
+
+/* =========================================================================
+   IN-GAME CONSOLE HUD & LIVE 3D BAOBO STAGE COMPANION
+   ========================================================================= */
+.console-stage-hud-wrap {
+  margin-bottom: 0.85rem;
+}
+
+.nintendo-hud-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 3px solid #2B2118;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAF0DD 100%);
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 5px 0 rgba(43, 33, 24, 0.2);
+}
+
+.hud-left-cluster,
+.hud-right-cluster {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hud-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 38px;
+  padding: 0.25rem 0.8rem;
+  border-radius: 999px;
+  border: 2.5px solid #2B2118;
+  background: linear-gradient(180deg, #FFF5F4 0%, #FFE0DD 100%);
+  color: var(--red-chop-dark);
+  font-weight: 900;
+  font-size: 0.84rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #2B2118;
+}
+
+.hud-exit-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.hud-game-title-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  background: #FFF9EB;
+  border: 2px solid #D5BE93;
+  font-weight: 900;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.hud-game-icon {
+  font-size: 1.2rem;
+}
+
+/* Live 3D BaoBo Companion Strip Inside Every Puzzle */
+.baobo-stage-companion {
+  margin-top: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 22px;
+  border: 2.5px solid #2B2118;
+  background: linear-gradient(180deg, #FFFDF7 0%, #FFF4DB 100%);
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 5px 0 rgba(43, 33, 24, 0.15);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.baobo-stage-companion.companion-cheer {
+  border-color: #1B6E56;
+  background: linear-gradient(180deg, #F4FFF9 0%, #DCF7EA 100%);
+  transform: translateY(-2px);
+}
+
+.baobo-stage-companion.companion-gentle {
+  border-color: #C8811A;
+  background: linear-gradient(180deg, #FFFDF5 0%, #FFF0CE 100%);
+}
+
+.baobo-stage-3d-slot {
+  width: 86px;
+  height: 86px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(255, 226, 150, 0.55) 0%, transparent 72%);
+  border-radius: 50%;
+}
+
+.baobo-stage-dialogue {
+  flex: 1;
+  min-width: 0;
+}
+
+.baobo-stage-toprow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+
+.baobo-stage-toprow .bo-name-tag {
+  margin-bottom: 0;
+}
+
+.baobo-stage-line {
+  font-weight: 800;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.baobo-stage-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 560px) {
+  .baobo-stage-companion {
+    flex-wrap: wrap;
+    padding: 0.5rem 0.7rem;
+  }
+  .baobo-stage-3d-slot {
+    width: 72px;
+    height: 72px;
+  }
+  .baobo-stage-tools {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* =========================================================================
+   NINTENDO CONTROLLER ABXY COLORED CHOICE BUTTONS
+   ========================================================================= */
+.prompt-box {
+  border: 2.5px solid #C8B28B;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #FFFDF9 0%, #FAF1DF 100%);
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 4px 0 rgba(184, 155, 103, 0.25);
+}
+
+.choices-list > .choice-btn {
+  position: relative;
+  border: 2.5px solid #2B2118;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAF2E1 100%);
+  box-shadow: inset 0 3px 0 #FFFFFF, 0 5px 0 #2B2118;
+  font-weight: 800;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+
+.choices-list > .choice-btn > span:first-child {
+  flex: 1;
+}
+
+.choices-list > .choice-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FFF4D4 100%);
+  border-color: #2B2118;
+}
+
+.choices-list > .choice-btn:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 1px 0 #2B2118;
+}
+
+.choices-list > .choice-btn::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  border: 2px solid #2B2118;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 2px 0 rgba(43, 33, 24, 0.3);
+  flex-shrink: 0;
+}
+
+.choices-list > .choice-btn:nth-child(1)::before {
+  content: "A";
+  background: linear-gradient(180deg, #F25244 0%, #C92D20 100%);
+}
+
+.choices-list > .choice-btn:nth-child(2)::before {
+  content: "B";
+  background: linear-gradient(180deg, #F5AA27 0%, #CC800A 100%);
+}
+
+.choices-list > .choice-btn:nth-child(3)::before {
+  content: "X";
+  background: linear-gradient(180deg, #3B8ED6 0%, #1F68A8 100%);
+}
+
+.choices-list > .choice-btn:nth-child(4)::before {
+  content: "Y";
+  background: linear-gradient(180deg, #2BA67D 0%, #197858 100%);
+}
+
+.choices-list > .choice-btn.correct {
+  background: linear-gradient(180deg, #E8FBF3 0%, #C7F2DF 100%);
+  border-color: #135843;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 5px 0 #135843;
+}
+
+.choices-list > .choice-btn.wrong {
+  background: linear-gradient(180deg, #FFF8E8 0%, #FFE6BA 100%);
+  border-color: #9A5E08;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 4px 0 #9A5E08;
+}
