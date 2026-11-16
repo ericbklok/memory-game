@@ -16,6 +16,8 @@ import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 NEWS_PATH = ROOT / "data" / "daily-news.json"
+LIVE_DEPLOYED_NEWS_URL = "https://ericbklok.github.io/memory-game/data/daily-news.json"
+LIVE_ID_RE = re.compile(r"^live-(hk|yvr)-[0-9]{8}-[0-9a-f]{8}$")
 
 FEEDS = [
     {
@@ -144,11 +146,31 @@ def build_live_cards(today_compact: str):
     return cards
 
 
+def fetch_deployed_live_archive():
+    """Fetch rolling live-* cards from currently deployed GitHub Pages JSON so daily crons retain history without git commits."""
+    try:
+        req = urllib.request.Request(LIVE_DEPLOYED_NEWS_URL, headers={"User-Agent": "DailyMindSumBot/2.0"})
+        cafile = "/etc/ssl/cert.pem" if pathlib.Path("/etc/ssl/cert.pem").exists() else None
+        ctx = ssl.create_default_context(cafile=cafile) if cafile else ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=10, context=ctx) as resp:
+            raw = resp.read(2_097_152)
+        payload = json.loads(raw.decode("utf-8"))
+        out = []
+        for item in payload.get("stories", []):
+            if isinstance(item, dict) and LIVE_ID_RE.match(str(item.get("id", ""))):
+                out.append(item)
+        return out
+    except Exception as exc:
+        print(f"[info] Deployed live archive fallback to repo copy: {exc}")
+        return []
+
+
 def main():
     existing = json.loads(NEWS_PATH.read_text(encoding="utf-8"))
     all_existing = existing.get("stories", [])
     curated = [s for s in all_existing if not str(s.get("id", "")).startswith("live-")]
-    prior_live = [s for s in all_existing if str(s.get("id", "")).startswith("live-")]
+    repo_live = [s for s in all_existing if str(s.get("id", "")).startswith("live-")]
+    deployed_live = fetch_deployed_live_archive()
 
     today = datetime.date.today()
     today_str = today.isoformat()
@@ -157,7 +179,7 @@ def main():
     fresh_live = build_live_cards(today_compact)
     seen_ids = set()
     merged_live = []
-    for card in fresh_live + prior_live:
+    for card in fresh_live + deployed_live + repo_live:
         cid = card.get("id")
         if cid and cid not in seen_ids:
             seen_ids.add(cid)
