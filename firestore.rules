@@ -19,6 +19,19 @@ rules_version = '2';
 //   - updatedAt: timestamp (required, must equal request.time via serverTimestamp()) - Server sync / last-played timestamp
 //   - activeGame: string (optional, 0..16 chars, strict enum of '' or one of the 16 game IDs) - Live currently-playing game ID
 //
+// Collection: pushReminders
+// Document ID: {uid} (must match authenticated user's request.auth.uid)
+// Fields (all 8 required on create & update; zero extraneous fields, zero PII, zero plaintext push URLs):
+//   - uid: string (required, immutable, 1..128 chars, == request.auth.uid) - Owner UID
+//   - enabled: bool (required) - Whether daily Web Push reminder is active
+//   - sealedSub: string (required, base64url ^[A-Za-z0-9_-]*$; 120..1024 chars when enabled == true, '' when enabled == false)
+//       Holds ECDH-P256 + AES-256-GCM encrypted PushSubscription ciphertext (decryptable only via private key in GitHub Secrets)
+//   - lang: string (required, enum ['zh', 'en']) - Preferred notification language
+//   - region: string (required, enum ['hk', 'yvr', 'both']) - Preferred timezone/region schedule
+//   - reminderHour: int (required, 0..23) - Preferred local hour for daily reminder
+//   - lastDoneDate: string (required, '' or 10-char YYYY-MM-DD) - Last completed daily-set date to suppress duplicate reminders
+//   - updatedAt: timestamp (required, must equal request.time via serverTimestamp()) - Server sync timestamp
+//
 // ===============================================================
 
 service cloud.firestore {
@@ -76,6 +89,19 @@ service cloud.firestore {
         'circles',
         'updatedAt',
         'activeGame'
+      ];
+    }
+
+    function pushReminderKeys() {
+      return [
+        'uid',
+        'enabled',
+        'sealedSub',
+        'lang',
+        'region',
+        'reminderHour',
+        'lastDoneDate',
+        'updatedAt'
       ];
     }
 
@@ -138,7 +164,7 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // Domain Validators (Used in BOTH create and update)
+    // Domain Validators: leaderboard (Used in BOTH create and update)
     // ===============================================================
 
     function isValidLeaderboardBase(uid) {
@@ -200,6 +226,59 @@ service cloud.firestore {
     }
 
     // ===============================================================
+    // Domain Validators: pushReminders (Used in BOTH create and update)
+    // ===============================================================
+
+    function isValidPushReminderBase(uid) {
+      let d = request.resource.data;
+      let keys = pushReminderKeys();
+      return isOwner(uid)
+        && uidUnchanged()
+        && hasRequiredFields(keys)
+        && hasOnlyAllowedFields(keys)
+        && d.uid is string
+        && d.uid.size() >= 1
+        && d.uid.size() <= 128
+        && d.uid == uid
+        && d.enabled is bool
+        && d.sealedSub is string
+        && d.sealedSub.size() <= 1024
+        && d.sealedSub.matches('^[A-Za-z0-9_-]*$')
+        && (
+          (d.enabled == true && d.sealedSub.size() >= 120 && d.sealedSub.size() <= 1024) ||
+          (d.enabled == false && d.sealedSub == '')
+        )
+        && d.lang is string
+        && d.lang.size() == 2
+        && d.lang in ['zh', 'en']
+        && d.region is string
+        && d.region.size() >= 2
+        && d.region.size() <= 4
+        && d.region in ['hk', 'yvr', 'both']
+        && d.reminderHour is int
+        && d.reminderHour >= 0
+        && d.reminderHour <= 23
+        && d.lastDoneDate is string
+        && (
+          d.lastDoneDate.size() == 0 ||
+          (d.lastDoneDate.size() == 10 && d.lastDoneDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        )
+        && d.updatedAt is timestamp
+        && d.updatedAt == request.time;
+    }
+
+    function isValidPushReminderCreate(uid) {
+      return isValidPushReminderBase(uid);
+    }
+
+    function isValidPushReminderUpdate(uid) {
+      return isValidPushReminderBase(uid)
+        && isDocOwner()
+        && uidNotModified()
+        && resource.data.uid == uid;
+    }
+
+    // ===============================================================
     // Collection Rules
     // ===============================================================
 
@@ -215,6 +294,17 @@ service cloud.firestore {
 
       // Disallow client deletes so players cannot delete-and-recreate docs to bypass update invariants.
       allow delete: if false;
+    }
+
+    match /pushReminders/{uid} {
+      // Owner-only single-doc read; bounded list read (max 200) for scheduled E2E-encrypted Web Push dispatcher.
+      allow get: if isOwner(uid);
+      allow list: if request.query.limit != null && request.query.limit <= 200;
+
+      // Strict owner-only create, update, and 1-tap opt-out delete.
+      allow create: if isValidPushReminderCreate(uid);
+      allow update: if isValidPushReminderUpdate(uid);
+      allow delete: if isOwner(uid);
     }
 
     // Default deny all other collections and documents

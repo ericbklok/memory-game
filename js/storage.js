@@ -122,7 +122,10 @@ export function createDefaultState() {
       sudokuDimSumIcons: false,
       reducedMotion: false,
       skipTitleScreen: false,
-      make24GentleV2: true
+      make24GentleV2: true,
+      dailyReminder: true, // Opt-in by default; easy 1-tap opt-out anytime!
+      reminderHour: 9, // 09:00 local morning tea default
+      reminderBannerDismissed: false
     },
     profile: {
       displayName: '',

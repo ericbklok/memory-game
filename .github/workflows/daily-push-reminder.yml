@@ -1,0 +1,39 @@
+name: Send Daily Brain Tea Reminders (Web Push)
+
+on:
+  schedule:
+    # Covers Morning (08:00 / 09:00), Afternoon (14:00), and Evening (20:00) in both Hong Kong & Vancouver!
+    - cron: "5 0,1,3,4,6,12,15,16,17,21,22 * * *"
+  workflow_dispatch:
+    inputs:
+      force_send:
+        description: "Send test reminder immediately to all enabled subscribers (ignore hour/played filter)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "daily-web-push"
+  cancel-in-progress: false
+
+jobs:
+  send-reminders:
+    timeout-minutes: 3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Dispatch Encrypted Web Push Reminders
+        env:
+          WEB_PUSH_SECRET: ${{ secrets.WEB_PUSH_SECRET }}
+          FORCE_SEND: ${{ inputs.force_send }}
+        run: node scripts/send_daily_push.js

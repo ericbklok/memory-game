@@ -3666,3 +3666,83 @@ body.mode-playing .victory-stage {
   padding: 0.06rem 0.44rem;
   border-radius: 999px;
 }
+
+
+/* =========================================================================
+   DAILY WEB PUSH REMINDER (DEFAULT OPT-IN · 1-TAP OPT-OUT)
+   ========================================================================= */
+.reminder-opt-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 0.78rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #FFFDF5 0%, #FFF4D8 100%);
+  border: 2px solid #E2A83B;
+  box-shadow: 0 2px 0 rgba(200, 140, 25, 0.2);
+}
+
+.reminder-opt-text {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #694105;
+}
+
+.reminder-opt-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.reminder-mini-btn {
+  padding: 0.24rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1.8px solid #2B2118;
+}
+
+.reminder-mini-btn.allow {
+  background: linear-gradient(180deg, #27AE7E 0%, #16805D 100%);
+  color: #FFFFFF;
+  border-color: #0E583F;
+}
+
+.reminder-mini-btn.optout {
+  background: #FFFFFF;
+  color: #5C462A;
+  border-color: #C4B092;
+}
+
+.start-reminder-pill-row {
+  display: flex;
+  justify-content: center;
+  margin: 0.35rem 0 0.55rem;
+}
+
+.start-reminder-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.32rem 0.82rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.start-reminder-toggle.on {
+  background: #EEFCF5;
+  border: 1.8px solid #2BA67D;
+  color: #0E583F;
+}
+
+.start-reminder-toggle.off {
+  background: #F4EFE6;
+  border: 1.8px dashed #BFB099;
+  color: #6E5F4B;
+}

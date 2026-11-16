@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-mindsum-v19';
+const CACHE_NAME = 'daily-mindsum-v20';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ const CORE_ASSETS = [
   './js/storage.js',
   './js/firebase-config.js',
   './js/firebase-service.js',
+  './js/push-service.js',
   './js/data/content.js',
   './js/data/eagle-art.js',
   './js/data/spot-diff-art.js',
@@ -108,5 +109,70 @@ self.addEventListener('fetch', function (event) {
           return exact || caches.match(req, { ignoreSearch: true });
         });
       })
+  );
+});
+
+self.addEventListener('push', function (event) {
+  let payload = {
+    title: '🫖 每日腦點心 · Daily MindSum',
+    body: '喵～今日嘅四道醒神腦點心已經準備好，入嚟嘆茶動腦筋啦！',
+    url: './',
+    tag: 'daily-mindsum-reminder'
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      if (parsed && typeof parsed === 'object') {
+        payload = {
+          title: String(parsed.title || payload.title).slice(0, 80),
+          body: String(parsed.body || payload.body).slice(0, 200),
+          url: './',
+          tag: String(parsed.tag || payload.tag).slice(0, 40)
+        };
+      }
+    } catch (e) {
+      // fallback to default message
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: './assets/icon-192.png',
+      badge: './assets/favicon-64.png',
+      tag: payload.tag,
+      renotify: false,
+      data: { url: payload.url },
+      actions: [
+        { action: 'play', title: '🥢 開始嘆茶 / Play' },
+        { action: 'optout', title: '🔕 關閉提醒 / Opt Out' }
+      ]
+    })
+  );
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  const isOptOut = event.action === 'optout';
+  const targetRel = isOptOut ? './?optout_reminder=1' : './';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windowClients) {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client && 'focus' in client) {
+          if (isOptOut && typeof client.navigate === 'function') {
+            return client.navigate(targetRel).then(function () {
+              return client.focus();
+            });
+          }
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetRel);
+      }
+    })
   );
 });

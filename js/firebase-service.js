@@ -83,7 +83,7 @@ export function isFirebaseConfigured() {
 }
 
 export function getCurrentAuthUser() {
-  return currentAuthUser;
+  return currentAuthUser && !currentAuthUser.isAnonymous ? currentAuthUser : null;
 }
 
 export function onUserChanged(cb) {
@@ -119,8 +119,9 @@ export async function initFirebaseIfConfigured() {
 
     authMod.onAuthStateChanged(fbAuth, function (user) {
       currentAuthUser = user || null;
+      const publicUser = getCurrentAuthUser();
       authListeners.forEach(function (fn) {
-        fn(currentAuthUser);
+        fn(publicUser);
       });
     });
 
@@ -167,9 +168,10 @@ function sanitizeDisplayName(raw) {
 }
 
 export async function syncScoreToCloud(state, forceSync, activeGameOverride) {
-  if (!fbDb || !currentAuthUser || !sdkModules) return false;
+  const realUser = getCurrentAuthUser();
+  if (!fbDb || !realUser || !sdkModules) return false;
   const fsMod = sdkModules.fsMod;
-  const uid = currentAuthUser.uid;
+  const uid = realUser.uid;
   const docRef = fsMod.doc(fbDb, 'leaderboard', uid);
 
   if (typeof activeGameOverride === 'string') {
@@ -257,7 +259,7 @@ export async function touchCloudPresence(state, gameId, isHeartbeat) {
   const gameChanged = nextGame !== currentActiveGame;
   currentActiveGame = nextGame;
 
-  if (!fbDb || !currentAuthUser || !sdkModules) return false;
+  if (!fbDb || !getCurrentAuthUser() || !sdkModules) return false;
   if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
 
   const now = Date.now();
@@ -386,4 +388,73 @@ export async function fetchCircleLeaderboard(circleCode) {
     return (b.totalPoints || 0) - (a.totalPoints || 0);
   });
   return rows;
+}
+
+const LAST_PUSH_SYNC_SIG_KEY = 'daily_mindsum_last_push_sync_v1';
+
+/**
+ * Syncs end-to-end encrypted Web Push subscription metadata to pushReminders/{uid}.
+ * Uses Google Auth UID if signed in, or silently falls back to Firebase Anonymous Auth if enabled.
+ * Strictly deduplicated by signature so page reloads never consume extra Spark writes.
+ */
+export async function syncPushReminderDoc(state, opts) {
+  const initRes = await initFirebaseIfConfigured();
+  if (!initRes.ready || !fbDb || !sdkModules) return false;
+  const authMod = sdkModules.authMod;
+  const fsMod = sdkModules.fsMod;
+
+  let user = currentAuthUser;
+  if (!user && opts && opts.enabled && typeof authMod.signInAnonymously === 'function') {
+    try {
+      const anonCred = await authMod.signInAnonymously(fbAuth);
+      user = anonCred ? anonCred.user : null;
+    } catch (e) {
+      // Anonymous Auth optional in Firebase Console; local SW notifications still work!
+      return false;
+    }
+  }
+  if (!user || !user.uid) return false;
+
+  const uid = user.uid;
+  const enabled = Boolean(opts && opts.enabled);
+  const sealedSub = enabled ? String((opts && opts.sealedSub) || '').slice(0, 1024) : '';
+  if (enabled && sealedSub.length < 120) return false;
+
+  const lang = state && state.lang === 'en' ? 'en' : 'zh';
+  const region =
+    state && (state.region === 'hk' || state.region === 'yvr' || state.region === 'both')
+      ? state.region
+      : 'both';
+  const rawHour = Number(opts && opts.utcHour);
+  const reminderHour = isFinite(rawHour) ? Math.max(0, Math.min(23, Math.round(rawHour))) : 1;
+  const rawDone = String((opts && opts.lastDoneDate) || '');
+  const lastDoneDate = /^\d{4}-\d{2}-\d{2}$/.test(rawDone) ? rawDone : '';
+
+  const pushSig = [uid, enabled ? '1' : '0', sealedSub, lang, region, reminderHour, lastDoneDate].join('|');
+  try {
+    if (localStorage.getItem(LAST_PUSH_SYNC_SIG_KEY) === pushSig) {
+      return true;
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  const docRef = fsMod.doc(fbDb, 'pushReminders', uid);
+  await fsMod.setDoc(docRef, {
+    uid: uid,
+    enabled: enabled,
+    sealedSub: sealedSub,
+    lang: lang,
+    region: region,
+    reminderHour: reminderHour,
+    lastDoneDate: lastDoneDate,
+    updatedAt: fsMod.serverTimestamp()
+  });
+
+  try {
+    localStorage.setItem(LAST_PUSH_SYNC_SIG_KEY, pushSig);
+  } catch (e) {
+    // ignore
+  }
+  return true;
 }

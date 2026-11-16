@@ -56,6 +56,16 @@ import {
   fetchCircleLeaderboard
 } from './firebase-service.js';
 import { saveFirebaseConfigOverride } from './firebase-config.js';
+import {
+  isPushNotificationSupported,
+  isIosNeedsHomeScreenForPush,
+  getNotificationPermissionState,
+  ensureWebPushSubscribed,
+  optOutDailyReminder,
+  markPushPlayedToday,
+  sendTestReminderNotification,
+  checkLocalReminderIfDue
+} from './push-service.js';
 
 const state = loadState();
 let currentTab = 'home'; // home | games | leaderboard | album | playing
@@ -289,9 +299,22 @@ function updateClocks() {
   if (yvrEl) yvrEl.textContent = fmt('America/Vancouver');
 }
 
-/* URL Invite Detection (?invite=TEA-XXXX&from=Name) */
+/* URL Invite & Notification Opt-Out Detection (?invite=TEA-XXXX&from=Name | ?optout_reminder=1) */
 function checkUrlInvite() {
   const params = new URLSearchParams(window.location.search);
+  if (params.get('optout_reminder') === '1') {
+    const cleanOptUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, cleanOptUrl);
+    optOutDailyReminder(state).then(() => {
+      showToast(
+        state.lang === 'zh'
+          ? '🔕 已關閉每日提醒（隨時可喺右上角 ⚙️ 設定重新開啟）'
+          : '🔕 Daily reminders turned off (re-enable anytime in ⚙️ Settings)'
+      );
+      renderMain();
+    });
+    return;
+  }
   const rawCode = (params.get('invite') || params.get('circle') || '').trim().toUpperCase();
   const fromName = (params.get('from') || '').replace(/[<>&"']/g, '').trim().slice(0, 24);
   if (!rawCode) return;
@@ -612,6 +635,30 @@ function renderHomeView() {
 
       <!-- Right Spotlight: Today's Focused 4-Dish Quest Stage -->
       <div class="plaza-quest-wing">
+        ${
+          state.prefs.dailyReminder !== false &&
+          isPushNotificationSupported() &&
+          getNotificationPermissionState() === 'default' &&
+          !state.prefs.reminderBannerDismissed
+            ? `<div class="reminder-opt-banner" id="homeReminderOptBar">
+                 <div class="reminder-opt-text">
+                   🔔 ${
+                     zh
+                       ? `每日 ${String(state.prefs.reminderHour || 9).padStart(2, '0')}:00 嘆茶提醒（預設開啟）`
+                       : `Daily ${String(state.prefs.reminderHour || 9).padStart(2, '0')}:00 play reminder (On by default)`
+                   }
+                 </div>
+                 <div class="reminder-opt-actions">
+                   <button type="button" class="reminder-mini-btn allow" id="homeAllowPushBtn">${
+                     zh ? '啟用通知' : 'Allow'
+                   }</button>
+                   <button type="button" class="reminder-mini-btn optout" id="homeOptOutPushBtn">${
+                     zh ? '關閉' : 'Opt Out'
+                   }</button>
+                 </div>
+               </div>`
+            : ''
+        }
         <div class="stamp-slip focused-quest-slip">
           <div class="stamp-slip-header">
             <span>${t(lang, 'slipTitle')}</span>
@@ -693,6 +740,35 @@ function renderHomeView() {
     });
   }
 
+  const allowPushHomeBtn = wrap.querySelector('#homeAllowPushBtn');
+  if (allowPushHomeBtn) {
+    allowPushHomeBtn.addEventListener('click', async () => {
+      playSfx('switch', state.sound);
+      state.prefs.dailyReminder = true;
+      state.prefs.reminderBannerDismissed = true;
+      saveState(state);
+      const res = await ensureWebPushSubscribed(state, true);
+      if (res && res.ok) {
+        showToast(zh ? '🔔 已開啟每日嘆茶提醒！' : '🔔 Daily play reminders enabled!');
+      }
+      renderHomeView();
+    });
+  }
+
+  const optOutPushHomeBtn = wrap.querySelector('#homeOptOutPushBtn');
+  if (optOutPushHomeBtn) {
+    optOutPushHomeBtn.addEventListener('click', async () => {
+      playSfx('switch', state.sound);
+      await optOutDailyReminder(state);
+      showToast(
+        zh
+          ? '🔕 已關閉每日提醒（隨時可喺 ⚙️ 設定重開）'
+          : '🔕 Daily reminders opted out (change anytime in ⚙️ Settings)'
+      );
+      renderHomeView();
+    });
+  }
+
   const shufBtn = wrap.querySelector('#shuffleDailyRestBtn');
   if (shufBtn) {
     shufBtn.addEventListener('click', () => {
@@ -732,6 +808,16 @@ function renderHomeView() {
 
   wrap.querySelector('#heroStartBtn').addEventListener('click', () => {
     playSfx('switch', state.sound);
+    if (
+      state.prefs.dailyReminder !== false &&
+      isPushNotificationSupported() &&
+      getNotificationPermissionState() === 'default' &&
+      !state.prefs.reminderBannerDismissed
+    ) {
+      state.prefs.reminderBannerDismissed = true;
+      saveState(state);
+      ensureWebPushSubscribed(state, true).catch(() => {});
+    }
     inDailySequence = true;
     if (nextUnstamped) {
       launchGame(nextUnstamped);
@@ -968,6 +1054,7 @@ async function handleDishCompleted(gameId, score, stars) {
   if (getCurrentAuthUser()) {
     syncScoreToCloud(state, true, gameId).catch(e => console.warn('Cloud sync warning:', e));
   }
+  markPushPlayedToday(state).catch(() => {});
 
   const lang = state.lang;
   const gameMeta = GAME_CATALOG.find(g => g.id === gameId);
@@ -1849,6 +1936,23 @@ function showStartScreen(forceEditProfile) {
              </div>`
       }
 
+      <div class="start-reminder-pill-row">
+        <button type="button" class="start-reminder-toggle ${
+          state.prefs.dailyReminder !== false ? 'on' : 'off'
+        }" id="startReminderToggleBtn">
+          <span>${state.prefs.dailyReminder !== false ? '🔔' : '🔕'}</span>
+          <span>${
+            state.prefs.dailyReminder !== false
+              ? zh
+                ? `每日 ${String(state.prefs.reminderHour || 9).padStart(2, '0')}:00 嘆茶提醒：預設開啟（撳此可關閉）`
+                : `Daily ${String(state.prefs.reminderHour || 9).padStart(2, '0')}:00 play reminder: ON (Tap to opt out)`
+              : zh
+              ? '每日嘆茶提醒：已關閉（撳此可開啟）'
+              : 'Daily play reminder: OFF (Tap to enable)'
+          }</span>
+        </button>
+      </div>
+
       <button type="button" class="btn-play-mega" id="startMegaPlayBtn">
         <span>▶</span>
         <span>${
@@ -1950,8 +2054,46 @@ function showStartScreen(forceEditProfile) {
     });
   }
 
+  const startRemBtn = startScreenEl.querySelector('#startReminderToggleBtn');
+  if (startRemBtn) {
+    startRemBtn.addEventListener('click', async () => {
+      playSfx('switch', state.sound);
+      if (state.prefs.dailyReminder !== false) {
+        await optOutDailyReminder(state);
+        showToast(zh ? '🔕 已關閉每日提醒' : '🔕 Opted out of daily reminders');
+      } else {
+        state.prefs.dailyReminder = true;
+        state.prefs.reminderBannerDismissed = false;
+        saveState(state);
+        ensureWebPushSubscribed(state, true).catch(() => {});
+        showToast(zh ? '🔔 已開啟每日嘆茶提醒' : '🔔 Daily reminders enabled');
+      }
+      if (nameInput && ageInput) {
+        const draftName = nameInput.value.trim();
+        const draftAge = parseInt(ageInput.value, 10);
+        if (draftName) state.profile.displayName = draftName.slice(0, 18);
+        if (!isNaN(draftAge) && draftAge >= 8 && draftAge <= 108) state.profile.age = draftAge;
+      }
+      showStartScreen(forceEditProfile);
+    });
+  }
+
+  function triggerDefaultPushOnStartGesture() {
+    if (
+      state.prefs.dailyReminder !== false &&
+      isPushNotificationSupported() &&
+      getNotificationPermissionState() === 'default' &&
+      !state.prefs.reminderBannerDismissed
+    ) {
+      state.prefs.reminderBannerDismissed = true;
+      saveState(state);
+      ensureWebPushSubscribed(state, true).catch(() => {});
+    }
+  }
+
   function validateAndProceed(forceTour) {
     if (!showForm) {
+      triggerDefaultPushOnStartGesture();
       playSfx('fanfare', state.sound);
       startScreenEl.classList.add('hidden');
       if (forceTour || !state.onboardingDone) {
@@ -1991,6 +2133,7 @@ function showStartScreen(forceEditProfile) {
     state.profile.displayName = cleanName;
     state.profile.age = cleanAge;
     saveState(state);
+    triggerDefaultPushOnStartGesture();
     syncChrome();
     renderMain();
 
@@ -2330,6 +2473,61 @@ function openSettingsModal() {
         </div>
       </div>
 
+      <!-- 5. Daily Play Reminder (Web Push · Opt-in by default, Easy 1-tap Opt-out) -->
+      <div class="pref-section">
+        <div class="pref-section-title">🔔 ${zh ? '每日嘆茶提醒（Web Push 通知）' : 'Daily Play Reminder (Web Push)'}</div>
+        <div class="pref-row">
+          <span class="pref-label">${zh ? '每日溫馨提醒' : 'Daily Reminder'}</span>
+          <div class="pref-seg-group">
+            <button type="button" class="pref-seg-btn ${p.dailyReminder !== false ? 'active' : ''}" data-preminder="on">🔔 ${
+              zh ? '開啟（預設）' : 'On (Default)'
+            }</button>
+            <button type="button" class="pref-seg-btn ${p.dailyReminder === false ? 'active' : ''}" data-preminder="off">🔕 ${
+              zh ? '關閉提醒' : 'Opt Out'
+            }</button>
+          </div>
+        </div>
+        ${
+          p.dailyReminder !== false
+            ? `<div class="pref-row">
+                 <span class="pref-label">${zh ? '提醒時間（本地）' : 'Reminder Time'}</span>
+                 <div class="pref-seg-group">
+                   ${[8, 9, 14, 20]
+                     .map(
+                       hr =>
+                         `<button type="button" class="pref-seg-btn ${(p.reminderHour || 9) === hr ? 'active' : ''}" data-premhour="${hr}">${String(
+                           hr
+                         ).padStart(2, '0')}:00</button>`
+                     )
+                     .join('')}
+                   <button type="button" class="chip-btn" id="testPushPrefBtn" style="min-height:38px;padding:0.2rem 0.65rem;font-size:0.8rem;">
+                     ✨ ${zh ? '試發通知' : 'Test'}
+                   </button>
+                 </div>
+               </div>`
+            : ''
+        }
+        ${
+          isIosNeedsHomeScreenForPush()
+            ? `<div style="margin-top:0.45rem;font-size:0.78rem;font-weight:700;color:var(--ink-muted);">
+                 📱 ${
+                   zh
+                     ? 'iPhone / iPad 小貼士：撳 Safari 底部「分享 → 加至主畫面」即可支援背景推送提醒！'
+                     : 'iPhone / iPad tip: Tap Safari Share → "Add to Home Screen" to enable background Web Push!'
+                 }
+               </div>`
+            : getNotificationPermissionState() === 'denied' && p.dailyReminder !== false
+            ? `<div style="margin-top:0.45rem;font-size:0.78rem;font-weight:700;color:var(--red-chop-dark);">
+                 ⚠️ ${
+                   zh
+                     ? '瀏覽器目前封鎖咗通知權限，請喺網址列鎖頭圖示允許「通知」即可接收提醒。'
+                     : 'Browser notifications are blocked in site settings — allow Notifications in your address bar to receive reminders.'
+                 }
+               </div>`
+            : ''
+        }
+      </div>
+
       <!-- Quick Actions: Tour, Profile, Start Screen -->
       <div class="action-row" style="margin-top:0.85rem;">
         <button type="button" class="btn btn-outline btn-sm" id="prefReplayTourBtn">
@@ -2462,6 +2660,54 @@ function openSettingsModal() {
           });
         });
 
+        card.querySelectorAll('[data-preminder]').forEach(b => {
+          b.addEventListener('click', async () => {
+            playSfx('switch', state.sound);
+            if (b.dataset.preminder === 'off') {
+              await optOutDailyReminder(state);
+              showToast(state.lang === 'zh' ? '🔕 已關閉每日提醒' : '🔕 Daily reminders turned off');
+            } else {
+              state.prefs.dailyReminder = true;
+              state.prefs.reminderBannerDismissed = true;
+              saveState(state);
+              const res = await ensureWebPushSubscribed(state, true);
+              if (res && res.ok) {
+                showToast(state.lang === 'zh' ? '🔔 已開啟每日嘆茶提醒！' : '🔔 Daily reminders enabled!');
+              }
+            }
+            refreshAll();
+          });
+        });
+
+        card.querySelectorAll('[data-premhour]').forEach(b => {
+          b.addEventListener('click', async () => {
+            state.prefs.reminderHour = Number(b.dataset.premhour);
+            playSfx('switch', state.sound);
+            saveState(state);
+            ensureWebPushSubscribed(state, true).catch(() => {});
+            refreshAll();
+          });
+        });
+
+        const testPushBtn = card.querySelector('#testPushPrefBtn');
+        if (testPushBtn) {
+          testPushBtn.addEventListener('click', async () => {
+            playSfx('tap', state.sound);
+            const sent = await sendTestReminderNotification(state.lang);
+            ensureWebPushSubscribed(state, false).catch(() => {});
+            showToast(
+              sent
+                ? state.lang === 'zh'
+                  ? '✅ 已發送測試提醒通知！'
+                  : '✅ Test notification sent!'
+                : state.lang === 'zh'
+                ? '⚠️ 請先允許瀏覽器通知權限'
+                : '⚠️ Please allow browser notification permission first'
+            );
+            renderPrefs();
+          });
+        }
+
         card.querySelector('#prefReplayTourBtn').addEventListener('click', () => {
           playSfx('switch', state.sound);
           if (startScreenEl) startScreenEl.classList.add('hidden');
@@ -2577,6 +2823,7 @@ setInterval(() => {
   updateClocks();
   syncLivePresenceBanner(false);
   touchCloudPresence(state, activeGameId || '', true).catch(() => {});
+  checkLocalReminderIfDue(state).catch(() => {});
 }, 25000);
 checkUrlInvite();
 syncChrome();
@@ -2599,11 +2846,18 @@ initFirebaseIfConfigured().then(res => {
       }
       syncLivePresenceBanner(shouldToast);
     });
+    if (state.prefs.dailyReminder !== false && getNotificationPermissionState() === 'granted') {
+      ensureWebPushSubscribed(state, false).catch(() => {});
+      checkLocalReminderIfDue(state).catch(() => {});
+    }
   }
   onUserChanged(user => {
     syncChrome();
     if (user) {
       syncScoreToCloud(state, false, activeGameId || '').catch(() => {});
+      if (state.prefs.dailyReminder !== false && getNotificationPermissionState() === 'granted') {
+        ensureWebPushSubscribed(state, false).catch(() => {});
+      }
     }
     if (currentTab === 'leaderboard') renderLeaderboardView();
   });
