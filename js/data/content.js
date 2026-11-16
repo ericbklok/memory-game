@@ -1,5 +1,5 @@
 export const GAME_CATEGORIES = [
-  { id: 'all', icon: '🌟', zh: '全部 (16)', en: 'All (16)' },
+  { id: 'all', icon: '🌟', zh: '全部 (26)', en: 'All (26)' },
   { id: 'memory', icon: '🧠', zh: '記憶力', en: 'Memory' },
   { id: 'logic', icon: '🧩', zh: '邏輯推理', en: 'Logic' },
   { id: 'math', icon: '🧮', zh: '靈活心算', en: 'Math' },
@@ -215,6 +215,136 @@ export const GAME_CATALOG = [
       en: '300 cozy HK & Vancouver illustrated scenes — tap either picture to spot 3 to 5 differences!'
     },
     pillar: { zh: '細節觀察 · 視覺比對', en: 'Visual Comparison · Focus' }
+  },
+  {
+    id: 'headcount',
+    cat: 'memory',
+    theme: 'jade',
+    icon: '🚋',
+    title: { zh: '叮叮天車數乘客', en: 'Tram & SkyTrain Head Count' },
+    shortName: { zh: '數乘客', en: 'Head Count' },
+    desc: {
+      zh: '經典腦鍛鍊人氣王！記實車廂原本人數，跟住幾波乘客上車落車，計下最後車入面有幾多人！',
+      en: 'Brain Age fan-favorite! Watch passengers board and exit the HK Tram or SkyTrain and track how many remain!'
+    },
+    pillar: { zh: '動態記憶 · 即時加減', en: 'Working Memory · Tracking' }
+  },
+  {
+    id: 'balance',
+    cat: 'logic',
+    theme: 'gold',
+    icon: '⚖️',
+    title: { zh: '茶莊天秤邊個重', en: 'Tea-Scale Heavyweight' },
+    shortName: { zh: '天秤重', en: 'Tea Scale' },
+    desc: {
+      zh: '靈活腦學校經典題！觀察兩至三個銅天秤嘅傾斜與平衡關係，推理出邊樣寶物全場最重！',
+      en: 'Big Brain Academy classic! Compare brass balance scales and deduce which tea-house treasure weighs the most!'
+    },
+    pillar: { zh: '輕重推理 · 比較邏輯', en: 'Quantitative Deduction' }
+  },
+  {
+    id: 'steamer',
+    cat: 'memory',
+    theme: 'red',
+    icon: '🥟',
+    title: { zh: '蒸籠蓋印記位', en: 'Low-to-High Steamer Recall' },
+    shortName: { zh: '記蒸籠', en: 'Steamers' },
+    desc: {
+      zh: '記實各籠點心嘅數字位置，蓋上竹籠後由細至大順序一籠籠揭開！',
+      en: 'Memorize numbered bamboo steamers before the lids close, then tap them back in ascending order!'
+    },
+    pillar: { zh: '空間瞬間記憶', en: 'Spatial Working Memory' }
+  },
+  {
+    id: 'quicksign',
+    cat: 'math',
+    theme: 'gold',
+    icon: '➕',
+    title: { zh: '算盤快選符號', en: 'Quick Sign & Bigger Plate' },
+    shortName: { zh: '填符號', en: 'Quick Sign' },
+    desc: {
+      zh: '幫茶樓算式揀啱 ＋ − × ÷ 運算符號，再比拼兩碟點心邊邊數值更大，爽快醒腦！',
+      en: 'Pick the missing + − × ÷ operator and compare two dim-sum plates to spot the bigger total!'
+    },
+    pillar: { zh: '運算直覺 · 數感比較', en: 'Number Sense · Operators' }
+  },
+  {
+    id: 'clocktower',
+    cat: 'math',
+    theme: 'blue',
+    icon: '🕰️',
+    title: { zh: '鐘樓鏡影認時間', en: 'Clock Tower & Mirror Time' },
+    shortName: { zh: '認鐘樓', en: 'Clock Time' },
+    desc: {
+      zh: '尖沙咀鐘樓與煤氣鎮蒸汽鐘！挑戰無字鐘面、水中鏡影倒影鐘及船車到達時間速算！',
+      en: 'TST Clock Tower & Gastown Steam Clock! Read numberless dials, mirror-reflected clocks & arrival times!'
+    },
+    pillar: { zh: '空間時計 · 時間心算', en: 'Mirror Clock · Elapsed Time' }
+  },
+  {
+    id: 'trail',
+    cat: 'focus',
+    theme: 'plum',
+    icon: '🧭',
+    title: { zh: '港溫梅花間竹連線', en: 'Alternating Stepping Stones' },
+    shortName: { zh: '梅花連線', en: 'Trail Link' },
+    desc: {
+      zh: '按「1 → 甲 → 2 → 乙…」（英文 1 → A → 2 → B…）梅花間竹順序輕撳石春路連線，訓練雙線轉數！',
+      en: 'Tap garden stepping stones alternating 1 → A → 2 → B → 3 → C in order to boost mental switching!'
+    },
+    pillar: { zh: '雙軌切換 · 執行專注', en: 'Task Switching · Focus' }
+  },
+  {
+    id: 'tangram',
+    cat: 'logic',
+    theme: 'jade',
+    icon: '🧩',
+    title: { zh: '七巧板拼影坊', en: 'Rotated Silhouette Fit' },
+    shortName: { zh: '拼影坊', en: 'Shape Fit' },
+    desc: {
+      zh: '喺腦海入面旋轉茶木拼塊（不可翻轉），搵出唯一可以完美嵌入剪影凹槽嘅一塊！',
+      en: 'Mentally rotate wooden geometric tiles (no flipping!) to spot the exact piece that fits the cutout!'
+    },
+    pillar: { zh: '心理旋轉 · 空間幾何', en: 'Mental Rotation' }
+  },
+  {
+    id: 'spotlight',
+    cat: 'focus',
+    theme: 'gold',
+    icon: '🔦',
+    title: { zh: '夜探霓虹剪影', en: "Mochi's Flashlight Peek" },
+    shortName: { zh: '電筒尋寶', en: 'Spotlight' },
+    desc: {
+      zh: '阿喵拎住電筒照亮黑夜舞台一角（亦可手指輕撳移動光圈），憑局部線索估出隱藏物品！',
+      en: 'Follow or aim Mochi’s moving flashlight beam across a dark stage to identify the hidden object!'
+    },
+    pillar: { zh: '局部觀察 · 視覺聯想', en: 'Visual Closure · Focus' }
+  },
+  {
+    id: 'radicals',
+    cat: 'verbal',
+    theme: 'plum',
+    icon: '🖌️',
+    title: { zh: '拆字拼詞館', en: 'Radical & Word Forge' },
+    shortName: { zh: '拆字館', en: 'Word Forge' },
+    desc: {
+      zh: '中文模式玩部首合字（如「氵＋青＝清」），英文模式玩生活詞語拼字，附語音朗讀！',
+      en: 'Forge Chinese characters from radicals in Cantonese mode, or unscramble cozy 5–6 letter words in English!'
+    },
+    pillar: { zh: '字形結構 · 拼字思維', en: 'Character & Word Structure' }
+  },
+  {
+    id: 'cupshuffle',
+    cat: 'focus',
+    theme: 'red',
+    icon: '🧺',
+    title: { zh: '蒸籠轉盤猜猜看', en: "Mochi's Steamer Shuffle" },
+    shortName: { zh: '洗蒸籠', en: 'Cup Shuffle' },
+    desc: {
+      zh: '阿喵親手將流沙奶皇包收進竹籠再左右交換洗牌，睇實目標跟到尾搵返佢出嚟！',
+      en: 'Mochi hides a Golden Custard Bun under a bamboo steamer and swaps them — track it with your eyes!'
+    },
+    pillar: { zh: '動態追蹤 · 目光鎖定', en: 'Dynamic Visual Tracking' }
   }
 ];
 

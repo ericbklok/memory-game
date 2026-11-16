@@ -198,27 +198,52 @@ export function renderBrainRadarSvg(perGamePlays, lang) {
     {
       zh: '記憶',
       en: 'Memory',
-      val: Math.min(1, 0.28 + ((p.memory || 0) + (p.melody || 0) + (p.news || 0)) * 0.12)
+      val: Math.min(
+        1,
+        0.28 + ((p.memory || 0) + (p.melody || 0) + (p.news || 0) + (p.headcount || 0) + (p.steamer || 0)) * 0.1
+      )
     },
     {
       zh: '邏輯',
       en: 'Logic',
-      val: Math.min(1, 0.28 + ((p.sudoku || 0) + (p.tenpai || 0) + (p.blocks || 0) + (p.shisen || 0)) * 0.1)
+      val: Math.min(
+        1,
+        0.28 +
+          ((p.sudoku || 0) + (p.tenpai || 0) + (p.blocks || 0) + (p.shisen || 0) + (p.balance || 0) + (p.tangram || 0)) *
+            0.09
+      )
     },
     {
       zh: '心算',
       en: 'Math',
-      val: Math.min(1, 0.28 + ((p.math || 0) + (p.make24 || 0)) * 0.14)
+      val: Math.min(
+        1,
+        0.28 + ((p.math || 0) + (p.make24 || 0) + (p.quicksign || 0) + (p.clocktower || 0)) * 0.11
+      )
     },
     {
       zh: '語言',
       en: 'Verbal',
-      val: Math.min(1, 0.28 + ((p.vocab || 0) + (p.words || 0) + (p.history || 0)) * 0.11)
+      val: Math.min(
+        1,
+        0.28 + ((p.vocab || 0) + (p.words || 0) + (p.history || 0) + (p.radicals || 0)) * 0.1
+      )
     },
     {
       zh: '專注',
       en: 'Focus',
-      val: Math.min(1, 0.28 + ((p.eagle || 0) + (p.stroop || 0) + (p.wordsearch || 0) + (p.spotdiff || 0)) * 0.11)
+      val: Math.min(
+        1,
+        0.28 +
+          ((p.eagle || 0) +
+            (p.stroop || 0) +
+            (p.wordsearch || 0) +
+            (p.spotdiff || 0) +
+            (p.trail || 0) +
+            (p.spotlight || 0) +
+            (p.cupshuffle || 0)) *
+            0.09
+      )
     }
   ];
 

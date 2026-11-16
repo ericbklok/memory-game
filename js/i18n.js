@@ -22,7 +22,7 @@ export const UI_STRINGS = {
     bonusSteamerBtn: '✨ 今日集齊印仔！再來一籠加餸',
     shareFamilyBtn: '📲 分享今日點心紙畀屋企人',
     inviteBtn: '📨 邀請親友一齊玩',
-    quickPickTitle: '自選十六款健腦點心',
+    quickPickTitle: '自選廿六款健腦點心',
     freePlaySub: '隨時揀一款最啱心水嘅遊戲練習，唔限次數！',
     lvlEasy: '輕鬆',
     lvlMed: '標準',

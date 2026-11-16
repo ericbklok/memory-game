@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-mindsum-v20';
+const CACHE_NAME = 'daily-mindsum-v21';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -29,6 +29,8 @@ const CORE_ASSETS = [
   './js/games/engine.js',
   './js/games/extra-games.js',
   './js/games/spot-diff-game.js',
+  './js/games/brain-age-games.js',
+  './js/games/academy-games.js',
   './data/daily-news.json'
 ];
 

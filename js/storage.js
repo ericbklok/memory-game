@@ -50,8 +50,45 @@ export const OTHER_DAILY_GAMES = [
   'stroop',
   'melody',
   'vocab',
-  'spotdiff'
+  'spotdiff',
+  'headcount',
+  'balance',
+  'steamer',
+  'quicksign',
+  'clocktower',
+  'trail',
+  'tangram',
+  'spotlight',
+  'radicals',
+  'cupshuffle'
 ];
+
+export function getMochiBondInfo(bondXP, lang) {
+  const xp = Math.max(0, Math.round(Number(bondXP || 0)));
+  const zh = lang !== 'en';
+  const tiers = [
+    { min: 0, need: 30, zh: '新相識茶貓', en: 'Curious Kitten' },
+    { min: 30, need: 80, zh: '茶樓好拍檔', en: 'Tea-House Pal' },
+    { min: 80, need: 160, zh: '知心老友記', en: 'Best Tea Buddy' },
+    { min: 160, need: 280, zh: '靈犀招財貓', en: 'Lucky Soulmate' },
+    { min: 280, need: 280, zh: '港溫鎮店貓王', en: 'Grandmaster Cat' }
+  ];
+  let lvl = 1;
+  for (let i = 0; i < tiers.length; i++) {
+    if (xp >= tiers[i].min) lvl = i + 1;
+  }
+  const cur = tiers[lvl - 1];
+  const span = lvl < 5 ? cur.need - cur.min : 100;
+  const into = lvl < 5 ? xp - cur.min : 100;
+  const pct = Math.max(6, Math.min(100, Math.round((into / span) * 100)));
+  return {
+    level: lvl,
+    xp: xp,
+    nextXp: cur.need,
+    pct: pct,
+    title: zh ? cur.zh : cur.en
+  };
+}
 
 function shuffleList(arr) {
   const copy = arr.slice();
@@ -125,7 +162,8 @@ export function createDefaultState() {
       make24GentleV2: true,
       dailyReminder: true, // Opt-in by default; easy 1-tap opt-out anytime!
       reminderHour: 9, // 09:00 local morning tea default
-      reminderBannerDismissed: false
+      reminderBannerDismissed: false,
+      mochiHat: 'auto' // 'auto' wears game-specific 3D role hats!
     },
     profile: {
       displayName: '',
@@ -144,20 +182,25 @@ export function createDefaultState() {
       lastStreakDate: null,
       lastPlayedAt: null,
       teapotShields: 1, // Start every parent with 1 Warm Teapot Streak Freeze!
+      mochiTreats: 3, // Starter Crispy Fish Treats to feed 3D Mochi!
+      mochiBondXP: 0,
       gamesCompleted: 0,
       dailySetsCompleted: 0,
       recentRounds: [],
       perGamePlays: {
         news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
-        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0, spotdiff: 0
+        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0, spotdiff: 0,
+        headcount: 0, balance: 0, steamer: 0, quicksign: 0, clocktower: 0, trail: 0, tangram: 0, spotlight: 0, radicals: 0, cupshuffle: 0
       },
       perGameLevel: {
         news: 1, memory: 1, math: 1, history: 1, words: 1, eagle: 1,
-        sudoku: 1, tenpai: 1, shisen: 1, make24: 0, wordsearch: 1, blocks: 1, stroop: 1, melody: 1, vocab: 1, spotdiff: 1
+        sudoku: 1, tenpai: 1, shisen: 1, make24: 0, wordsearch: 1, blocks: 1, stroop: 1, melody: 1, vocab: 1, spotdiff: 1,
+        headcount: 1, balance: 1, steamer: 1, quicksign: 1, clocktower: 1, trail: 1, tangram: 1, spotlight: 1, radicals: 1, cupshuffle: 1
       }, // 0=Easy, 1=Standard, 2=Challenge (Make 24 defaults to 0 Relaxed!)
       perGameCleanStreak: {
         news: 0, memory: 0, math: 0, history: 0, words: 0, eagle: 0,
-        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0, spotdiff: 0
+        sudoku: 0, tenpai: 0, shisen: 0, make24: 0, wordsearch: 0, blocks: 0, stroop: 0, melody: 0, vocab: 0, spotdiff: 0,
+        headcount: 0, balance: 0, steamer: 0, quicksign: 0, clocktower: 0, trail: 0, tangram: 0, spotlight: 0, radicals: 0, cupshuffle: 0
       }
     },
     daily: {
@@ -260,6 +303,8 @@ export function recordGameCompletion(state, gameId, earnedPoints, stars, allAlbu
   state.stats.todayPoints += earnedPoints;
   state.stats.gamesCompleted += 1;
   state.stats.lastPlayedAt = Date.now();
+  state.stats.mochiTreats = (state.stats.mochiTreats || 0) + 1;
+  state.stats.mochiBondXP = (state.stats.mochiBondXP || 0) + 8;
   state.stats.perGamePlays[gameId] = (state.stats.perGamePlays[gameId] || 0) + 1;
 
   const defLvl = gameId === 'make24' ? 0 : 1;

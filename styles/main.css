@@ -3746,3 +3746,125 @@ body.mode-playing .victory-stage {
   border: 1.8px dashed #BFB099;
   color: #6E5F4B;
 }
+
+
+/* =========================================================================
+   MOCHI 3D BOND METER, FISH TREATS & 3D HAT WARDROBE
+   ========================================================================= */
+.mochi-care-dock {
+  background: linear-gradient(180deg, #FFFDF8 0%, #FDF2E2 100%);
+  border: 2px solid #D9C39E;
+  border-radius: 16px;
+  padding: 0.55rem 0.72rem;
+  box-shadow: inset 0 2px 0 #FFFFFF, 0 3px 0 rgba(185, 152, 98, 0.2);
+}
+
+.mochi-bond-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #6B3B16;
+  margin-bottom: 0.28rem;
+}
+
+.mochi-bond-xp {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.mochi-bond-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #EFE4D0;
+  overflow: hidden;
+  border: 1px solid #D8C5A6;
+  margin-bottom: 0.48rem;
+}
+
+.mochi-bond-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #FF758F 0%, #F59F00 100%);
+  transition: width 0.35s ease;
+}
+
+.mochi-care-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.42rem;
+}
+
+.mochi-care-btn {
+  padding: 0.34rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1.8px solid #2B2118;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.65), 0 2px 0 #2B2118;
+  transition: transform 0.12s ease;
+}
+
+.mochi-care-btn:hover {
+  transform: translateY(-1px);
+}
+
+.mochi-care-btn:active {
+  transform: translateY(1px);
+}
+
+.mochi-care-btn.treat {
+  background: linear-gradient(180deg, #FFE8EE 0%, #FFD0DD 100%);
+  color: #7D1B3A;
+}
+
+.mochi-care-btn.outfit {
+  background: linear-gradient(180deg, #FFF8E1 0%, #FFE49E 100%);
+  color: #694105;
+}
+
+.mochi-win-reward-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.25rem auto 0.55rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #FFF3F7 0%, #FFE2EC 100%);
+  border: 1.8px solid #E64980;
+  color: #8A1C46;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.mochi-wardrobe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.wardrobe-hat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.16rem;
+  padding: 0.58rem 0.45rem;
+  border-radius: 14px;
+  background: #FFFDF8;
+  border: 2px solid #D8C4A3;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(180, 150, 100, 0.2);
+}
+
+.wardrobe-hat-card.active {
+  background: linear-gradient(180deg, #EEFCF5 0%, #D6F5E6 100%);
+  border-color: #16805D;
+}
+
+.wardrobe-hat-card.locked {
+  opacity: 0.62;
+  background: #F4EFE6;
+}

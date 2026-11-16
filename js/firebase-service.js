@@ -22,7 +22,17 @@ const ALLOWED_GAMES = [
   'stroop',
   'melody',
   'vocab',
-  'spotdiff'
+  'spotdiff',
+  'headcount',
+  'balance',
+  'steamer',
+  'quicksign',
+  'clocktower',
+  'trail',
+  'tangram',
+  'spotlight',
+  'radicals',
+  'cupshuffle'
 ];
 const CIRCLE_CODE_RE = /^[A-Z0-9-]{3,16}$/;
 

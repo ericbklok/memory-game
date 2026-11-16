@@ -17,8 +17,14 @@ import {
 import { drawFreshItems, hasSeenSignature, markSeenSignature } from '../data/seed-tracker.js';
 import { t, pickText, randomPraise, playSfx, speakText, stopSpeaking } from '../i18n.js';
 import { getFamilyPhotos } from '../storage.js';
-import { getLiveComboCount } from '../ui-fx.js';
-import { mountBaoBo3D, setCurrentStageGameId, getCoachIntroForGame } from '../mascot-3d.js';
+import { getLiveComboCount, spawnFloatingPop } from '../ui-fx.js';
+import {
+  mountBaoBo3D,
+  setCurrentStageGameId,
+  getCoachIntroForGame,
+  getStageCompanionBadge,
+  resolveHatForRole
+} from '../mascot-3d.js';
 
 function shuffle(arr) {
   const copy = [...arr];
@@ -96,11 +102,14 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
     </div>
 
     <div class="baobo-stage-companion" id="stageBaoBoCompanion">
-      <div class="baobo-stage-3d-slot" id="stageBaoBo3DSlot"></div>
+      <div class="baobo-stage-3d-slot" id="stageBaoBo3DSlot" title="${zh ? '輕撳摸摸阿喵！' : 'Tap to pet Mochi!'}"></div>
       <div class="baobo-stage-dialogue">
         <div class="baobo-stage-toprow">
-          <span class="bo-name-tag">🐾 ${zh ? '阿喵領航' : 'Mochi Guide'}</span>
-          <button type="button" class="baobo-voice-chip" id="stageBoSpeakBtn">🔊 ${zh ? '聽講解' : 'Voice'}</button>
+          <span class="bo-name-tag">${getStageCompanionBadge(gameMeta.id, lang)}</span>
+          <div style="display:flex;gap:0.35rem;align-items:center;">
+            <button type="button" class="baobo-voice-chip" id="stageBoPetBtn">🐾 ${zh ? '摸摸頭' : 'Pet'}</button>
+            <button type="button" class="baobo-voice-chip" id="stageBoSpeakBtn">🔊 ${zh ? '聽講解' : 'Voice'}</button>
+          </div>
         </div>
         <div class="baobo-stage-line" id="stageBaoBoSpeechText">${introLine}</div>
       </div>
@@ -120,22 +129,46 @@ export function renderStageHeader({ container, gameMeta, lang, level, onChangeLe
   });
 
   const slot3d = header.querySelector('#stageBaoBo3DSlot');
+  const stagePetLinesZh = [
+    '喵嗚～呼嚕呼嚕…多謝摸摸頭，今日腦筋一定超醒神！💖',
+    '招財肉球加持你！唔使急，睇準先撳喵～🐾',
+    '好舒服喵～！卡關記得隨時撳「💡 貼士」搵我幫手！✨'
+  ];
+  const stagePetLinesEn = [
+    'Purrrr~ Thanks for the head pats! Your brain is super sharp today! 💖',
+    'Lucky calico paw power activated! Take all the time you like~ 🐾',
+    'So cozy, meow~! Tap 💡 Hint anytime you want a friendly clue! ✨'
+  ];
+
+  const petStageMochi = function (ev) {
+    playSfx('meow', true);
+    boCtrl.setMood('treat');
+    const txtEl = header.querySelector('#stageBaoBoSpeechText');
+    const pool = zh ? stagePetLinesZh : stagePetLinesEn;
+    const msg = pool[Math.floor(Math.random() * pool.length)];
+    if (txtEl) txtEl.textContent = msg;
+    const rect = slot3d.getBoundingClientRect();
+    const px = ev && typeof ev.clientX === 'number' && ev.clientX > 0 ? ev.clientX : rect.left + 32;
+    const py = ev && typeof ev.clientY === 'number' && ev.clientY > 0 ? ev.clientY : rect.top + 12;
+    spawnFloatingPop(px - 24, py - 14, zh ? '💖 呼嚕喵～' : '💖 Purrr~!', '#E64980');
+  };
+
   const boCtrl = mountBaoBo3D(slot3d, {
     size: 84,
     role: 'stage',
+    hat: resolveHatForRole('stage', gameMeta.id),
     mood: curCombo >= 2 ? 'cheer' : 'wave',
     onTap: function () {
-      playSfx('meow', true);
-      const txtEl = header.querySelector('#stageBaoBoSpeechText');
-      if (txtEl) {
-        boCtrl.setTalking(true);
-        speakText(txtEl.textContent, lang);
-        setTimeout(function () {
-          boCtrl.setTalking(false);
-        }, 2600);
-      }
+      petStageMochi(null);
     }
   });
+
+  const petBtn = header.querySelector('#stageBoPetBtn');
+  if (petBtn) {
+    petBtn.addEventListener('click', function (ev) {
+      petStageMochi(ev);
+    });
+  }
 
   const spkBtn = header.querySelector('#stageBoSpeakBtn');
   if (spkBtn) {

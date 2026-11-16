@@ -3,17 +3,24 @@ import { t, pickText, getRankTitle, randomPraise, playSfx, speakText, stopSpeaki
 import {
   renderMasterBoSvg,
   MASTER_BO_QUIPS,
+  spawnFloatingPop,
   spawnConfettiBurst,
   renderBrainRadarSvg,
   resetComboStreak,
   evaluateAgePerformance,
   renderAgeComparisonCard
 } from './ui-fx.js';
-import { mountBaoBo3D } from './mascot-3d.js';
+import {
+  mountBaoBo3D,
+  MOCHI_OUTFIT_CATALOG,
+  setGlobalMochiHatPref,
+  resolveHatForRole
+} from './mascot-3d.js';
 import {
   loadState,
   saveState,
   getTodayDateStr,
+  getMochiBondInfo,
   reshuffleDailyDishes,
   recordGameCompletion,
   getFamilyPhotos,
@@ -41,6 +48,20 @@ import {
   mountVocabGame
 } from './games/extra-games.js';
 import { mountSpotDiffGame } from './games/spot-diff-game.js';
+import {
+  mountHeadCountGame,
+  mountBalanceGame,
+  mountSteamerGame,
+  mountQuickSignGame,
+  mountClockTowerGame
+} from './games/brain-age-games.js';
+import {
+  mountTrailGame,
+  mountTangramGame,
+  mountSpotlightGame,
+  mountRadicalsGame,
+  mountCupShuffleGame
+} from './games/academy-games.js';
 import {
   ONLINE_WINDOW_MS,
   isFirebaseConfigured,
@@ -409,6 +430,7 @@ function syncChrome() {
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === currentTab);
   });
+  setGlobalMochiHatPref((state.prefs && state.prefs.mochiHat) || 'auto');
   syncLivePresenceBanner(false);
 }
 
@@ -606,6 +628,30 @@ function renderHomeView() {
           <span class="plaza-poke-pill">👆 ${zh ? '輕撳阿喵摸摸頭' : 'Pet 3D Mochi!'}</span>
         </div>
 
+        ${(function () {
+          const bond = getMochiBondInfo(state.stats.mochiBondXP || 0, lang);
+          const treats = typeof state.stats.mochiTreats === 'number' ? state.stats.mochiTreats : 3;
+          return `
+            <div class="mochi-care-dock">
+              <div class="mochi-bond-top">
+                <span class="mochi-bond-label">💖 Lv.${bond.level} · ${escapeHtml(bond.title)}</span>
+                <span class="mochi-bond-xp">${bond.level < 5 ? `${bond.xp}/${bond.nextXp}` : 'MAX 👑'}</span>
+              </div>
+              <div class="mochi-bond-bar-track" aria-hidden="true">
+                <div class="mochi-bond-bar-fill" style="width:${bond.pct}%;"></div>
+              </div>
+              <div class="mochi-care-btns">
+                <button type="button" class="mochi-care-btn treat" id="feedMochiTreatBtn">
+                  🐟 ${zh ? `餵小魚乾 (${treats})` : `Feed Treat (${treats})`}
+                </button>
+                <button type="button" class="mochi-care-btn outfit" id="openMochiOutfitBtn">
+                  🎀 ${zh ? '阿喵換裝' : '3D Hats'}
+                </button>
+              </div>
+            </div>
+          `;
+        })()}
+
         <div class="plaza-comic-bubble" id="boBubbleBtn">
           <div class="plaza-bubble-head">
             <span class="bo-name-tag">🐾 ${zh ? '三色招財貓阿喵 3D' : '3D Calico Cat Mochi'}</span>
@@ -686,7 +732,7 @@ function renderHomeView() {
             🎲 ${zh ? '扭蛋抽關' : 'Gacha Spin'}
           </button>
           <button type="button" class="btn btn-gold btn-sm" id="browseAllGamesBtn">
-            🕹️ ${zh ? '全部 16 款卡帶' : 'All 16 Games'}
+            🕹️ ${zh ? '全部 26 款卡帶' : 'All 26 Games'}
           </button>
           <button type="button" class="btn btn-jade btn-sm" id="shareCardBtn">
             📲 ${zh ? '晒點心紙' : 'Share Card'}
@@ -731,6 +777,59 @@ function renderHomeView() {
     speakText(txt, lang);
     setTimeout(() => plazaBo.setTalking(false), 3200);
   });
+
+  const feedBtn = wrap.querySelector('#feedMochiTreatBtn');
+  if (feedBtn) {
+    feedBtn.addEventListener('click', ev => {
+      const curTreats = typeof state.stats.mochiTreats === 'number' ? state.stats.mochiTreats : 0;
+      if (curTreats <= 0) {
+        playSfx('gentle', state.sound);
+        showToast(
+          zh
+            ? '🐟 小魚乾食晒喇！玩完任何一籠腦點心即送小魚乾～'
+            : '🐟 Out of fish treats! Complete any brain dish to earn more!'
+        );
+        return;
+      }
+      const prevBond = getMochiBondInfo(state.stats.mochiBondXP || 0, lang);
+      state.stats.mochiTreats = curTreats - 1;
+      state.stats.mochiBondXP = (state.stats.mochiBondXP || 0) + 15;
+      saveState(state);
+      const nextBond = getMochiBondInfo(state.stats.mochiBondXP, lang);
+
+      playSfx('meow', true);
+      plazaBo.setMood('treat');
+      const px = typeof ev.clientX === 'number' && ev.clientX > 0 ? ev.clientX : 160;
+      const py = typeof ev.clientY === 'number' && ev.clientY > 0 ? ev.clientY : 220;
+      spawnFloatingPop(px - 36, py - 18, zh ? '🐟 +15 親密度 💖' : '🐟 +15 Bond 💖', '#E64980');
+
+      const speechEl = wrap.querySelector('#boSpeechText');
+      if (nextBond.level > prevBond.level) {
+        spawnConfettiBurst(26);
+        showToast(
+          zh
+            ? `🎉 阿喵親密度升到 Lv.${nextBond.level}（${nextBond.title}），解鎖咗新 3D 帽仔！`
+            : `🎉 Mochi Bond reached Lv.${nextBond.level} (${nextBond.title}) — new 3D Hat unlocked!`
+        );
+      }
+      if (speechEl) {
+        speechEl.textContent = zh
+          ? '喵嗚～脆卜卜小魚乾超好食呀！阿喵好鍾意同你一齊嘆早茶動腦筋 💖🐾'
+          : 'Meow-nom-nom~! Crispy fish treats are my favorite! Let’s enjoy more brain puzzles together 💖🐾';
+      }
+      setTimeout(() => {
+        if (currentTab === 'home') renderHomeView();
+      }, 950);
+    });
+  }
+
+  const outfitBtn = wrap.querySelector('#openMochiOutfitBtn');
+  if (outfitBtn) {
+    outfitBtn.addEventListener('click', () => {
+      playSfx('switch', state.sound);
+      openMochiWardrobeModal();
+    });
+  }
 
   const jumpVitBtn = wrap.querySelector('#jumpVitalityBtn');
   if (jumpVitBtn) {
@@ -950,7 +1049,7 @@ function renderGamesTabView() {
         <div style="flex:1;min-width:0;">
           <h1 style="margin:0;font-size:1.24rem;font-weight:900;">🕹️ ${t(lang, 'quickPickTitle')}</h1>
           <p style="margin:0.15rem 0 0;color:var(--ink-muted);font-size:0.88rem;font-weight:700;">
-            ${zh ? '16 款無計時健腦卡帶 · 連續 3 個月以上零重複題庫！' : '16 untimed brain cartridges · 100+ days of non-repeating puzzles!'}
+            ${zh ? '26 款無計時健腦卡帶 · 腦鍛鍊＋靈活腦學校＋港溫情懷零重複題庫！' : '26 untimed brain cartridges · Brain Age & Academy classics, non-repeating!'}
           </p>
         </div>
         <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
@@ -1025,6 +1124,16 @@ function launchGame(gameId) {
   else if (gameId === 'melody') mountMelodyGame(ctx);
   else if (gameId === 'vocab') mountVocabGame(ctx);
   else if (gameId === 'spotdiff') mountSpotDiffGame(ctx);
+  else if (gameId === 'headcount') mountHeadCountGame(ctx);
+  else if (gameId === 'balance') mountBalanceGame(ctx);
+  else if (gameId === 'steamer') mountSteamerGame(ctx);
+  else if (gameId === 'quicksign') mountQuickSignGame(ctx);
+  else if (gameId === 'clocktower') mountClockTowerGame(ctx);
+  else if (gameId === 'trail') mountTrailGame(ctx);
+  else if (gameId === 'tangram') mountTangramGame(ctx);
+  else if (gameId === 'spotlight') mountSpotlightGame(ctx);
+  else if (gameId === 'radicals') mountRadicalsGame(ctx);
+  else if (gameId === 'cupshuffle') mountCupShuffleGame(ctx);
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1092,6 +1201,13 @@ async function handleDishCompleted(gameId, score, stars) {
         +<span id="winScoreTicker">0</span> ${t(lang, 'pointsUnit')}
         ${newlyCompletedAllFour ? (lang === 'zh' ? '（另加齊印獎賞 +50 分！🎊）' : ' (+50 Full Card Bonus! 🎊)') : ''}
       </p>
+      <div class="mochi-win-reward-pill">
+        🐾 ${
+          lang === 'zh'
+            ? `阿喵好開心！獲得 +1 🐟 小魚乾（現有 ${state.stats.mochiTreats || 0} 條）· 親密度 +8 💖`
+            : `Mochi cheers for you! Earned +1 🐟 Fish Treat (${state.stats.mochiTreats || 0} total) · Bond +8 💖`
+        }
+      </div>
 
       ${renderAgeComparisonCard(ageEval, lang)}
 
@@ -1124,6 +1240,7 @@ async function handleDishCompleted(gameId, score, stars) {
   mountBaoBo3D(mainEl.querySelector('#victoryBo3DSlot'), {
     size: 148,
     role: 'victory',
+    hat: resolveHatForRole('stage', gameId),
     mood: 'cheer'
   });
 
@@ -1852,7 +1969,7 @@ function showStartScreen(forceEditProfile) {
       </div>
 
       <h1 class="start-title-zh">每日腦點心</h1>
-      <div class="start-title-en">DAILY MINDSUM · 16 BRAIN GAMES</div>
+      <div class="start-title-en">DAILY MINDSUM · 26 BRAIN GAMES</div>
 
       <div class="start-mascot-stage" style="margin:0.35rem auto 0.55rem;">
         <span class="start-float-icon">🥟</span>
@@ -2231,8 +2348,8 @@ function openWelcomeTourModal(initialStep) {
         mood: 'cheer',
         title: zh ? '🕹️ 零計時壓力 · 語音貼士與設定' : '🕹️ Stress-Free Play, Voice & Settings',
         voice: zh
-          ? '全部十六款遊戲都唔限時間，輕輕一撳就玩得。隨時撳喇叭聽廣東話或英文朗讀，或者撳右上角齒輪調整字體大細、語速同地區！即刻開波嘆早茶啦！'
-          : 'All 16 games are untimed and single-tap. Tap Read Aloud anytime to listen, use Hints freely, or tap the top-right Gear icon to customize text size, voice speed, and city focus!',
+          ? '全部廿六款遊戲都唔限時間，輕輕一撳就玩得。隨時撳喇叭聽廣東話或英文朗讀，或者撳右上角齒輪調整字體大細、語速同地區！即刻開波嘆早茶啦！'
+          : 'All 26 games are untimed and single-tap. Tap Read Aloud anytime to listen, use Hints freely, or tap the top-right Gear icon to customize text size, voice speed, and city focus!',
         bodyHtml: `
           <div class="tour-showcase-box">
             <p style="margin:0;font-size:0.9rem;line-height:1.6;">
@@ -2629,8 +2746,8 @@ function openSettingsModal() {
             playSfx('switch', state.sound);
             showToast(
               state.lang === 'zh'
-                ? '✅ 已將全部 16 款點心設為所選難度！'
-                : '✅ Updated difficulty across all 16 games!'
+                ? '✅ 已將全部 26 款點心設為所選難度！'
+                : '✅ Updated difficulty across all 26 games!'
             );
             refreshAll();
           });
@@ -2729,6 +2846,111 @@ function openSettingsModal() {
   }
 
   renderPrefs();
+}
+
+function openMochiWardrobeModal() {
+  const lang = state.lang;
+  const zh = lang === 'zh';
+
+  function renderWardrobe() {
+    const bond = getMochiBondInfo(state.stats.mochiBondXP || 0, lang);
+    const curHat = (state.prefs && state.prefs.mochiHat) || 'auto';
+    const previewHat = curHat === 'auto' ? 'chef' : curHat;
+
+    openModal(
+      `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <h2 style="margin:0;font-size:1.25rem;font-weight:900;">🎀 ${
+          zh ? '阿喵 3D 換裝衣帽間' : "Mochi's 3D Hat Wardrobe"
+        }</h2>
+        <button type="button" class="chip-btn" id="closeWardrobeTopBtn">✕</button>
+      </div>
+      <p style="margin:0.25rem 0 0.7rem;font-size:0.86rem;color:var(--ink-muted);font-weight:700;">
+        ${
+          zh
+            ? `目前親密度：Lv.${bond.level}（${bond.title}）· 餵小魚乾或過關即可解鎖更多 3D 帽仔！`
+            : `Bond Level: Lv.${bond.level} (${bond.title}) · Play games & feed fish treats to unlock 3D hats!`
+        }
+      </p>
+      <div style="display:flex;justify-content:center;margin-bottom:0.75rem;">
+        <div id="wardrobeBo3DSlot" style="width:146px;height:146px;border-radius:22px;background:linear-gradient(180deg,#FFFDF7,#F9EED8);border:2px solid #D9C39E;display:flex;align-items:center;justify-content:center;"></div>
+      </div>
+      <div class="mochi-wardrobe-grid">
+        ${MOCHI_OUTFIT_CATALOG.map(item => {
+          const unlocked = bond.level >= item.minLevel;
+          const active = curHat === item.id;
+          return `
+            <button type="button" class="wardrobe-hat-card ${active ? 'active' : ''} ${
+              unlocked ? '' : 'locked'
+            }" data-hat="${item.id}" data-minlvl="${item.minLevel}">
+              <span style="font-size:1.45rem;">${item.icon}</span>
+              <span style="font-weight:900;font-size:0.84rem;">${zh ? item.zh : item.en}</span>
+              <span style="font-size:0.72rem;font-weight:800;color:${
+                active ? 'var(--jade-dark)' : 'var(--ink-muted)'
+              };">
+                ${
+                  active
+                    ? zh
+                      ? '✅ 穿戴中'
+                      : '✅ Equipped'
+                    : unlocked
+                    ? zh
+                      ? '輕撳穿戴'
+                      : 'Tap to wear'
+                    : `🔒 Lv.${item.minLevel}`
+                }
+              </span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+      <button type="button" class="btn btn-primary btn-full btn-sm" id="doneWardrobeBtn" style="margin-top:0.85rem;">
+        ✅ ${zh ? '靚晒！返回茶樓' : 'Looking Cute! Done'}
+      </button>
+    `,
+      card => {
+        const previewCtrl = mountBaoBo3D(card.querySelector('#wardrobeBo3DSlot'), {
+          size: 138,
+          role: 'wardrobe',
+          hat: previewHat,
+          mood: 'happy',
+          onTap: () => {
+            playSfx('meow', true);
+            previewCtrl.setMood('cheer');
+          }
+        });
+
+        card.querySelector('#closeWardrobeTopBtn').addEventListener('click', closeModal);
+        card.querySelector('#doneWardrobeBtn').addEventListener('click', () => {
+          playSfx('switch', state.sound);
+          closeModal();
+        });
+
+        card.querySelectorAll('.wardrobe-hat-card').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const minLv = Number(btn.dataset.minlvl || 1);
+            if (bond.level < minLv) {
+              playSfx('gentle', state.sound);
+              showToast(
+                zh
+                  ? `🔒 親密度達到 Lv.${minLv} 即可解鎖呢頂帽仔！快啲玩點心或餵小魚乾啦 🐟`
+                  : `🔒 Reach Bond Lv.${minLv} by playing dishes & feeding treats to unlock!`
+              );
+              return;
+            }
+            state.prefs.mochiHat = btn.dataset.hat;
+            saveState(state);
+            setGlobalMochiHatPref(state.prefs.mochiHat);
+            playSfx('meow', state.sound);
+            if (currentTab === 'home') renderHomeView();
+            renderWardrobe();
+          });
+        });
+      }
+    );
+  }
+
+  renderWardrobe();
 }
 
 /* =========================================================================

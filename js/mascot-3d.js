@@ -67,8 +67,119 @@ export const GAME_COACH_LINES = {
   spotdiff: {
     zh: '望真啲上下／左右兩幅港溫插畫，直接輕撳任何一幅圖入面唔同嘅地方！卡關隨時撳「💡 貼士」喵～',
     en: 'Compare both HK & Vancouver illustrations and tap the differences on either picture! Tap 💡 Hint anytime~'
+  },
+  headcount: {
+    zh: '叮叮開車喵～！先記實車入面原本有幾多人，再跟住每一波上車加、落車減，計下最後仲有幾多位乘客！',
+    en: 'All aboard, meow~! Remember the starting passengers, then add boarders & subtract exits on each wave!'
+  },
+  balance: {
+    zh: '望實銅天秤邊一邊沉低（沉低代表重啲，平排代表一樣重），推理出邊一樣寶物係全場最重喵！',
+    en: 'Watch which pan tips lower on the brass scales (lower = heavier, level = equal) and tap the heaviest item!'
+  },
+  steamer: {
+    zh: '先記住打開咗嘅蒸籠數字位置，一撳最細嗰個數字就會蓋上竹籠，跟住由細至大順序揭開晒佢哋喵！',
+    en: 'Memorize the open steamer numbers — tapping the smallest number closes the lids, then tap them in ascending order!'
+  },
+  quicksign: {
+    zh: '上半場幫算式揀啱 ＋ − × ÷ 符號，下半場比拼邊一碟點心算式數值大啲喵！',
+    en: 'First pick the missing + − × ÷ sign, then tap whichever dim-sum plate has the larger total!'
+  },
+  clocktower: {
+    zh: '嚟到尖沙咀鐘樓同煤氣鎮蒸汽鐘！認清無字鐘面、水中鏡影鐘同埋船車到達時間喵～',
+    en: 'Welcome to the Clock Tower! Read numberless dials, mirror-reflected clocks, and transit arrival times!'
+  },
+  trail: {
+    zh: '梅花間竹踩石春路！嚴格跟住「1 → 甲 → 2 → 乙…」（英文 1 → A → 2 → B…）交替順序輕撳連線喵！',
+    en: 'Step across the garden stones alternating strictly in order: 1 → A → 2 → B → 3 → C…!'
+  },
+  tangram: {
+    zh: '喺腦入面順時針或逆時針旋轉下面嘅木塊（唔可以反轉背面㗎），搵出啱啱好嵌得入上面剪影嗰一塊喵！',
+    en: 'Mentally rotate (without flipping!) the wooden pieces below to find the exact one that fits the silhouette!'
+  },
+  spotlight: {
+    zh: '阿喵拎住電筒幫你照住黑夜舞台！你亦可以手指輕撳舞台移動光圈，估下收埋咗咩寶物喵～',
+    en: 'Mochi is shining the spotlight! You can also tap anywhere on the dark stage to aim the beam and guess what is hidden!'
+  },
+  radicals: {
+    zh: '漢字合字坊！將部首同右邊啱嘅部件拼埋一齊合成靚字（英文模式則順序拼出詞語）喵！',
+    en: 'Word & Character Forge! Combine the radical with its matching part (or tap scrambled letters in order)!'
+  },
+  cupshuffle: {
+    zh: '睇實阿喵將金鈴奶皇包收埋喺邊籠，蓋埋竹籠洗牌之後，憑眼力搵返佢出嚟喵～！',
+    en: 'Watch which steamer Mochi hides the Golden Custard Bun under, follow the swaps, and tap where it landed!'
   }
 };
+
+export const MOCHI_OUTFIT_CATALOG = [
+  { id: 'auto', minLevel: 1, icon: '🎭', zh: '隨遊戲變裝', en: 'Auto Game Role' },
+  { id: 'none', minLevel: 1, icon: '🐱', zh: '原味三色貓', en: 'Classic Calico' },
+  { id: 'leaf', minLevel: 1, icon: '🌱', zh: '春茶嫩芽夾', en: 'Tea-Leaf Sprout' },
+  { id: 'chef', minLevel: 1, icon: '👩‍🍳', zh: '點心大廚帽', en: 'Dim Sum Chef' },
+  { id: 'conductor', minLevel: 2, icon: '🚋', zh: '叮叮車長帽', en: 'Conductor Cap' },
+  { id: 'detective', minLevel: 3, icon: '🔍', zh: '神探獵鹿帽', en: 'Detective Cap' },
+  { id: 'scholar', minLevel: 4, icon: '🎓', zh: '狀元學士帽', en: 'Scholar Cap' },
+  { id: 'crown', minLevel: 5, icon: '👑', zh: '招財貓王冠', en: 'Golden Crown' }
+];
+
+export const GAME_ROLE_HATS = {
+  headcount: { hat: 'conductor', zh: '🚋 阿喵站長', en: '🚋 Conductor Mochi' },
+  clocktower: { hat: 'conductor', zh: '🕰️ 阿喵報時員', en: '🕰️ Timekeeper Mochi' },
+  math: { hat: 'chef', zh: '👩‍🍳 阿喵掌櫃', en: '👩‍🍳 Tea-Chef Mochi' },
+  make24: { hat: 'chef', zh: '🃏 阿喵荷官', en: '🃏 Card-Chef Mochi' },
+  quicksign: { hat: 'chef', zh: '🧮 阿喵算盤師', en: '🧮 Abacus Mochi' },
+  steamer: { hat: 'chef', zh: '🥟 阿喵點心師', en: '🥟 Steamer Mochi' },
+  cupshuffle: { hat: 'chef', zh: '🧺 阿喵洗籠莊家', en: '🧺 Dealer Mochi' },
+  balance: { hat: 'chef', zh: '⚖️ 阿喵茶莊掌秤', en: '⚖️ Tea-Scale Mochi' },
+  memory: { hat: 'chef', zh: '🀄 阿喵雀友', en: '🀄 Tile-Master Mochi' },
+  news: { hat: 'scholar', zh: '🎓 阿喵主播', en: '🎓 Anchor Mochi' },
+  history: { hat: 'scholar', zh: '🏛️ 阿喵博學博士', en: '🏛️ Historian Mochi' },
+  words: { hat: 'scholar', zh: '🎓 阿喵文曲星', en: '🎓 Poet Mochi' },
+  vocab: { hat: 'scholar', zh: '📖 阿喵雙語導師', en: '📖 Tutor Mochi' },
+  radicals: { hat: 'scholar', zh: '🖌️ 阿喵書法家', en: '🖌️ Scribe Mochi' },
+  sudoku: { hat: 'scholar', zh: '🔢 阿喵棋博士', en: '🔢 Logic Mochi' },
+  tenpai: { hat: 'scholar', zh: '🀄 阿喵雀聖', en: '🀄 Grandmaster Mochi' },
+  spotdiff: { hat: 'detective', zh: '🔍 阿喵大偵探', en: '🔍 Detective Mochi' },
+  eagle: { hat: 'detective', zh: '👀 阿喵千里眼', en: '👀 Eagle-Eye Mochi' },
+  spotlight: { hat: 'detective', zh: '🔦 阿喵夜巡探長', en: '🔦 Spotlight Mochi' },
+  wordsearch: { hat: 'detective', zh: '🔤 阿喵尋字探員', en: '🔤 Word-Scout Mochi' },
+  trail: { hat: 'detective', zh: '🧭 阿喵領路員', en: '🧭 Pathfinder Mochi' },
+  tangram: { hat: 'detective', zh: '🧩 阿喵巧匠', en: '🧩 Artisan Mochi' },
+  shisen: { hat: 'leaf', zh: '🌱 阿喵茶侶', en: '🌱 Tea-Buddy Mochi' },
+  blocks: { hat: 'leaf', zh: '🧱 阿喵木匠', en: '🧱 Woodcraft Mochi' },
+  stroop: { hat: 'leaf', zh: '🎨 阿喵畫師', en: '🎨 Artist Mochi' },
+  melody: { hat: 'crown', zh: '🎵 阿喵樂師', en: '🎵 Maestro Mochi' }
+};
+
+let globalMochiHatPref = 'auto';
+
+export function setGlobalMochiHatPref(hatId) {
+  globalMochiHatPref = hatId || 'auto';
+  for (let i = 0; i < activeInstances.length; i++) {
+    const inst = activeInstances[i];
+    if (!inst.explicitHat) {
+      inst.hat = resolveHatForRole(inst.role, currentStageGameId);
+    }
+  }
+}
+
+export function resolveHatForRole(role, gameId) {
+  if (globalMochiHatPref && globalMochiHatPref !== 'auto') {
+    return globalMochiHatPref;
+  }
+  if (role === 'stage' && gameId && GAME_ROLE_HATS[gameId]) {
+    return GAME_ROLE_HATS[gameId].hat;
+  }
+  if (role === 'board') return 'crown';
+  return 'none';
+}
+
+export function getStageCompanionBadge(gameId, lang) {
+  const info = gameId && GAME_ROLE_HATS[gameId];
+  if (info) {
+    return lang === 'en' ? info.en : info.zh;
+  }
+  return lang === 'en' ? '🐾 Mochi Guide' : '🐾 阿喵領航';
+}
 
 const COACH_CHEERS = {
   zh: [
@@ -831,8 +942,65 @@ function renderBaoBoFrame(inst, nowMs) {
     }
   });
 
-  // 14. Orbiting 3D Golden Lucky Coins / Stars during Cheer / Victory!
-  if ((mood === 'cheer' || mood === 'celebrate') && !calm) {
+  // 14. 3D Role-Playing Hat / Costume Perched Between Mochi's Calico Ears!
+  const activeHat = inst.hat || 'none';
+  if (activeHat === 'chef') {
+    let band = mat4Translate(head, 0, 0.57, 0.05);
+    band = mat4Scale(band, 0.30, 0.10, 0.28);
+    drawPart(meshes.cyl, band, [0.98, 0.98, 0.96], 0.022, 0.28, 1.0);
+    let puffC = mat4Translate(head, 0, 0.74, 0.05);
+    drawPart(meshes.lowSphere, mat4Scale(puffC, 0.34, 0.20, 0.32), [1.0, 1.0, 0.99], 0.024, 0.32, 1.0);
+    [-0.17, 0.17].forEach(function (px) {
+      let sidePuff = mat4Translate(head, px, 0.72, 0.08);
+      drawPart(meshes.lowSphere, mat4Scale(sidePuff, 0.18, 0.16, 0.18), [1.0, 1.0, 0.99], 0.020, 0.32, 1.0);
+    });
+  } else if (activeHat === 'conductor') {
+    let capTop = mat4Translate(head, 0, 0.62, 0.06);
+    drawPart(meshes.cyl, mat4Scale(capTop, 0.34, 0.11, 0.32), [0.12, 0.24, 0.48], 0.022, 0.30, 1.0);
+    let goldBand = mat4Translate(head, 0, 0.54, 0.07);
+    drawPart(meshes.cyl, mat4Scale(goldBand, 0.31, 0.04, 0.30), BELL_GOLD, 0.018, 0.18, 1.0);
+    let visor = mat4Translate(head, 0, 0.51, 0.31);
+    visor = mat4RotateX(visor, 0.22);
+    drawPart(meshes.lowSphere, mat4Scale(visor, 0.27, 0.035, 0.16), [0.15, 0.12, 0.12], 0.018, 0.20, 1.0);
+    let emblem = mat4Translate(head, 0, 0.63, 0.37);
+    drawPart(meshes.lowSphere, mat4Scale(emblem, 0.065, 0.065, 0.035), BELL_GOLD, 0.014, 0.12, 1.0);
+  } else if (activeHat === 'scholar') {
+    let baseCap = mat4Translate(head, 0, 0.56, 0.05);
+    drawPart(meshes.cyl, mat4Scale(baseCap, 0.28, 0.08, 0.28), [0.18, 0.14, 0.16], 0.02, 0.35, 1.0);
+    let board = mat4Translate(head, 0, 0.66, 0.05);
+    board = mat4RotateY(board, 0.78);
+    drawPart(meshes.cyl, mat4Scale(board, 0.46, 0.032, 0.46), [0.16, 0.13, 0.15], 0.022, 0.32, 1.0);
+    let tassel = mat4Translate(head, 0.32, 0.56, 0.22);
+    drawPart(meshes.cyl, mat4Scale(tassel, 0.028, 0.14, 0.028), COLLAR_RED, 0.012, 0.30, 1.0);
+  } else if (activeHat === 'detective') {
+    let dome = mat4Translate(head, 0, 0.56, 0.06);
+    drawPart(meshes.lowSphere, mat4Scale(dome, 0.33, 0.18, 0.33), [0.76, 0.52, 0.28], 0.022, 0.36, 1.0);
+    let brim = mat4Translate(head, 0, 0.50, 0.30);
+    drawPart(meshes.lowSphere, mat4Scale(brim, 0.26, 0.035, 0.16), [0.58, 0.38, 0.18], 0.018, 0.36, 1.0);
+    let topBow = mat4Translate(head, 0, 0.73, 0.06);
+    drawPart(meshes.lowSphere, mat4Scale(topBow, 0.07, 0.045, 0.07), [0.42, 0.25, 0.12], 0.015, 0.38, 1.0);
+  } else if (activeHat === 'crown') {
+    let crownBase = mat4Translate(head, 0, 0.58, 0.06);
+    drawPart(meshes.cyl, mat4Scale(crownBase, 0.27, 0.09, 0.27), BELL_GOLD, 0.022, 0.15, 1.0);
+    [-0.16, 0, 0.16].forEach(function (cx) {
+      let spike = mat4Translate(head, cx, 0.70, 0.14);
+      drawPart(meshes.earCone, mat4Scale(spike, 0.085, 0.14, 0.085), BELL_GOLD, 0.018, 0.15, 1.0);
+    });
+    let gem = mat4Translate(head, 0, 0.59, 0.33);
+    drawPart(meshes.lowSphere, mat4Scale(gem, 0.058, 0.058, 0.035), COLLAR_RED, 0.012, 0.10, 1.0);
+  } else if (activeHat === 'leaf') {
+    let stem = mat4Translate(head, 0.02, 0.62, 0.08);
+    drawPart(meshes.cyl, mat4Scale(stem, 0.024, 0.11, 0.024), [0.18, 0.62, 0.32], 0.012, 0.32, 1.0);
+    [-1, 1].forEach(function (s) {
+      let lf = mat4Translate(head, 0.02 + s * 0.11, 0.71, 0.08);
+      lf = mat4RotateZ(lf, s * -0.55);
+      drawPart(meshes.lowSphere, mat4Scale(lf, 0.12, 0.048, 0.07), [0.24, 0.78, 0.42], 0.016, 0.28, 1.0);
+    });
+  }
+
+  // 15. Orbiting 3D Golden Lucky Coins / Hearts during Cheer / Victory / Treat!
+  if ((mood === 'cheer' || mood === 'celebrate' || mood === 'treat') && !calm) {
+    const orbCol = mood === 'treat' ? [1.0, 0.42, 0.58] : BELL_GOLD;
     for (let k = 0; k < 3; k++) {
       const ang = t * 2.9 + (k * Math.PI * 2) / 3;
       const sx = Math.cos(ang) * 0.95;
@@ -842,7 +1010,7 @@ function renderBaoBoFrame(inst, nowMs) {
       star = mat4RotateY(star, t * 4.0);
       star = mat4RotateZ(star, 0.78);
       star = mat4Scale(star, 0.105, 0.105, 0.06);
-      drawPart(meshes.lowSphere, star, BELL_GOLD, 0.02, 0.14, 1.0);
+      drawPart(meshes.lowSphere, star, orbCol, 0.02, 0.14, 1.0);
     }
   }
 }
@@ -1075,9 +1243,12 @@ export function mountBaoBo3D(containerEl, opts) {
     containerEl.appendChild(canvas);
   }
 
+  const explicitHat = options.hat || '';
   const inst = {
     id: options.id || 'mochi_' + Math.random().toString(36).slice(2, 8),
     role: options.role || 'plaza',
+    hat: explicitHat || resolveHatForRole(options.role || 'plaza', currentStageGameId),
+    explicitHat: Boolean(explicitHat),
     canvas: canvas,
     size: size,
     glCtx: glCtx,
@@ -1118,8 +1289,11 @@ export function mountBaoBo3D(containerEl, opts) {
   return {
     setMood: function (newMood) {
       inst.mood = newMood || 'greet';
-      inst.squash = newMood === 'cheer' ? 0.22 : -0.16;
+      inst.squash = newMood === 'cheer' || newMood === 'treat' ? 0.24 : -0.16;
       inst.earPerk = 0.85;
+    },
+    setHat: function (newHat) {
+      inst.hat = newHat || resolveHatForRole(inst.role, currentStageGameId);
     },
     setTalking: function (flag) {
       inst.talking = Boolean(flag);
